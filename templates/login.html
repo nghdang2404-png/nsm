@@ -1,0 +1,80 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập Nam Sương Motor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-area">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Nam Sương Motor">
+            <h1>ĐĂNG NHẬP HỆ THỐNG</h1>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <i class="fas fa-exclamation-triangle"></i> {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <div class="input-group">
+                <label for="username"><i class="fas fa-user"></i></label>
+                <input type="text" id="username" name="username" placeholder="Tên đăng nhập or Email" required>
+            </div>
+            <div class="input-group">
+                <label for="password"><i class="fas fa-lock"></i></label>
+                <input type="password" id="password" name="password" placeholder="Mật khẩu" required>
+            </div>
+            
+            <a href="#" class="forgot-password">Quên mật khẩu?</a>
+            
+            <button type="submit" class="login-btn">ĐĂNG NHẬP</button>
+        </form>
+        
+        <div class="footer-links">
+            <a href="#">Đăng ký tài khoản mới</a>
+            <span class="separator">|</span>
+            <a href="https://namsuongmotor.com/">Quay lại trang chủ</a>
+        </div>
+    </div>
+</body>
+</html>
+<style>
+    /* Bắt buộc set body và html chiếm toàn bộ chiều cao màn hình */
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        display: flex; /* Kích hoạt Flexbox */
+        justify-content: center; /* Căn giữa theo chiều ngang */
+        align-items: center; /* Căn giữa theo chiều dọc */
+        background-color: #f4f7f9; /* Màu nền nhẹ nhàng */
+    }
+
+    /* Container đăng nhập của bạn */
+    .login-container {
+        background: white;
+        padding: 40px;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08); /* Đổ bóng nhẹ cho chuyên nghiệp */
+        width: 100%;
+        max-width: 400px; /* Giới hạn độ rộng tối đa */
+        text-align: center;
+        border: 1px solid #eee;
+    }
+
+    /* Đảm bảo hình ảnh logo không bị quá to */
+    .brand-logo {
+        max-width: 200px;
+        margin-bottom: 20px;
+    }
+</style>

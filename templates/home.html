@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Giá & Tồn Kho - Nam Sương Motor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <style>
+        .table-responsive { width: 100%; overflow-x: auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 40px; border: 1px solid #eef2f5; }
+        .price-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        .price-table th { background-color: #1a1a1a; color: #ffffff; padding: 14px 12px; font-weight: 600; text-transform: uppercase; font-size: 13px; }
+        .price-table td { padding: 12px; border-bottom: 1px solid #eef2f5; color: #2c3e50; }
+        .price-table tbody tr { cursor: pointer; transition: background-color 0.2s; }
+        .price-table tbody tr:hover { background-color: #f1f5f9; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .price-highlight { color: #d32f2f; font-weight: 700; }
+        .stock-badge { display: inline-block; min-width: 28px; padding: 4px 6px; border-radius: 4px; font-weight: 600; font-size: 12px; text-align: center; }
+        .stock-in { background-color: #e8f5e9; color: #2e7d32; }
+        .stock-zero { background-color: #ffebee; color: #c62828; }
+
+        /* CSS cho thanh Tìm kiếm & Lọc trên trang chủ */
+        .filter-container {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            border: 1px solid #eef2f5;
+        }
+        .filter-form {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filter-input, .filter-select {
+            flex: 1;
+            min-width: 220px;
+            padding: 10px 15px;
+            border: 1px solid #dcdcdc;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .filter-input:focus, .filter-select:focus {
+            border-color: #1a1a1a;
+        }
+        .filter-btn {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .filter-btn:hover {
+            background-color: #333;
+        }
+        .reset-btn {
+            background-color: #e0e0e0;
+            color: #333;
+            text-decoration: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            display: inline-block;
+            transition: background 0.2s;
+        }
+        .reset-btn:hover {
+            background-color: #d0d0d0;
+        }
+
+        /* CSS cho Modal hiển thị ảnh xe & chọn màu */
+        .car-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+        .car-modal-content { background: #fff; padding: 25px; border-radius: 12px; text-align: center; max-width: 500px; width: 90%; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .car-modal-close { position: absolute; top: 10px; right: 15px; font-size: 26px; cursor: pointer; color: #666; font-weight: bold; }
+        .car-modal-close:hover { color: #000; }
+        .car-modal-img { width: 100%; max-height: 350px; object-fit: contain; border-radius: 6px; margin-top: 10px; border: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="{{ url_for('home') }}" class="brand-logo">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Nam Sương" style="height: 40px; width: auto; object-fit: contain;">
+        <span>NAM SƯƠNG MOTOR</span>
+    </a>
+        
+    <div class="main-menu">
+        <a href="{{ url_for('home') }}">Tất cả xe</a>
+        <a href="{{ url_for('admin_panel') }}" style="color: #ffcc00; font-weight: bold; border-left: 1px solid #444; padding-left: 15px; margin-left: 10px;">
+            <i class="fas fa-edit"></i> Cập nhật dữ liệu
+        </a>
+    </div>
+
+    <div class="user-panel">
+        <div class="user-badge">
+            <i class="fas fa-circle" style="color: #2e7d32;"></i>
+            <span>Xin chào, <strong>{{ username }}</strong></span>
+        </div>
+        <a href="{{ url_for('logout') }}" class="logout-btn">
+            <i class="fas fa-sign-out-alt"></i> Đăng xuất
+        </a>
+    </div>
+</nav>
+
+<header class="hero-banner">
+    <h1>Hệ Thống Quản Lý Giá Xe & Tồn Kho Hệ Thống</h1>
+    <p>Cập nhật số liệu trực tuyến toàn hệ thống các chi nhánh Nam Sương</p>
+</header>
+
+<div class="container" style="max-width: 1400px;">
+    
+    <!-- KHUNG TÌM KIẾM VÀ BỘ LỌC -->
+    <div class="filter-container">
+        <form method="GET" action="{{ url_for('home') }}" class="filter-form">
+            <input type="text" name="search" value="{{ search_query }}" class="filter-input" placeholder="🔍 Nhập tên xe hoặc phiên bản cần tìm...">
+            
+            <select name="loai" class="filter-select">
+                <option value="">-- Tất cả loại xe --</option>
+                {% if danh_sach_loai %}
+                    {% for l in danh_sach_loai %}
+                        <option value="{{ l }}" {% if loai_filter == l %}selected{% endif %}>{{ l }}</option>
+                    {% endfor %}
+                {% endif %}
+            </select>
+            
+            <div>
+                <button type="submit" class="filter-btn"><i class="fas fa-search"></i> Tìm kiếm</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="section-header">
+        <h2 class="section-title">BẢNG GIÁ NIÊM YẾT VÀ TỒN KHO CHI NHÁNH</h2>
+    </div>
+
+    <div class="table-responsive">
+        <table class="price-table">
+            <thead>
+                <tr>
+                    <th>Loại xe</th> <th>Tên xe</th> <th>Phiên bản</th>
+                    <th class="text-right">Giá xe (VNĐ)</th>
+                    <th class="text-right">Giấy tờ Phường</th>
+                    <th class="text-right">Giấy tờ Xã</th>
+                    <th class="text-center">NS1</th> <th class="text-center">NS2</th>
+                    <th class="text-center">NS3</th> <th class="text-center">NS4</th>
+                    <th class="text-center">NS5</th> <th class="text-center">NSM1</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if danh_sach_xe %}
+                    {% for xe in danh_sach_xe %}
+                    <tr onclick='showCarImage("{{ xe.ten_xe }} - {{ xe.phien_ban }}", "{{ url_for("static", filename="uploads/" ~ xe.hinh_anh) if xe.hinh_anh else "" }}", {{ xe.mau_xe | tojson | safe }})' title="Click để xem hình ảnh xe">
+                        <td><strong>{{ xe.loai_xe }}</strong></td>
+                        <td>{{ xe.ten_xe }}</td>
+                        <td>{{ xe.phien_ban }}</td>
+                        <td class="text-right price-highlight">{{ "{:,.0f}".format(xe.gia_xe) }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(xe.gia_giay_to_phuong) }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(xe.gia_giay_to_xa) }}</td>
+                        <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.ns1 > 0 else 'stock-zero' }}">{{ xe.ns1 }}</span></td>
+                        <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.ns2 > 0 else 'stock-zero' }}">{{ xe.ns2 }}</span></td>
+                        <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.ns3 > 0 else 'stock-zero' }}">{{ xe.ns3 }}</span></td>
+                        <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.ns4 > 0 else 'stock-zero' }}">{{ xe.ns4 }}</span></td>
+                        <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.ns5 > 0 else 'stock-zero' }}">{{ xe.ns5 }}</span></td>
+                        <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.nsm1 > 0 else 'stock-zero' }}">{{ xe.nsm1 }}</span></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="12" class="text-center" style="padding: 30px; color: #777;">Không tìm thấy dòng xe phù hợp.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- TIỆN ÍCH DỊCH VỤ SHOWROOM -->
+    <h2 class="section-title">DỊCH VỤ HỖ TRỢ HỆ THỐNG</h2>
+    <div class="services-grid">
+        <div class="service-card">
+            <i class="fas fa-boxes"></i>
+            <h4>Quản Lý Kho Tổng</h4>
+            <p>Kiểm soát số lượng tồn thực tế liên thông giữa các chi nhánh</p>
+        </div>
+        <div class="service-card">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <h4>Cập Nhật Giá Lăn Bánh</h4>
+            <p>Tính toán tự động chi phí giấy tờ theo khu vực Phường / Xã</p>
+        </div>
+        <div class="service-card">
+            <i class="fas fa-shield-alt"></i>
+            <h4>Bảo Hành Chính Hãng</h4>
+            <p>Tra cứu lịch sử bảo dưỡng và thông tin xe nhanh chóng</p>
+        </div>
+        <div class="service-card">
+            <i class="fas fa-headset"></i>
+            <h4>Hỗ Trợ Nghiệp Vụ</h4>
+            <p>Liên hệ bộ phận kế toán dịch vụ để giải đáp thắc mắc</p>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL HIỂN THỊ ẢNH KHI CLICK VÀO HÀNG -->
+<div id="carImageModal" class="car-modal">
+    <div class="car-modal-content">
+        <span class="car-modal-close" onclick="closeModal()">&times;</span>
+        <h3 id="modalCarTitle" style="margin-bottom: 5px; color: #1a1a1a;"></h3>
+        
+        <!-- Khu vực nút bấm chọn màu xe -->
+        <div id="modalColorButtons" style="margin: 10px 0; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;"></div>
+
+        <img id="modalCarImg" src="" alt="Hình ảnh xe" class="car-modal-img">
+        <p id="modalNoImgText" style="color: #888; margin-top: 15px; display: none;">Chưa có hình ảnh cập nhật cho dòng xe này.</p>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+    <div class="container footer-content">
+        <div class="footer-col">
+            <h3>VỀ CHÚNG TÔI</h3>
+            <p><strong>CÔNG TY TNHH CÀ PHÊ NAM SƯƠNG</strong></p>
+            <p>Hệ thống đại lý phân phối xe máy Honda chính hãng hàng đầu, mang đến sản phẩm và dịch vụ uy tín.</p>
+            <p>GPKD Số: 2000434674 - Ngày cấp: 10/01/2005 - Sở KH & ĐT Tỉnh Cà Mau</p>
+        </div>
+        <div class="footer-col">
+            <h3>THÔNG TIN LIÊN HỆ</h3>
+            <p><i class="fas fa-map-marker-alt"></i> <strong>Địa chỉ:</strong> Số 17-19, Phạm Văn Ký, Phường 2, Tp Cà Mau</p>
+            <p><i class="fas fa-building"></i> <strong>VPĐD:</strong> PG01-06, Lê Duẩn, Phường 1, Tp Cà Mau</p>
+            <p><i class="fas fa-headset"></i> <strong>Hotline:</strong> 1800 577 730</p>
+            <p><i class="fas fa-phone-alt"></i> <strong>Điện thoại:</strong> (0290) 3835733 - 0941209770</p>
+            <p><i class="fas fa-envelope"></i> <strong>Email:</strong> cr@namsuong.com</p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; Bản quyền thuộc về Nam Sương Group</p>
+    </div>
+</footer>
+
+<script>
+    function showCarImage(carName, defaultImg, colorsJson) {
+        const modal = document.getElementById('carImageModal');
+        const modalTitle = document.getElementById('modalCarTitle');
+        const modalImg = document.getElementById('modalCarImg');
+        const noImgText = document.getElementById('modalNoImgText');
+        const colorButtonsContainer = document.getElementById('modalColorButtons');
+
+        modalTitle.innerText = carName;
+        colorButtonsContainer.innerHTML = ''; // Làm sạch các nút màu trước đó
+
+        let colors = [];
+        try {
+            colors = colorsJson;
+        } catch (e) {
+            colors = [];
+        }
+
+        // Nếu xe được cấu hình nhiều màu sắc
+        if (colors && colors.length > 0) {
+            colors.forEach((item, index) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.innerText = item.ten_mau;
+                btn.className = 'btn btn-sm ' + (index === 0 ? 'btn-dark' : 'btn-outline-dark');
+                // Tùy chỉnh style nhẹ cho nút bấm màu bắt mắt
+                btn.style.cssText = `
+                    border-radius: 20px; 
+                    padding: 5px 15px; 
+                    border: 1px solid #1a1a1a; 
+                    cursor: pointer; 
+                    font-size: 13px; 
+                    font-weight: 500;
+                    background-color: ${index === 0 ? '#1a1a1a' : '#ffffff'};
+                    color: ${index === 0 ? '#ffffff' : '#1a1a1a'};
+                    transition: all 0.2s;
+                `;
+                
+                // Sự kiện click chọn màu
+                btn.onclick = function() {
+                    Array.from(colorButtonsContainer.children).forEach(b => {
+                        b.style.backgroundColor = '#ffffff';
+                        b.style.color = '#1a1a1a';
+                    });
+                    btn.style.backgroundColor = '#1a1a1a';
+                    btn.style.color = '#ffffff';
+
+                    modalImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
+                };
+
+                colorButtonsContainer.appendChild(btn);
+            });
+
+            // Hiển thị mặc định ảnh của màu đầu tiên
+            modalImg.src = "{{ url_for('static', filename='uploads/') }}" + colors[0].hinh_anh_mau;
+            modalImg.style.display = 'block';
+            noImgText.style.display = 'none';
+
+        } else if (defaultImg && defaultImg.trim() !== '') {
+            // Trường hợp không có bảng màu riêng nhưng có ảnh đại diện mặc định
+            modalImg.src = defaultImg;
+            modalImg.style.display = 'block';
+            noImgText.style.display = 'none';
+        } else {
+            // Không có ảnh nào
+            modalImg.src = '';
+            modalImg.style.display = 'none';
+            noImgText.style.display = 'block';
+        }
+        
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('carImageModal').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('carImageModal');
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    }
+</script>
+
+</body>
+</html>

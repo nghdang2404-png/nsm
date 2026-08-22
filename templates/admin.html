@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản trị - Hệ thống Nam Sương</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f4f6ef;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        .table th {
+            vertical-align: middle;
+            background-color: #212529 !important;
+            color: #fff;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+        .col-small {
+            width: 55px !important;
+            text-align: center;
+        }
+        .form-control-sm, .form-select-sm {
+            border-radius: 6px;
+        }
+        .btn {
+            border-radius: 6px;
+        }
+        .color-row-item {
+            background: #f8f9fa;
+            border: 1px dashed #ced4da;
+            padding: 6px;
+            border-radius: 6px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header / Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm px-4">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="/admin">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Nam Sương" style="height: 38px; width: auto; object-fit: contain;" class="me-2">
+                <div>
+                    <span class="text-warning fs-5">NAM SƯƠNG</span>
+                    <span class="d-block text-muted" style="font-size: 10px; letter-spacing: 1px;">QUẢN LÝ KHO & GIÁ XE</span>
+                </div>
+            </a>
+            <div class="d-flex">
+                <a href="/home" class="btn btn-outline-light btn-sm me-2">
+                    <i class="fa-solid fa-house me-1"></i> Trang chủ
+                </a>
+                <a href="/logout" class="btn btn-danger btn-sm">
+                    <i class="fa-solid fa-right-from-bracket me-1"></i> Đăng xuất
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4">
+        
+        <!-- HIỂN THỊ THÔNG BÁO FLASH (CẢNH BÁO / THÀNH CÔNG / LỖI) Ở ĐẦU TRANG -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'danger' else 'danger' }} alert-dismissible fade show shadow-sm mb-3" role="alert">
+                        <i class="fa-solid {% if category == 'success' %}fa-circle-check{% elif category == 'warning' %}fa-triangle-exclamation{% else %}fa-circle-exclamation{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Thanh tìm kiếm và Bộ lọc -->
+        <div class="card mb-3">
+            <div class="card-body py-3">
+                <form method="GET" action="/admin" class="row g-2 align-items-center">
+                    <div class="col-md-4">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                            <input type="text" name="search" value="{{ search_query }}" class="form-control" placeholder="Tìm theo tên xe hoặc phiên bản...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="loai" class="form-select form-select-sm">
+                            <option value="">-- Tất cả loại xe --</option>
+                            {% for l in danh_sach_loai %}
+                                <option value="{{ l }}" {% if loai_filter == l %}selected{% endif %}>{{ l }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-auto">
+                        <button type="submit" class="btn btn-primary btn-sm px-3"><i class="fa-solid fa-filter me-1"></i> Lọc dữ liệu</button>
+                        <a href="/admin" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-rotate-right"></i> Đặt lại</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Form Import Excel -->
+        <div class="card mb-3">
+            <div class="card-body py-3">
+                <h6 class="text-primary mb-2 fw-bold"><i class="fa-solid fa-file-excel me-1 text-success"></i> Cập nhật dữ liệu nhanh từ Excel</h6>
+                <form action="/admin/import" method="POST" enctype="multipart/form-data" class="row g-2 align-items-center">
+                    <div class="col-md-4">
+                        <input type="file" name="file_excel" class="form-control form-control-sm" accept=".xlsx, .xls" required>
+                    </div>
+                    <div class="col-md-auto">
+                        <button type="submit" class="btn btn-warning btn-sm fw-semibold text-dark"><i class="fa-solid fa-cloud-arrow-up me-1"></i> Tải lên Excel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Bảng dữ liệu -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle text-center mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 90px;">Loại</th>
+                                <th style="width: 130px;">Tên xe</th>
+                                <th style="width: 100px;">Phiên bản</th>
+                                <th style="width: 90px;">Giá xe</th>
+                                <th style="width: 80px;">Phường</th>
+                                <th style="width: 80px;">Xã</th>
+                                <th class="col-small">NS1</th>
+                                <th class="col-small">NS2</th>
+                                <th class="col-small">NS3</th>
+                                <th class="col-small">NS4</th>
+                                <th class="col-small">NS5</th>
+                                <th class="col-small">NSM1</th>
+                                <th style="width: 250px;">Hình ảnh & Màu sắc xe</th>
+                                <th style="width: 100px;">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody style="font-size: 13px;">
+                            
+                            <!-- 1. Dòng thêm mới xe (Dùng form riêng độc lập) -->
+                            <form action="/admin/add" method="POST" enctype="multipart/form-data" id="form_add_xe">
+                                <tr class="table-info">
+                                    <td><input type="text" name="loai_xe" class="form-control form-control-sm" placeholder="Loại..." required></td>
+                                    <td><input type="text" name="ten_xe" class="form-control form-control-sm" placeholder="Tên xe..." required></td>
+                                    <td><input type="text" name="phien_ban" class="form-control form-control-sm" placeholder="Phiên bản..."></td>
+                                    <td><input type="number" name="gia_xe" class="form-control form-control-sm" placeholder="Giá..."></td>
+                                    <td><input type="number" name="gia_giay_to_phuong" class="form-control form-control-sm" placeholder="Phường..."></td>
+                                    <td><input type="number" name="gia_giay_to_xa" class="form-control form-control-sm" placeholder="Xã..."></td>
+                                    <td><input type="number" name="ns1" class="form-control form-control-sm p-1 text-center" value="0"></td>
+                                    <td><input type="number" name="ns2" class="form-control form-control-sm p-1 text-center" value="0"></td>
+                                    <td><input type="number" name="ns3" class="form-control form-control-sm p-1 text-center" value="0"></td>
+                                    <td><input type="number" name="ns4" class="form-control form-control-sm p-1 text-center" value="0"></td>
+                                    <td><input type="number" name="ns5" class="form-control form-control-sm p-1 text-center" value="0"></td>
+                                    <td><input type="number" name="nsm1" class="form-control form-control-sm p-1 text-center" value="0"></td>
+                                    <td class="text-start">
+                                        <div class="mb-1">
+                                            <label class="form-label small fw-bold mb-0">Ảnh đại diện chung:</label>
+                                            <input type="file" name="hinh_anh" class="form-control form-control-sm" accept="image/*">
+                                        </div>
+                                        <hr class="my-1">
+                                        <div id="addColorContainer_new" class="mb-1">
+                                            <label class="form-label small fw-bold mb-0 text-primary">Các màu xe:</label>
+                                            <div class="color-row-item">
+                                                <input type="text" name="ten_mau[]" class="form-control form-control-sm mb-1" placeholder="Tên màu (VD: Đỏ đen)">
+                                                <input type="file" name="hinh_anh_mau[]" class="form-control form-control-sm" accept="image/*">
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 11px;" onclick="addColorRow('addColorContainer_new', 'form_add_xe')">
+                                            <i class="fa-solid fa-plus"></i> Thêm màu
+                                        </button>
+                                    </td>
+                                    <td><button type="submit" class="btn btn-success btn-sm w-100 fw-semibold"><i class="fa-solid fa-plus me-1"></i> Thêm xe</button></td>
+                                </tr>
+                            </form>
+
+                            <!-- 2. Danh sách xe hiện có (Mỗi dòng là 1 form riêng biệt được khai báo độc lập) -->
+                            {% for xe in danh_sach_xe %}
+                            <form action="/admin/edit/{{ xe.id }}" method="POST" enctype="multipart/form-data" id="form_edit_{{ xe.id }}">
+                                <tr>
+                                    <td><input type="text" name="loai_xe" value="{{ xe.loai_xe }}" class="form-control form-control-sm"></td>
+                                    <td><input type="text" name="ten_xe" value="{{ xe.ten_xe }}" class="form-control form-control-sm"></td>
+                                    <td><input type="text" name="phien_ban" value="{{ xe.phien_ban }}" class="form-control form-control-sm"></td>
+                                    <td><input type="number" name="gia_xe" value="{{ xe.gia_xe }}" class="form-control form-control-sm"></td>
+                                    <td><input type="number" name="gia_giay_to_phuong" value="{{ xe.gia_giay_to_phuong }}" class="form-control form-control-sm"></td>
+                                    <td><input type="number" name="gia_giay_to_xa" value="{{ xe.gia_giay_to_xa }}" class="form-control form-control-sm"></td>
+                                    <td><input type="number" name="ns1" value="{{ xe.ns1 }}" class="form-control form-control-sm p-1 text-center"></td>
+                                    <td><input type="number" name="ns2" value="{{ xe.ns2 }}" class="form-control form-control-sm p-1 text-center"></td>
+                                    <td><input type="number" name="ns3" value="{{ xe.ns3 }}" class="form-control form-control-sm p-1 text-center"></td>
+                                    <td><input type="number" name="ns4" value="{{ xe.ns4 }}" class="form-control form-control-sm p-1 text-center"></td>
+                                    <td><input type="number" name="ns5" value="{{ xe.ns5 }}" class="form-control form-control-sm p-1 text-center"></td>
+                                    <td><input type="number" name="nsm1" value="{{ xe.nsm1 }}" class="form-control form-control-sm p-1 text-center"></td>
+                                    
+                                    <!-- Quản lý ảnh đại diện & danh sách màu chi tiết của xe -->
+                                    <td class="text-start">
+                                        <div class="mb-1">
+                                            <span class="small text-muted">Ảnh chính: <strong>{{ xe.hinh_anh if xe.hinh_anh else 'Chưa có' }}</strong></span>
+                                            <input type="file" name="hinh_anh" class="form-control form-control-sm mt-1" accept="image/*">
+                                        </div>
+                                        <hr class="my-1">
+                                        <div class="small fw-bold text-secondary mb-1">Màu sắc hiện có:</div>
+                                        {% if xe.mau_xe %}
+                                            {% for mau in xe.mau_xe %}
+                                            <div class="color-row-item">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <input type="text" name="edit_ten_mau_{{ mau.id }}" value="{{ mau.ten_mau }}" class="form-control form-control-sm" style="width: 75%;">
+                                                    <a href="/admin/delete-mau/{{ mau.id }}" class="text-danger small fw-bold text-decoration-none" onclick="return confirm('Xóa màu này?')" title="Xóa màu này">
+                                                        <i class="fa-solid fa-trash"></i>
+                                                    </a>
+                                                </div>
+                                                <div class="small text-truncate text-muted mb-1" style="max-width: 220px;" title="{{ mau.hinh_anh_mau }}">
+                                                    <i class="fa-solid fa-image"></i> {{ mau.hinh_anh_mau }}
+                                                </div>
+                                                <input type="file" name="edit_hinh_anh_mau_{{ mau.id }}" class="form-control form-control-sm" accept="image/*">
+                                            </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="text-muted small fst-italic mb-1">Chưa thiết lập màu sắc riêng.</div>
+                                        {% endif %}
+
+                                        <!-- Khu vực thêm màu mới cho xe này -->
+                                        <div id="addColorContainer_{{ xe.id }}"></div>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 mt-1" style="font-size: 11px;" onclick="addColorRow('addColorContainer_{{ xe.id }}', 'form_edit_{{ xe.id }}')">
+                                            <i class="fa-solid fa-plus"></i> Thêm màu mới
+                                        </button>
+                                    </td>
+
+                                    <td>
+                                        <button type="submit" class="btn btn-primary btn-sm px-2 mb-1 w-100" title="Lưu thay đổi"><i class="fa-solid fa-floppy-disk"></i> Lưu</button>
+                                        <a href="/admin/delete/{{ xe.id }}" class="btn btn-danger btn-sm px-2 mb-1 w-100" onclick="return confirm('Bạn có chắc muốn xóa xe này cùng toàn bộ thông tin màu sắc liên quan?')" title="Xóa"><i class="fa-solid fa-trash"></i> Xóa</a>
+                                    </td>
+                                </tr>
+                            </form>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript hỗ trợ thêm dòng nhập màu linh hoạt kết nối form id -->
+<!-- JavaScript hỗ trợ thêm dòng nhập màu và ẩn cảnh báo khi click ra ngoài -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function addColorRow(containerId, formId) {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = 'color-row-item mt-1';
+            div.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <input type="text" name="new_ten_mau[]" form="${formId}" class="form-control form-control-sm" placeholder="Tên màu mới..." style="width: 85%;">
+                    <button type="button" class="btn btn-sm text-danger p-0" onclick="this.parentElement.parentElement.remove()"><i class="fa-solid fa-circle-xmark fs-6"></i></button>
+                </div>
+                <input type="file" name="new_hinh_anh_mau[]" form="${formId}" class="form-control form-control-sm" accept="image/*">
+            `;
+            container.appendChild(div);
+        }
+        
+        // Lắng nghe sự kiện click trên toàn trang để ẩn thông báo khi click ra vùng trống
+        document.addEventListener('click', function(event) {
+            const alerts = document.querySelectorAll('.alert');
+            
+            // Nếu click vào chính nút đóng (x) hoặc bên trong alert, không làm gì cả
+            if (event.target.closest('.alert') || event.target.closest('.btn-close')) {
+                return;
+            }
+
+            // Nếu click ra ngoài, đóng tất cả alert đang hiện
+            alerts.forEach(function(alert) {
+                const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                bsAlert.close();
+            });
+        });
+    </script>
+
+</body>
+</html>
