@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký tài khoản mới - Hệ thống Nam Sương</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f4f6ef;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.075);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar đơn giản -->
+    <nav class="navbar navbar-dark bg-dark mb-4 shadow-sm px-3">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="/admin">
+                <span class="text-warning fs-5 me-2">NAM SƯƠNG</span> <span class="text-muted fs-6">| Quản trị hệ thống</span>
+            </a>
+            <div>
+                <a href="/admin" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Quay lại trang Quản trị</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" style="max-width: 600px;">
+        
+        <!-- HIỂN THỊ THÔNG BÁO FLASH -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'danger' else 'danger' }} alert-dismissible fade show shadow-sm mb-3" role="alert">
+                        <i class="fa-solid fa-circle-exclamation me-2"></i> {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card p-4">
+            <h4 class="text-primary fw-bold mb-3 text-center"><i class="fa-solid fa-user-plus me-2"></i> Đăng Ký Tài Khoản Nhân Viên</h4>
+            <p class="text-muted text-center small mb-4">Tài khoản được tạo sẽ chỉ có quyền truy cập xem thông tin tại trang chủ.</p>
+
+            <form action="/register" method="POST">
+    <div class="mb-3">
+        <label class="form-label fw-semibold small">Tên đăng nhập:</label>
+        <input type="text" name="username" class="form-control form-control-sm" placeholder="Nhập tên đăng nhập..." required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold small">Mật khẩu:</label>
+        <input type="password" name="password" class="form-control form-control-sm" placeholder="Nhập mật khẩu..." required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold small">Nhập lại mật khẩu:</label>
+        <input type="password" name="confirm_password" class="form-control form-control-sm" placeholder="Xác nhận lại mật khẩu..." required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold small">Bộ phận làm việc:</label>
+        <input type="text" name="bo_phan" class="form-control form-control-sm" placeholder="VD: Kế toán dịch vụ, Phụ tùng...">
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold small">Khu vực làm việc:</label>
+        <select name="khu_vuc" class="form-select form-select-sm" required>
+            <option value="" disabled selected>-- Chọn khu vực --</option>
+            <option value="Cà Mau">Cà Mau</option>
+            <option value="Bạc Liêu">Bạc Liêu</option>
+        </select>
+    </div>
+
+    <div class="mb-4 form-check">
+        <input type="checkbox" name="is_admin" value="yes" class="form-check-input" id="adminCheck">
+        <label class="form-check-label small fw-semibold text-danger" for="adminCheck">
+            Cấp quyền Quản trị viên (Admin) cho tài khoản này
+        </label>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100 fw-semibold py-2">
+        <i class="fa-solid fa-check me-1"></i> Tạo tài khoản
+    </button>
+</form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

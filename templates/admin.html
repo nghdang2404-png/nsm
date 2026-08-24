@@ -1,395 +1,525 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản trị - Hệ thống Nam Sương</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body {
-            background-color: #f4f6ef;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .navbar-brand {
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-        .card {
-            border: none;
+{% extends "base.html" %}
+
+{% block title %}Quản trị - Hệ thống Nam Sương{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table th {
+        vertical-align: middle;
+        background-color: #212529 !important;
+        color: #fff;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        text-align: center;
+    }
+
+    /* ĐỊNH DẠNG MÀU SẮC KHU VỰC CÀ MAU (XANH DƯƠNG) */
+    .col-cm { 
+        background-color: #edf5ff !important; 
+    }
+    .box-cm {
+        background-color: #e0edff;
+        border: 1px solid #b6d4fe;
+        border-radius: 6px;
+        padding: 6px;
+        margin-bottom: 6px;
+    }
+    .badge-cm {
+        background-color: #0d6efd;
+        color: #fff;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 700;
+        display: inline-block;
+        margin-bottom: 4px;
+    }
+
+    /* ĐỊNH DẠNG MÀU SẮC KHU VỰC BẠC LIÊU (XANH LÁ) */
+    .col-bl { 
+        background-color: #f0fdf4 !important; 
+    }
+    .box-bl {
+        background-color: #dcfce7;
+        border: 1px solid #86efac;
+        border-radius: 6px;
+        padding: 6px;
+        margin-bottom: 6px;
+    }
+    .badge-bl {
+        background-color: #16a34a;
+        color: #fff;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 700;
+        display: inline-block;
+        margin-bottom: 4px;
+    }
+
+    .col-tonkho { background-color: #fafafa !important; }
+
+    .table td {
+        vertical-align: middle;
+        padding: 6px !important;
+    }
+    .form-control-sm, .form-select-sm {
+        border-radius: 5px;
+        border-color: #cbd5e1;
+        background-color: #ffffff;
+    }
+    .form-control-sm:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+    }
+    
+    .col-small {
+        min-width: 70px !important;
+        text-align: center;
+    }
+
+    .col-tonkho input[type=number]::-webkit-inner-spin-button, 
+    .col-tonkho input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+    .col-tonkho input[type=number] {
+        -moz-appearance: textfield;
+    }
+
+    .color-row-item {
+        background: #ffffff;
+        border: 1px dashed #cbd5e1;
+        padding: 8px;
+        border-radius: 6px;
+        margin-bottom: 6px;
+    }
+
+    .price-label-tag {
+        font-size: 10px;
+        font-weight: 700;
+        margin-bottom: 2px;
+        display: block;
+    }
+
+    @media (max-width: 991px) {
+        .table-responsive { border: none; }
+        .table thead { display: none; }
+        .table tbody, .table tr, .table td { display: block; width: 100%; }
+        
+        .table tr {
+            margin-bottom: 20px;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
             border-radius: 10px;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            overflow: hidden;
         }
-        .table th {
-            vertical-align: middle;
-            background-color: #212529 !important;
-            color: #fff;
-            text-transform: uppercase;
-            font-size: 11px;
-            letter-spacing: 0.5px;
-            text-align: center;
-        }
-        
-        /* PHÂN NHÓM MÀU SẮC TRỰC QUAN CHO CÁC CỘT */
-        .col-gia { background-color: #faf8f0 !important; }
-        .col-tonkho { background-color: #f0f6ff !important; }
+        .table-info { background-color: #e6f7f2 !important; border-color: #c3e6cb !important; }
 
-        /* Tinh chỉnh ô input */
         .table td {
-            vertical-align: middle;
-            padding: 6px !important;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-align: right;
+            padding: 10px 15px !important;
+            border-bottom: 1px dashed #e9ecef;
         }
-        .form-control-sm, .form-select-sm {
-            border-radius: 6px;
-            border-color: #cbd5e1;
-        }
-        .form-control-sm:focus {
-            border-color: #0d6efd;
-            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+        .table td:last-child { border-bottom: none; }
+        
+        .table td::before {
+            content: attr(data-label);
+            flex-basis: 40%;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 700;
+            color: #495057;
+            text-transform: uppercase;
+            margin-right: 10px;
         }
         
-        /* Cột tồn kho - Tăng độ rộng để thấy rõ số */
-        .col-small {
-            min-width: 75px !important;
-            text-align: center;
+        .table td > input, .table td > select, .table td > textarea {
+            flex: 1;
+            width: 100%;
+            max-width: 55%;
+            margin: 0 !important;
         }
 
-        /* Ẩn mũi tên tăng/giảm của input số ở cột tồn kho để tiết kiệm không gian */
-        .col-tonkho input[type=number]::-webkit-inner-spin-button, 
-        .col-tonkho input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
+        .table td:nth-child(13) {
+            flex-direction: column;
+            align-items: flex-start;
+            background-color: #f8f9fa;
         }
-        .col-tonkho input[type=number] {
-            -moz-appearance: textfield;
+        .table td:nth-child(13)::before {
+            flex-basis: 100%;
+            width: 100%;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #dee2e6;
+            color: #0d6efd;
         }
+        .table td:nth-child(13) > div { width: 100%; max-width: 100%; }
 
-        .btn {
-            border-radius: 6px;
+        .table td:nth-child(14) {
+            flex-direction: row;
+            gap: 10px;
+            background-color: #eef2f5;
         }
-        .color-row-item {
-            background: #ffffff;
-            border: 1px dashed #cbd5e1;
-            padding: 8px;
-            border-radius: 6px;
-            margin-bottom: 6px;
+        .table td:nth-child(14)::before { display: none; }
+        .table td:nth-child(14) > button, 
+        .table td:nth-child(14) > a {
+            flex: 1;
+            margin: 0 !important;
         }
+    }
+</style>
+{% endblock %}
 
-        /* =======================================================
-           CSS ĐÁP ỨNG CHO THIẾT BỊ DI ĐỘNG (DƯỚI 992px)
-           ======================================================= */
-        @media (max-width: 991px) {
-            .navbar .container-fluid {
-                flex-direction: column;
-                gap: 12px;
-            }
-            .navbar-brand { margin: 0 auto; }
-            .navbar .d-flex { width: 100%; justify-content: center; }
-
-            .table-responsive { border: none; }
-            .table thead { display: none; }
-            .table tbody, .table tr, .table td { display: block; width: 100%; }
-            
-            .table tr {
-                margin-bottom: 20px;
-                background-color: #fff;
-                border: 1px solid #dee2e6;
-                border-radius: 10px;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-                overflow: hidden;
-            }
-            .table-info { background-color: #e6f7f2 !important; border-color: #c3e6cb !important; }
-
-            .table td {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                text-align: right;
-                padding: 10px 15px !important;
-                border-bottom: 1px dashed #e9ecef;
-            }
-            .table td:last-child { border-bottom: none; }
-            
-            .table td::before {
-                content: attr(data-label);
-                flex-basis: 40%;
-                text-align: left;
-                font-size: 12px;
-                font-weight: 700;
-                color: #495057;
-                text-transform: uppercase;
-                margin-right: 10px;
-            }
-            
-            .table td > input, .table td > select, .table td > textarea {
-                flex: 1;
-                width: 100%;
-                max-width: 55%;
-                margin: 0 !important;
-            }
-
-            .table td:nth-child(13) {
-                flex-direction: column;
-                align-items: flex-start;
-                background-color: #f8f9fa;
-            }
-            .table td:nth-child(13)::before {
-                flex-basis: 100%;
-                width: 100%;
-                margin-bottom: 10px;
-                padding-bottom: 8px;
-                border-bottom: 1px solid #dee2e6;
-                color: #0d6efd;
-            }
-            .table td:nth-child(13) > div { width: 100%; max-width: 100%; }
-
-            .table td:nth-child(14) {
-                flex-direction: row;
-                gap: 10px;
-                background-color: #eef2f5;
-            }
-            .table td:nth-child(14)::before { display: none; }
-            .table td:nth-child(14) > button, 
-            .table td:nth-child(14) > a {
-                flex: 1;
-                margin: 0 !important;
-            }
-        }
-    </style>
-</head>
-<body>
-
-    <!-- Header / Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm px-3">
-        <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="/admin">
-                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Nam Sương" style="height: 38px; width: auto; object-fit: contain;" class="me-2">
-                <div>
-                    <span class="text-warning fs-5">NAM SƯƠNG</span>
-                    <span class="d-block text-muted" style="font-size: 10px; letter-spacing: 1px;">QUẢN LÝ KHO & GIÁ XE</span>
+{% block content %}
+<!-- Thanh tìm kiếm và Bộ lọc -->
+<div class="card mb-3">
+    <div class="card-body py-3">
+        <form method="GET" action="/admin" class="row g-2 align-items-center">
+            <div class="col-md-4 col-12">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input type="text" name="search" value="{{ search_query }}" class="form-control" placeholder="Tìm theo tên xe hoặc phiên bản...">
                 </div>
-            </a>
-            <div class="d-flex mt-lg-0 mt-2">
-                <a href="/home" class="btn btn-outline-light btn-sm me-2">
-                    <i class="fa-solid fa-house me-1"></i> Trang chủ
-                </a>
-                <a href="/logout" class="btn btn-danger btn-sm">
-                    <i class="fa-solid fa-right-from-bracket me-1"></i> Đăng xuất
-                </a>
             </div>
-        </div>
-    </nav>
-
-    <div class="container-fluid px-lg-4 px-2">
-        
-        <!-- HIỂN THỊ THÔNG BÁO FLASH -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category if category != 'danger' else 'danger' }} alert-dismissible fade show shadow-sm mb-3" role="alert">
-                        <i class="fa-solid {% if category == 'success' %}fa-circle-check{% elif category == 'warning' %}fa-triangle-exclamation{% else %}fa-circle-exclamation{% endif %} me-2"></i>
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <!-- Thanh tìm kiếm và Bộ lọc -->
-        <div class="card mb-3">
-            <div class="card-body py-3">
-                <form method="GET" action="/admin" class="row g-2 align-items-center">
-                    <div class="col-md-4 col-12">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                            <input type="text" name="search" value="{{ search_query }}" class="form-control" placeholder="Tìm theo tên xe hoặc phiên bản...">
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-12">
-                        <select name="loai" class="form-select form-select-sm">
-                            <option value="">-- Tất cả loại xe --</option>
-                            {% for l in danh_sach_loai %}
-                                <option value="{{ l }}" {% if loai_filter == l %}selected{% endif %}>{{ l }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-auto col-12 d-flex gap-2 mt-2 mt-md-0">
-                        <button type="submit" class="btn btn-primary btn-sm px-3 flex-grow-1"><i class="fa-solid fa-filter me-1"></i> Lọc dữ liệu</button>
-                        <a href="/admin" class="btn btn-outline-secondary btn-sm flex-grow-1 text-center"><i class="fa-solid fa-rotate-right"></i> Đặt lại</a>
-                    </div>
-                </form>
+            <div class="col-md-3 col-12">
+                <select name="loai" class="form-select form-select-sm">
+                    <option value="">-- Tất cả loại xe --</option>
+                    {% for l in danh_sach_loai %}
+                        <option value="{{ l }}" {% if loai_filter == l %}selected{% endif %}>{{ l }}</option>
+                    {% endfor %}
+                </select>
             </div>
-        </div>
-
-        <!-- Form Import Excel -->
-        <div class="card mb-3">
-            <div class="card-body py-3">
-                <h6 class="text-primary mb-2 fw-bold"><i class="fa-solid fa-file-excel me-1 text-success"></i> Cập nhật dữ liệu nhanh từ Excel</h6>
-                <form action="/admin/import" method="POST" enctype="multipart/form-data" class="row g-2 align-items-center">
-                    <div class="col-md-4 col-12">
-                        <input type="file" name="file_excel" class="form-control form-control-sm" accept=".xlsx, .xls" required>
-                    </div>
-                    <div class="col-md-auto col-12 mt-2 mt-md-0">
-                        <button type="submit" class="btn btn-warning btn-sm w-100 fw-semibold text-dark"><i class="fa-solid fa-cloud-arrow-up me-1"></i> Tải lên Excel</button>
-                    </div>
-                </form>
+            <div class="col-md-auto col-12 d-flex gap-2 mt-2 mt-md-0">
+                <button type="submit" class="btn btn-primary btn-sm px-3 flex-grow-1"><i class="fa-solid fa-filter me-1"></i> Lọc dữ liệu</button>
+                <a href="/admin" class="btn btn-outline-secondary btn-sm flex-grow-1 text-center"><i class="fa-solid fa-rotate-right"></i> Đặt lại</a>
             </div>
-        </div>
+        </form>
+    </div>
+</div>
 
-        <!-- Bảng dữ liệu -->
-        <div class="card shadow-sm mb-5">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-bordered align-middle text-center mb-0">
-                        <thead>
-                            <tr>
-                                <th style="min-width: 100px;">Loại</th>
-                                <!-- Tăng min-width lên 220px để chứa đủ các mã xe dài -->
-                                <th style="min-width: 220px;">Tên xe</th> 
-                                <th style="min-width: 180px;">Phiên bản</th>
-                                <!-- Tăng min-width lên 120px để hiển thị trọn vẹn các số 0 của giá tiền -->
-                                <th style="min-width: 120px;" class="col-gia">Giá xe</th>
-                                <th style="min-width: 110px;" class="col-gia">Phường</th>
-                                <th style="min-width: 110px;" class="col-gia">Xã</th>
-                                <th class="col-small col-tonkho" title="Tồn kho NS1">NS1</th>
-                                <th class="col-small col-tonkho" title="Tồn kho NS2">NS2</th>
-                                <th class="col-small col-tonkho" title="Tồn kho NS3">NS3</th>
-                                <th class="col-small col-tonkho" title="Tồn kho NS4">NS4</th>
-                                <th class="col-small col-tonkho" title="Tồn kho NS5">NS5</th>
-                                <th class="col-small col-tonkho" title="Tồn kho NSM1">NSM1</th>
-                                <th style="min-width: 260px;">Hình ảnh & Màu sắc xe</th>
-                                <th style="min-width: 100px;">Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody style="font-size: 13px;">
+<!-- Form Import Excel -->
+<div class="card mb-3">
+    <div class="card-body py-3">
+        <h6 class="text-primary mb-2 fw-bold"><i class="fa-solid fa-file-excel me-1 text-success"></i> Cập nhật dữ liệu nhanh từ Excel</h6>
+        <form action="/admin/import" method="POST" enctype="multipart/form-data" class="row g-2 align-items-center">
+            <div class="col-md-4 col-12">
+                <input type="file" name="file_excel" class="form-control form-control-sm" accept=".xlsx, .xls" required>
+            </div>
+            <div class="col-md-auto col-12 mt-2 mt-md-0">
+                <button type="submit" class="btn btn-warning btn-sm w-100 fw-semibold text-dark"><i class="fa-solid fa-cloud-arrow-up me-1"></i> Tải lên Excel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bảng dữ liệu -->
+<div class="card shadow-sm mb-5">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle text-center mb-0">
+                <thead>
+                    <tr>
+                        <th style="min-width: 90px;">Loại</th>
+                        <th style="min-width: 180px;">Tên xe</th> 
+                        <th style="min-width: 150px;">Phiên bản</th>
+                        <th style="min-width: 190px;">Giá xe (6 vùng)</th>
+                        <th style="min-width: 135px;" class="bg-primary text-white">Giấy tờ Cà Mau</th>
+                        <th style="min-width: 135px;" class="bg-success text-white">Giấy tờ Bạc Liêu</th>
+                        <th class="col-small col-tonkho" title="Tồn kho NS1">NS1</th>
+                        <th class="col-small col-tonkho" title="Tồn kho NS2">NS2</th>
+                        <th class="col-small col-tonkho" title="Tồn kho NS3">NS3</th>
+                        <th class="col-small col-tonkho" title="Tồn kho NS4">NS4</th>
+                        <th class="col-small col-tonkho" title="Tồn kho NS5">NS5</th>
+                        <th class="col-small col-tonkho" title="Tồn kho NSM1">NSM1</th>
+                        <th style="min-width: 250px;">Hình ảnh & Màu sắc xe</th>
+                        <th style="min-width: 90px;">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody style="font-size: 13px;">
+                    
+                    <!-- 1. DÒNG THÊM MỚI XE -->
+                    <form action="/admin/add" method="POST" enctype="multipart/form-data" id="form_add_xe">
+                        <tr class="table-info">
+                            <td data-label="Loại xe"><input type="text" name="loai_xe" class="form-control form-control-sm" placeholder="Loại..." required></td>
+                            <td data-label="Tên xe"><textarea name="ten_xe" class="form-control form-control-sm" rows="2" style="resize: vertical; min-height: 40px;" placeholder="Tên xe..." required></textarea></td>
+                            <td data-label="Phiên bản"><textarea name="phien_ban" class="form-control form-control-sm" rows="2" style="resize: vertical; min-height: 40px;" placeholder="Phiên bản..."></textarea></td>
                             
-                            <!-- 1. Dòng thêm mới xe -->
-                            <form action="/admin/add" method="POST" enctype="multipart/form-data" id="form_add_xe">
-                                <tr class="table-info">
-                                    <td data-label="Loại xe"><input type="text" name="loai_xe" class="form-control form-control-sm" placeholder="Loại..." required></td>
-                                    <td data-label="Tên xe"><textarea name="ten_xe" class="form-control form-control-sm" rows="2" style="resize: vertical; min-height: 40px;" placeholder="Tên xe..." required></textarea></td>
-                                    <td data-label="Phiên bản"><textarea name="phien_ban" class="form-control form-control-sm" rows="2" style="resize: vertical; min-height: 40px;" placeholder="Phiên bản..."></textarea></td>
-                                    <td data-label="Giá xe" class="col-gia"><input type="number" name="gia_xe" class="form-control form-control-sm" placeholder="Giá..."></td>
-                                    <td data-label="Giấy tờ Phường" class="col-gia"><input type="number" name="gia_giay_to_phuong" class="form-control form-control-sm" placeholder="Phường..."></td>
-                                    <td data-label="Giấy tờ Xã" class="col-gia"><input type="number" name="gia_giay_to_xa" class="form-control form-control-sm" placeholder="Xã..."></td>
-                                    <td data-label="Tồn NS1" class="col-tonkho"><input type="number" name="ns1" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
-                                    <td data-label="Tồn NS2" class="col-tonkho"><input type="number" name="ns2" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
-                                    <td data-label="Tồn NS3" class="col-tonkho"><input type="number" name="ns3" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
-                                    <td data-label="Tồn NS4" class="col-tonkho"><input type="number" name="ns4" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
-                                    <td data-label="Tồn NS5" class="col-tonkho"><input type="number" name="ns5" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
-                                    <td data-label="Tồn NSM1" class="col-tonkho"><input type="number" name="nsm1" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
-                                    
-                                    <td data-label="Quản lý Hình ảnh & Màu sắc" class="text-start bg-white">
-                                        <div class="mb-1">
-                                            <label class="form-label small fw-bold mb-0 text-muted">Ảnh đại diện chung:</label>
-                                            <input type="file" name="hinh_anh" class="form-control form-control-sm" accept="image/*">
-                                        </div>
-                                        <hr class="my-2">
-                                        <div id="addColorContainer_new" class="mb-1">
-                                            <label class="form-label small fw-bold mb-0 text-primary">Các màu xe:</label>
-                                            <div class="color-row-item">
-                                                <input type="text" name="ten_mau[]" class="form-control form-control-sm mb-1" placeholder="Tên màu (VD: Đỏ đen)">
-                                                <input type="file" name="hinh_anh_mau[]" class="form-control form-control-sm" accept="image/*">
+                            <td data-label="Giá xe" class="text-start">
+                                <!-- Khung Cà Mau -->
+                                <div class="box-cm">
+                                    <span class="badge-cm">CÀ MAU</span>
+                                    <div class="mb-1">
+                                        <span class="price-label-tag text-primary">CM Thấp:</span>
+                                        <input type="number" name="gia_cm_thap" class="form-control form-control-sm" placeholder="CM Thấp...">
+                                    </div>
+                                    <div class="mb-1">
+                                        <span class="price-label-tag text-primary">CM Trung:</span>
+                                        <input type="number" name="gia_cm_trung" class="form-control form-control-sm" placeholder="CM Trung...">
+                                    </div>
+                                    <div>
+                                        <span class="price-label-tag text-primary">CM Cao:</span>
+                                        <input type="number" name="gia_cm_cao" class="form-control form-control-sm" placeholder="CM Cao...">
+                                    </div>
+                                </div>
+                                <!-- Khung Bạc Liêu -->
+                                <div class="box-bl">
+                                    <span class="badge-bl">BẠC LIÊU</span>
+                                    <div class="mb-1">
+                                        <span class="price-label-tag text-success">BL Thấp:</span>
+                                        <input type="number" name="gia_bl_thap" class="form-control form-control-sm" placeholder="BL Thấp...">
+                                    </div>
+                                    <div class="mb-1">
+                                        <span class="price-label-tag text-success">BL Trung:</span>
+                                        <input type="number" name="gia_bl_trung" class="form-control form-control-sm" placeholder="BL Trung...">
+                                    </div>
+                                    <div>
+                                        <span class="price-label-tag text-success">BL Cao:</span>
+                                        <input type="number" name="gia_bl_cao" class="form-control form-control-sm" placeholder="BL Cao...">
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Giấy tờ Cà Mau (Xanh dương) -->
+                            <td data-label="Giấy tờ Cà Mau" class="col-cm text-start">
+                                <div class="mb-1">
+                                    <span class="price-label-tag text-primary">CM Phường:</span>
+                                    <input type="number" name="gia_gt_phuong_cm" class="form-control form-control-sm" placeholder="Phường CM...">
+                                </div>
+                                <div>
+                                    <span class="price-label-tag text-primary">CM Xã:</span>
+                                    <input type="number" name="gia_gt_xa_cm" class="form-control form-control-sm" placeholder="Xã CM...">
+                                </div>
+                            </td>
+
+                            <!-- Giấy tờ Bạc Liêu (Xanh lá) -->
+                            <td data-label="Giấy tờ Bạc Liêu" class="col-bl text-start">
+                                <div class="mb-1">
+                                    <span class="price-label-tag text-success">BL Phường:</span>
+                                    <input type="number" name="gia_gt_phuong_bl" class="form-control form-control-sm" placeholder="Phường BL...">
+                                </div>
+                                <div>
+                                    <span class="price-label-tag text-success">BL Xã:</span>
+                                    <input type="number" name="gia_gt_xa_bl" class="form-control form-control-sm" placeholder="Xã BL...">
+                                </div>
+                            </td>
+
+                            <td data-label="Tồn NS1" class="col-tonkho"><input type="number" name="ns1" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
+                            <td data-label="Tồn NS2" class="col-tonkho"><input type="number" name="ns2" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
+                            <td data-label="Tồn NS3" class="col-tonkho"><input type="number" name="ns3" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
+                            <td data-label="Tồn NS4" class="col-tonkho"><input type="number" name="ns4" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
+                            <td data-label="Tồn NS5" class="col-tonkho"><input type="number" name="ns5" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
+                            <td data-label="Tồn NSM1" class="col-tonkho"><input type="number" name="nsm1" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
+                            
+                            <td data-label="Quản lý Hình ảnh & Màu sắc" class="text-start bg-white">
+                                <div class="mb-1">
+                                    <label class="form-label small fw-bold mb-0 text-muted">Ảnh đại diện chung:</label>
+                                    <input type="file" name="hinh_anh" class="form-control form-control-sm" accept="image/*">
+                                </div>
+                                <hr class="my-2">
+                                <div id="addColorContainer_new" class="mb-1">
+                                    <label class="form-label small fw-bold mb-1 text-primary">Các màu xe:</label>
+                                    <div class="color-row-item mb-1">
+                                        <input type="text" name="ten_mau[]" class="form-control form-control-sm mb-1" placeholder="Tên màu (VD: Đỏ đen)">
+                                        <div class="row g-1 mb-1">
+                                            <div class="col-6">
+                                                <div class="p-1 rounded" style="background-color: #edf5ff; border: 1px solid #b6d4fe;">
+                                                    <span class="price-label-tag text-primary">CL Cà Mau:</span>
+                                                    <input type="number" name="chenh_lech_cm[]" class="form-control form-control-sm" placeholder="CL CM" value="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="p-1 rounded" style="background-color: #f0fdf4; border: 1px solid #86efac;">
+                                                    <span class="price-label-tag text-success">CL Bạc Liêu:</span>
+                                                    <input type="number" name="chenh_lech_bl[]" class="form-control form-control-sm" placeholder="CL BL" value="0">
+                                                </div>
                                             </div>
                                         </div>
-                                        <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2 mt-1 w-100" style="font-size: 11px;" onclick="addColorRow('addColorContainer_new', 'form_add_xe')">
-                                            <i class="fa-solid fa-plus"></i> Thêm màu
-                                        </button>
-                                    </td>
-                                    <td data-label="Hành động"><button type="submit" class="btn btn-success btn-sm w-100 fw-semibold shadow-sm"><i class="fa-solid fa-plus me-1"></i> Thêm xe</button></td>
-                                </tr>
-                            </form>
+                                        <input type="file" name="hinh_anh_mau[]" class="form-control form-control-sm" accept="image/*">
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2 mt-1 w-100" style="font-size: 11px;" onclick="addColorRow('addColorContainer_new', 'form_add_xe')">
+                                    <i class="fa-solid fa-plus"></i> Thêm màu
+                                </button>
+                            </td>
+                            <td data-label="Hành động"><button type="submit" class="btn btn-success btn-sm w-100 fw-semibold shadow-sm"><i class="fa-solid fa-plus me-1"></i> Thêm xe</button></td>
+                        </tr>
+                    </form>
 
-                            <!-- 2. Danh sách xe hiện có -->
-                            {% for xe in danh_sach_xe %}
-                            <form action="/admin/edit/{{ xe.id }}" method="POST" enctype="multipart/form-data" id="form_edit_{{ xe.id }}">
-                                <tr>
-                                    <td data-label="Loại xe"><input type="text" name="loai_xe" value="{{ xe.loai_xe }}" class="form-control form-control-sm"></td>
-                                    <td data-label="Tên xe"><textarea name="ten_xe" class="form-control form-control-sm fw-semibold" rows="2" style="resize: vertical; min-height: 40px;">{{ xe.ten_xe }}</textarea></td>
-                                    <td data-label="Phiên bản"><textarea name="phien_ban" class="form-control form-control-sm" rows="2" style="resize: vertical; min-height: 40px;">{{ xe.phien_ban }}</textarea></td>
-                                    <td data-label="Giá xe" class="col-gia"><input type="number" name="gia_xe" value="{{ xe.gia_xe }}" class="form-control form-control-sm"></td>
-                                    <td data-label="Giấy tờ Phường" class="col-gia"><input type="number" name="gia_giay_to_phuong" value="{{ xe.gia_giay_to_phuong }}" class="form-control form-control-sm"></td>
-                                    <td data-label="Giấy tờ Xã" class="col-gia"><input type="number" name="gia_giay_to_xa" value="{{ xe.gia_giay_to_xa }}" class="form-control form-control-sm"></td>
-                                    <td data-label="Tồn NS1" class="col-tonkho"><input type="number" name="ns1" value="{{ xe.ns1 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
-                                    <td data-label="Tồn NS2" class="col-tonkho"><input type="number" name="ns2" value="{{ xe.ns2 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
-                                    <td data-label="Tồn NS3" class="col-tonkho"><input type="number" name="ns3" value="{{ xe.ns3 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
-                                    <td data-label="Tồn NS4" class="col-tonkho"><input type="number" name="ns4" value="{{ xe.ns4 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
-                                    <td data-label="Tồn NS5" class="col-tonkho"><input type="number" name="ns5" value="{{ xe.ns5 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
-                                    <td data-label="Tồn NSM1" class="col-tonkho"><input type="number" name="nsm1" value="{{ xe.nsm1 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
-                                    
-                                    <td data-label="Cập nhật Hình ảnh & Màu sắc" class="text-start bg-white">
-                                        <div class="mb-1">
-                                            <span class="small text-muted">Ảnh chính: <strong class="text-dark">{{ xe.hinh_anh if xe.hinh_anh else 'Chưa có' }}</strong></span>
-                                            <input type="file" name="hinh_anh" class="form-control form-control-sm mt-1" accept="image/*">
+                    <!-- 2. DANH SÁCH XE HIỆN CÓ -->
+                    {% for xe in danh_sach_xe %}
+                    <form action="/admin/edit/{{ xe.id }}" method="POST" enctype="multipart/form-data" id="form_edit_{{ xe.id }}">
+                        <tr>
+                            <td data-label="Loại xe"><input type="text" name="loai_xe" value="{{ xe.loai_xe }}" class="form-control form-control-sm"></td>
+                            <td data-label="Tên xe"><textarea name="ten_xe" class="form-control form-control-sm fw-semibold" rows="2" style="resize: vertical; min-height: 40px;">{{ xe.ten_xe }}</textarea></td>
+                            <td data-label="Phiên bản"><textarea name="phien_ban" class="form-control form-control-sm" rows="2" style="resize: vertical; min-height: 40px;">{{ xe.phien_ban }}</textarea></td>
+                            
+                            <td data-label="Giá xe" class="text-start">
+                                <!-- Khung Cà Mau -->
+                                <div class="box-cm">
+                                    <span class="badge-cm">CÀ MAU</span>
+                                    <div class="mb-1">
+                                        <span class="price-label-tag text-primary">CM Thấp:</span>
+                                        <input type="number" name="gia_cm_thap" value="{{ xe.gia_cm_thap|default(0) }}" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="mb-1">
+                                        <span class="price-label-tag text-primary">CM Trung:</span>
+                                        <input type="number" name="gia_cm_trung" value="{{ xe.gia_cm_trung|default(0) }}" class="form-control form-control-sm">
+                                    </div>
+                                    <div>
+                                        <span class="price-label-tag text-primary">CM Cao:</span>
+                                        <input type="number" name="gia_cm_cao" value="{{ xe.gia_cm_cao|default(0) }}" class="form-control form-control-sm">
+                                    </div>
+                                </div>
+                                <!-- Khung Bạc Liêu -->
+                                <div class="box-bl">
+                                    <span class="badge-bl">BẠC LIÊU</span>
+                                    <div class="mb-1">
+                                        <span class="price-label-tag text-success">BL Thấp:</span>
+                                        <input type="number" name="gia_bl_thap" value="{{ xe.gia_bl_thap|default(0) }}" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="mb-1">
+                                        <span class="price-label-tag text-success">BL Trung:</span>
+                                        <input type="number" name="gia_bl_trung" value="{{ xe.gia_bl_trung|default(0) }}" class="form-control form-control-sm">
+                                    </div>
+                                    <div>
+                                        <span class="price-label-tag text-success">BL Cao:</span>
+                                        <input type="number" name="gia_bl_cao" value="{{ xe.gia_bl_cao|default(0) }}" class="form-control form-control-sm">
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Giấy tờ Cà Mau (Xanh dương) -->
+                            <td data-label="Giấy tờ Cà Mau" class="col-cm text-start">
+                                <div class="mb-1">
+                                    <span class="price-label-tag text-primary">CM Phường:</span>
+                                    <input type="number" name="gia_gt_phuong_cm" value="{{ xe.gia_gt_phuong_cm|default(0) }}" class="form-control form-control-sm">
+                                </div>
+                                <div>
+                                    <span class="price-label-tag text-primary">CM Xã:</span>
+                                    <input type="number" name="gia_gt_xa_cm" value="{{ xe.gia_gt_xa_cm|default(0) }}" class="form-control form-control-sm">
+                                </div>
+                            </td>
+
+                            <!-- Giấy tờ Bạc Liêu (Xanh lá) -->
+                            <td data-label="Giấy tờ Bạc Liêu" class="col-bl text-start">
+                                <div class="mb-1">
+                                    <span class="price-label-tag text-success">BL Phường:</span>
+                                    <input type="number" name="gia_gt_phuong_bl" value="{{ xe.gia_gt_phuong_bl|default(0) }}" class="form-control form-control-sm">
+                                </div>
+                                <div>
+                                    <span class="price-label-tag text-success">BL Xã:</span>
+                                    <input type="number" name="gia_gt_xa_bl" value="{{ xe.gia_gt_xa_bl|default(0) }}" class="form-control form-control-sm">
+                                </div>
+                            </td>
+
+                            <td data-label="Tồn NS1" class="col-tonkho"><input type="number" name="ns1" value="{{ xe.ns1 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
+                            <td data-label="Tồn NS2" class="col-tonkho"><input type="number" name="ns2" value="{{ xe.ns2 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
+                            <td data-label="Tồn NS3" class="col-tonkho"><input type="number" name="ns3" value="{{ xe.ns3 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
+                            <td data-label="Tồn NS4" class="col-tonkho"><input type="number" name="ns4" value="{{ xe.ns4 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
+                            <td data-label="Tồn NS5" class="col-tonkho"><input type="number" name="ns5" value="{{ xe.ns5 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
+                            <td data-label="Tồn NSM1" class="col-tonkho"><input type="number" name="nsm1" value="{{ xe.nsm1 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
+                            
+                            <td data-label="Cập nhật Hình ảnh & Màu sắc" class="text-start bg-white">
+                                <div class="mb-1">
+                                    <span class="small text-muted">Ảnh chính: <strong class="text-dark">{{ xe.hinh_anh if xe.hinh_anh else 'Chưa có' }}</strong></span>
+                                    <input type="file" name="hinh_anh" class="form-control form-control-sm mt-1" accept="image/*">
+                                </div>
+                                <hr class="my-2">
+                                <div class="small fw-bold text-secondary mb-2">Màu sắc hiện có:</div>
+                                {% if xe.mau_xe %}
+                                    {% for mau in xe.mau_xe %}
+                                    <div class="color-row-item mb-2">
+                                        <div class="d-flex gap-1 align-items-center mb-1">
+                                            <input type="text" name="edit_ten_mau_{{ mau.id }}" value="{{ mau.ten_mau }}" class="form-control form-control-sm fw-bold" placeholder="Tên màu">
+                                            <a href="/admin/delete-mau/{{ mau.id }}" class="text-danger small fw-bold text-decoration-none ms-auto p-1" onclick="return confirm('Xóa màu này?')" title="Xóa màu này">
+                                                <i class="fa-solid fa-trash fs-6"></i>
+                                            </a>
                                         </div>
-                                        <hr class="my-2">
-                                        <div class="small fw-bold text-secondary mb-2">Màu sắc hiện có:</div>
-                                        {% if xe.mau_xe %}
-                                            {% for mau in xe.mau_xe %}
-                                            <div class="color-row-item">
-                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                    <input type="text" name="edit_ten_mau_{{ mau.id }}" value="{{ mau.ten_mau }}" class="form-control form-control-sm" style="width: 82%;">
-                                                    <a href="/admin/delete-mau/{{ mau.id }}" class="text-danger small fw-bold text-decoration-none" onclick="return confirm('Xóa màu này?')" title="Xóa màu này">
-                                                        <i class="fa-solid fa-trash fs-6"></i>
-                                                    </a>
+                                        <div class="row g-1 mb-1">
+                                            <div class="col-6">
+                                                <div class="p-1 rounded" style="background-color: #edf5ff; border: 1px solid #b6d4fe;">
+                                                    <span class="price-label-tag text-primary">CL Cà Mau:</span>
+                                                    <input type="number" name="edit_chenh_lech_cm_{{ mau.id }}" value="{{ mau.chenh_lech_cm|default(0) }}" class="form-control form-control-sm" placeholder="CL CM">
                                                 </div>
-                                                <div class="small text-truncate text-muted mb-1" style="max-width: 220px;" title="{{ mau.hinh_anh_mau }}">
-                                                    <i class="fa-solid fa-image"></i> {{ mau.hinh_anh_mau }}
-                                                </div>
-                                                <input type="file" name="edit_hinh_anh_mau_{{ mau.id }}" class="form-control form-control-sm" accept="image/*">
                                             </div>
-                                            {% endfor %}
-                                        {% else %}
-                                            <div class="text-muted small fst-italic mb-2">Chưa thiết lập màu sắc riêng.</div>
-                                        {% endif %}
+                                            <div class="col-6">
+                                                <div class="p-1 rounded" style="background-color: #f0fdf4; border: 1px solid #86efac;">
+                                                    <span class="price-label-tag text-success">CL Bạc Liêu:</span>
+                                                    <input type="number" name="edit_chenh_lech_bl_{{ mau.id }}" value="{{ mau.chenh_lech_bl|default(0) }}" class="form-control form-control-sm" placeholder="CL BL">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="small text-truncate text-muted mb-1" style="max-width: 220px;" title="{{ mau.hinh_anh_mau }}">
+                                            <i class="fa-solid fa-image"></i> {{ mau.hinh_anh_mau if mau.hinh_anh_mau else 'Chưa có ảnh' }}
+                                        </div>
+                                        <input type="file" name="edit_hinh_anh_mau_{{ mau.id }}" class="form-control form-control-sm" accept="image/*">
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="text-muted small fst-italic mb-2">Chưa thiết lập màu sắc riêng.</div>
+                                {% endif %}
 
-                                        <div id="addColorContainer_{{ xe.id }}"></div>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 mt-2 w-100" style="font-size: 11px;" onclick="addColorRow('addColorContainer_{{ xe.id }}', 'form_edit_{{ xe.id }}')">
-                                            <i class="fa-solid fa-plus"></i> Thêm màu mới
-                                        </button>
-                                    </td>
+                                <div id="addColorContainer_{{ xe.id }}"></div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 mt-2 w-100" style="font-size: 11px;" onclick="addColorRow('addColorContainer_{{ xe.id }}', 'form_edit_{{ xe.id }}')">
+                                    <i class="fa-solid fa-plus"></i> Thêm màu mới
+                                </button>
+                            </td>
 
-                                    <td data-label="Hành động">
-                                        <button type="submit" class="btn btn-primary btn-sm px-2 mb-1 w-100 shadow-sm" title="Lưu thay đổi"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu</button>
-                                        <a href="/admin/delete/{{ xe.id }}" class="btn btn-danger btn-sm px-2 mb-1 w-100 shadow-sm" onclick="return confirm('Bạn có chắc muốn xóa xe này cùng toàn bộ thông tin màu sắc liên quan?')" title="Xóa"><i class="fa-solid fa-trash me-1"></i> Xóa</a>
-                                    </td>
-                                </tr>
-                            </form>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                            <td data-label="Hành động">
+                                <button type="submit" class="btn btn-primary btn-sm px-2 mb-1 w-100 shadow-sm" title="Lưu thay đổi"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu</button>
+                                <a href="/admin/delete/{{ xe.id }}" class="btn btn-danger btn-sm px-2 mb-1 w-100 shadow-sm" onclick="return confirm('Bạn có chắc muốn xóa xe này cùng toàn bộ thông tin màu sắc liên quan?')" title="Xóa"><i class="fa-solid fa-trash me-1"></i> Xóa</a>
+                            </td>
+                        </tr>
+                    </form>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
+</div>
+{% endblock %}
 
-    <!-- JavaScript xử lý giao diện -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function addColorRow(containerId, formId) {
-            const container = document.getElementById(containerId);
-            const div = document.createElement('div');
-            div.className = 'color-row-item mt-2';
-            div.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <input type="text" name="new_ten_mau[]" form="${formId}" class="form-control form-control-sm" placeholder="Tên màu mới..." style="width: 85%;">
-                    <button type="button" class="btn btn-sm text-danger p-0" onclick="this.parentElement.parentElement.remove()"><i class="fa-solid fa-circle-xmark fs-5"></i></button>
+{% block scripts %}
+<script>
+    function addColorRow(containerId, formId) {
+        const container = document.getElementById(containerId);
+        const div = document.createElement('div');
+        div.className = 'color-row-item mt-2';
+
+        const isNewForm = (formId === 'form_add_xe');
+        const nameMau = isNewForm ? 'ten_mau[]' : 'new_ten_mau[]';
+        const nameCm = isNewForm ? 'chenh_lech_cm[]' : 'new_chenh_lech_cm[]';
+        const nameBl = isNewForm ? 'chenh_lech_bl[]' : 'new_chenh_lech_bl[]';
+        const nameAnh = isNewForm ? 'hinh_anh_mau[]' : 'new_hinh_anh_mau[]';
+
+        div.innerHTML = `
+            <div class="d-flex gap-1 align-items-center mb-1">
+                <input type="text" name="${nameMau}" form="${formId}" class="form-control form-control-sm fw-bold" placeholder="Tên màu mới...">
+                <button type="button" class="btn btn-sm text-danger p-0 ms-auto" onclick="this.parentElement.parentElement.remove()"><i class="fa-solid fa-circle-xmark fs-5"></i></button>
+            </div>
+            <div class="row g-1 mb-1">
+                <div class="col-6">
+                    <div class="p-1 rounded" style="background-color: #edf5ff; border: 1px solid #b6d4fe;">
+                        <span class="price-label-tag text-primary">CL Cà Mau:</span>
+                        <input type="number" name="${nameCm}" form="${formId}" class="form-control form-control-sm" placeholder="CL CM" value="0">
+                    </div>
                 </div>
-                <input type="file" name="new_hinh_anh_mau[]" form="${formId}" class="form-control form-control-sm" accept="image/*">
-            `;
-            container.appendChild(div);
-        }
-        
-        document.addEventListener('click', function(event) {
-            const alerts = document.querySelectorAll('.alert');
-            if (event.target.closest('.alert') || event.target.closest('.btn-close')) {
-                return;
-            }
-            alerts.forEach(function(alert) {
-                const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
-                bsAlert.close();
-            });
-        });
-    </script>
-</body>
-</html>
+                <div class="col-6">
+                    <div class="p-1 rounded" style="background-color: #f0fdf4; border: 1px solid #86efac;">
+                        <span class="price-label-tag text-success">CL Bạc Liêu:</span>
+                        <input type="number" name="${nameBl}" form="${formId}" class="form-control form-control-sm" placeholder="CL BL" value="0">
+                    </div>
+                </div>
+            </div>
+            <input type="file" name="${nameAnh}" form="${formId}" class="form-control form-control-sm" accept="image/*">
+        `;
+        container.appendChild(div);
+    }
+</script>
+{% endblock %}

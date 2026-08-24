@@ -12,7 +12,7 @@
         .table-responsive { width: 100%; overflow-x: auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 40px; border: 1px solid #eef2f5; }
         .price-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
         .price-table th { background-color: #1a1a1a; color: #ffffff; padding: 14px 12px; font-weight: 600; text-transform: uppercase; font-size: 13px; }
-        .price-table td { padding: 12px; border-bottom: 1px solid #eef2f5; color: #2c3e50; }
+        .price-table td { padding: 12px; border-bottom: 1px solid #eef2f5; color: #2c3e50; vertical-align: middle; }
         .price-table tbody tr { cursor: pointer; transition: background-color 0.2s; }
         .price-table tbody tr:hover { background-color: #f1f5f9; }
         .text-right { text-align: right; }
@@ -22,7 +22,21 @@
         .stock-in { background-color: #e8f5e9; color: #2e7d32; }
         .stock-zero { background-color: #ffebee; color: #c62828; }
 
-        /* CSS cho thanh Tìm kiếm & Lọc trên trang chủ */
+        .color-dots-container {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .color-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid #bbb;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            flex-shrink: 0;
+        }
+
         .filter-container {
             background: #ffffff;
             padding: 20px;
@@ -66,76 +80,44 @@
             background-color: #333;
         }
 
-        /* CSS cho Modal hiển thị ảnh xe & chọn màu */
+        /* Modal hiển thị ảnh xe & bảng tính giá theo khu vực */
         .car-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
-        .car-modal-content { background: #fff; padding: 25px; border-radius: 12px; text-align: center; max-width: 500px; width: 90%; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .car-modal-content { background: #fff; padding: 25px; border-radius: 12px; text-align: center; max-width: 520px; width: 90%; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
         .car-modal-close { position: absolute; top: 10px; right: 15px; font-size: 26px; cursor: pointer; color: #666; font-weight: bold; }
         .car-modal-close:hover { color: #000; }
-        .car-modal-img { width: 100%; max-height: 350px; object-fit: contain; border-radius: 6px; margin-top: 10px; border: 1px solid #eee; }
+        .car-modal-img { width: 100%; max-height: 260px; object-fit: contain; border-radius: 6px; margin-top: 10px; border: 1px solid #eee; }
 
-        /* =========================================================
-           THÊM CSS ĐÁP ỨNG (RESPONSIVE) DÀNH RIÊNG CHO ĐIỆN THOẠI
-           ========================================================= */
+        /* Khối chi tiết giá theo phân vùng khu vực */
+        .price-breakdown-box {
+            margin-top: 15px;
+            text-align: left;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            font-size: 14px;
+        }
+        .region-badge {
+            background-color: #d32f2f;
+            color: #ffffff;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
         @media (max-width: 768px) {
-            /* Thanh tìm kiếm xếp dọc để dễ bấm trên điện thoại */
-            .filter-form {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .filter-input, .filter-select, .filter-btn {
-                width: 100%;
-                margin-bottom: 5px;
-            }
-
-            /* Bảng giá điều chỉnh ép chữ xuống dòng, thu nhỏ font và padding */
-            .price-table th, .price-table td {
-                padding: 8px 4px;
-                font-size: 12px;
-                white-space: normal; /* Cho phép chữ xuống dòng */
-                word-wrap: break-word; /* Cắt chữ quá dài */
-                vertical-align: middle;
-            }
-            .price-table th {
-                font-size: 11px;
-                padding: 10px 4px;
-            }
-
-            /* Giới hạn độ rộng các cột văn bản để dành không gian cho các cột số */
-            .price-table td:nth-child(1), .price-table th:nth-child(1) { min-width: 50px; } /* Loại xe */
-            .price-table td:nth-child(2), .price-table th:nth-child(2) { min-width: 80px; } /* Tên xe */
-            .price-table td:nth-child(3), .price-table th:nth-child(3) { min-width: 70px; } /* Phiên bản */
-            
-            /* Thu nhỏ các huy hiệu số lượng tồn kho */
-            .stock-badge {
-                min-width: 22px;
-                padding: 3px 4px;
-                font-size: 11px;
-            }
-
-            /* Tùy chỉnh Navbar nếu style.css chưa hỗ trợ mobile */
-            .navbar {
-                flex-direction: column;
-                padding: 10px;
-                gap: 10px;
-                text-align: center;
-            }
-            .main-menu {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            .main-menu a[style*="border-left"] {
-                border-left: none !important;
-                padding-left: 0 !important;
-                margin-left: 0 !important;
-                display: block;
-                width: 100%;
-                margin-top: 5px;
-            }
-            .user-panel {
-                width: 100%;
-                justify-content: space-between;
-                margin-top: 5px;
-            }
+            .filter-form { flex-direction: column; align-items: stretch; }
+            .filter-input, .filter-select, .filter-btn { width: 100%; margin-bottom: 5px; }
+            .price-table th, .price-table td { padding: 8px 4px; font-size: 12px; white-space: normal; word-wrap: break-word; vertical-align: middle; }
+            .price-table th { font-size: 11px; padding: 10px 4px; }
+            .stock-badge { min-width: 22px; padding: 3px 4px; font-size: 11px; }
         }
     </style>
 </head>
@@ -149,15 +131,18 @@
         
     <div class="main-menu">
         <a href="{{ url_for('home') }}">Tất cả xe</a>
+        
+        {% if session.get('role') == 'admin' %}
         <a href="{{ url_for('admin_panel') }}" style="color: #ffcc00; font-weight: bold; border-left: 1px solid #444; padding-left: 15px; margin-left: 10px;">
             <i class="fas fa-edit"></i> Cập nhật dữ liệu
         </a>
+        {% endif %}
     </div>
 
     <div class="user-panel">
         <div class="user-badge">
             <i class="fas fa-circle" style="color: #2e7d32;"></i>
-            <span>Xin chào, <strong>{{ username }}</strong></span>
+            <span>Xin chào, <strong>{{ username }}</strong> (Khu vực: <strong>{{ user_vung | default(session.get('vung', 'Cà Mau')) }}</strong>)</span>
         </div>
         <a href="{{ url_for('logout') }}" class="logout-btn">
             <i class="fas fa-sign-out-alt"></i> Đăng xuất
@@ -172,7 +157,6 @@
 
 <div class="container" style="max-width: 1400px; padding: 0 15px;">
     
-    <!-- KHUNG TÌM KIẾM VÀ BỘ LỌC -->
     <div class="filter-container">
         <form method="GET" action="{{ url_for('home') }}" class="filter-form">
             <input type="text" name="search" value="{{ search_query }}" class="filter-input" placeholder="🔍 Nhập tên xe hoặc phiên bản cần tìm...">
@@ -200,25 +184,66 @@
         <table class="price-table">
             <thead>
                 <tr>
-                    <th>Loại xe</th> <th>Tên xe</th> <th>Phiên bản</th>
+                    <th>Loại xe</th> 
+                    <th>Tên xe</th> 
+                    <th>Phiên bản</th>
+                    <th>Màu sắc</th>
                     <th class="text-right">Giá xe (VNĐ)</th>
-                    <th class="text-right">Giấy tờ Phường</th>
-                    <th class="text-right">Giấy tờ Xã</th>
-                    <th class="text-center">NS1</th> <th class="text-center">NS2</th>
-                    <th class="text-center">NS3</th> <th class="text-center">NS4</th>
-                    <th class="text-center">NS5</th> <th class="text-center">NSM1</th>
+                    <!-- ĐÃ ẨN CỘT GIẤY TỜ PHƯỜNG & XÃ KHỎI BẢNG CHÍNH -->
+                    <th class="text-center">NS1</th> 
+                    <th class="text-center">NS2</th>
+                    <th class="text-center">NS3</th> 
+                    <th class="text-center">NS4</th>
+                    <th class="text-center">NS5</th> 
+                    <th class="text-center">NSM1</th>
                 </tr>
             </thead>
             <tbody>
                 {% if danh_sach_xe %}
                     {% for xe in danh_sach_xe %}
-                    <tr onclick='showCarImage("{{ xe.ten_xe }} - {{ xe.phien_ban }}", "{{ url_for("static", filename="uploads/" ~ xe.hinh_anh) if xe.hinh_anh else "" }}", {{ xe.mau_xe | tojson | safe }})' title="Click để xem hình ảnh xe">
+                    <!-- TRUYỀN THÊM GIÁ GIẤY TỜ VÀ KHU VỰC VÀO HAM showCarImage -->
+                    <tr onclick='showCarImage(
+                        "{{ xe.ten_xe }} - {{ xe.phien_ban }}", 
+                        "{{ url_for("static", filename="uploads/" ~ xe.hinh_anh) if xe.hinh_anh else "" }}", 
+                        {{ xe.mau_xe | tojson | safe }}, 
+                        {{ xe.gia_hien_thi | default(0) }},
+                        {{ xe.gia_giay_to_phuong | default(0) }},
+                        {{ xe.gia_giay_to_xa | default(0) }},
+                        "{{ user_vung | default(session.get("vung", "Cà Mau")) }}"
+                    )' title="Click để xem hình ảnh và dự toán chi phí lăn bánh">
                         <td><strong>{{ xe.loai_xe }}</strong></td>
                         <td>{{ xe.ten_xe }}</td>
                         <td>{{ xe.phien_ban }}</td>
-                        <td class="text-right price-highlight">{{ "{:,.0f}".format(xe.gia_xe) }}</td>
-                        <td class="text-right">{{ "{:,.0f}".format(xe.gia_giay_to_phuong) }}</td>
-                        <td class="text-right">{{ "{:,.0f}".format(xe.gia_giay_to_xa) }}</td>
+                        
+                        <td>
+                            {% if xe.mau_xe and xe.mau_xe|length > 0 %}
+                                <div class="color-dots-container" title="Các màu sắc có sẵn">
+                                    {% for mau in xe.mau_xe %}
+                                        {% if mau.ds_ma_mau and mau.ds_ma_mau|length > 0 %}
+                                            {% set num_colors = mau.ds_ma_mau|length %}
+                                            {% if num_colors == 1 %}
+                                                <span class="color-dot" style="background-color: {{ mau.ds_ma_mau[0] }};" title="{{ mau.ten_mau }}"></span>
+                                            {% elif num_colors == 2 %}
+                                                <span class="color-dot" style="background: linear-gradient(135deg, {{ mau.ds_ma_mau[0] }} 50%, {{ mau.ds_ma_mau[1] }} 50%);" title="{{ mau.ten_mau }}"></span>
+                                            {% else %}
+                                                <span class="color-dot" style="background: linear-gradient(135deg, 
+                                                    {% for m in mau.ds_ma_mau %}
+                                                        {{ m }} {{ loop.index0 * (100 / num_colors) }}%, {{ m }} {{ loop.index * (100 / num_colors) }}{% if not loop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                );" title="{{ mau.ten_mau }}"></span>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted" style="font-size: 12px; font-style: italic; color: #888;">Chưa cập nhật</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-right price-highlight">{{ "{:,.0f}".format(xe.gia_hien_thi) }}</td>
+                        
+                        <!-- ĐÃ BỎ 2 CỘT GIẤY TỜ TẠI ĐÂY -->
+
                         <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.ns1 > 0 else 'stock-zero' }}">{{ xe.ns1 }}</span></td>
                         <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.ns2 > 0 else 'stock-zero' }}">{{ xe.ns2 }}</span></td>
                         <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.ns3 > 0 else 'stock-zero' }}">{{ xe.ns3 }}</span></td>
@@ -229,54 +254,64 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="12" class="text-center" style="padding: 30px; color: #777;">Không tìm thấy dòng xe phù hợp.</td>
+                        <td colspan="11" class="text-center" style="padding: 30px; color: #777;">Không tìm thấy dòng xe phù hợp.</td>
                     </tr>
                 {% endif %}
             </tbody>
         </table>
     </div>
 
-    <!-- TIỆN ÍCH DỊCH VỤ SHOWROOM -->
-    <h2 class="section-title">DỊCH VỤ HỖ TRỢ HỆ THỐNG</h2>
-    <div class="services-grid">
-        <div class="service-card">
-            <i class="fas fa-boxes"></i>
-            <h4>Quản Lý Kho Tổng</h4>
-            <p>Kiểm soát số lượng tồn thực tế liên thông giữa các chi nhánh</p>
-        </div>
-        <div class="service-card">
-            <i class="fas fa-file-invoice-dollar"></i>
-            <h4>Cập Nhật Giá Lăn Bánh</h4>
-            <p>Tính toán tự động chi phí giấy tờ theo khu vực Phường / Xã</p>
-        </div>
-        <div class="service-card">
-            <i class="fas fa-shield-alt"></i>
-            <h4>Bảo Hành Chính Hãng</h4>
-            <p>Tra cứu lịch sử bảo dưỡng và thông tin xe nhanh chóng</p>
-        </div>
-        <div class="service-card">
-            <i class="fas fa-headset"></i>
-            <h4>Hỗ Trợ Nghiệp Vụ</h4>
-            <p>Liên hệ bộ phận kế toán dịch vụ để giải đáp thắc mắc</p>
-        </div>
-    </div>
 </div>
 
-<!-- MODAL HIỂN THỊ ẢNH KHI CLICK VÀO HÀNG -->
+<!-- MODAL HIỂN THỊ ẢNH & BẢNG GIÁ LĂN BÁNH THEO KHU VỰC -->
 <div id="carImageModal" class="car-modal">
     <div class="car-modal-content">
         <span class="car-modal-close" onclick="closeModal()">&times;</span>
         <h3 id="modalCarTitle" style="margin-bottom: 5px; color: #1a1a1a;"></h3>
         
-        <!-- Khu vực nút bấm chọn màu xe -->
+        <!-- Nút chọn màu -->
         <div id="modalColorButtons" style="margin: 10px 0; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;"></div>
 
+        <!-- Ảnh xe -->
         <img id="modalCarImg" src="" alt="Hình ảnh xe" class="car-modal-img">
         <p id="modalNoImgText" style="color: #888; margin-top: 15px; display: none;">Chưa có hình ảnh cập nhật cho dòng xe này.</p>
+        
+        <!-- BẢNG TÍNH GIÁ VÀ GIẤY TỜ THEO KHU VỰC -->
+        <div class="price-breakdown-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eef2f5; padding-bottom: 8px;">
+                <span style="font-weight: bold; color: #1a1a1a;">
+                    <i class="fas fa-map-marker-alt" style="color: #d32f2f;"></i> Phân vùng áp dụng:
+                </span>
+                <span id="modalRegionBadge" class="region-badge">Cà Mau</span>
+            </div>
+            
+            <div class="price-row">
+                <span>Giá xe niêm yết:</span>
+                <strong id="modalBasePrice" class="price-highlight">0 VNĐ</strong>
+            </div>
+            <div class="price-row">
+                <span>Phí giấy tờ Phường:</span>
+                <strong id="modalGiaPhuong">0 VNĐ</strong>
+            </div>
+            <div class="price-row">
+                <span>Phí giấy tờ Xã:</span>
+                <strong id="modalGiaXa">0 VNĐ</strong>
+            </div>
+            
+            <hr style="margin: 10px 0; border: none; border-top: 1px dashed #cbd5e1;">
+            
+            <div class="price-row" style="font-size: 15px;">
+                <span><strong>Tổng lăn bánh (Phường):</strong></span>
+                <strong id="modalTongPhuong" style="color: #2e7d32;">0 VNĐ</strong>
+            </div>
+            <div class="price-row" style="font-size: 15px;">
+                <span><strong>Tổng lăn bánh (Xã):</strong></span>
+                <strong id="modalTongXa" style="color: #2e7d32;">0 VNĐ</strong>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- FOOTER -->
 <footer class="footer">
     <div class="container footer-content">
         <div class="footer-col">
@@ -300,15 +335,37 @@
 </footer>
 
 <script>
-    function showCarImage(carName, defaultImg, colorsJson) {
+    // Hàm định dạng số tiền sang chuẩn VNĐ
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
+    }
+
+    function showCarImage(carName, defaultImg, colorsJson, basePrice, giaPhuong, giaXa, userVung) {
         const modal = document.getElementById('carImageModal');
         const modalTitle = document.getElementById('modalCarTitle');
         const modalImg = document.getElementById('modalCarImg');
         const noImgText = document.getElementById('modalNoImgText');
         const colorButtonsContainer = document.getElementById('modalColorButtons');
 
+        // Cập nhật thông tin vùng áp dụng
+        const khuVuc = userVung || 'Cà Mau';
+        document.getElementById('modalRegionBadge').innerText = khuVuc;
+
         modalTitle.innerText = carName;
-        colorButtonsContainer.innerHTML = ''; // Làm sạch các nút màu trước đó
+        colorButtonsContainer.innerHTML = '';
+        
+        const giaGoc = Number(basePrice) || 0;
+        const phiPhuong = Number(giaPhuong) || 0;
+        const phiXa = Number(giaXa) || 0;
+
+        // Hàm cập nhật bảng giá trong modal
+        function updateModalPrice(currentBasePrice) {
+            document.getElementById('modalBasePrice').innerText = formatCurrency(currentBasePrice);
+            document.getElementById('modalGiaPhuong').innerText = formatCurrency(phiPhuong);
+            document.getElementById('modalGiaXa').innerText = formatCurrency(phiXa);
+            document.getElementById('modalTongPhuong').innerText = formatCurrency(currentBasePrice + phiPhuong);
+            document.getElementById('modalTongXa').innerText = formatCurrency(currentBasePrice + phiXa);
+        }
 
         let colors = [];
         try {
@@ -317,14 +374,12 @@
             colors = [];
         }
 
-        // Nếu xe được cấu hình nhiều màu sắc
         if (colors && colors.length > 0) {
             colors.forEach((item, index) => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.innerText = item.ten_mau;
                 btn.className = 'btn btn-sm ' + (index === 0 ? 'btn-dark' : 'btn-outline-dark');
-                // Tùy chỉnh style nhẹ cho nút bấm màu bắt mắt
                 btn.style.cssText = `
                     border-radius: 20px; 
                     padding: 5px 15px; 
@@ -337,7 +392,7 @@
                     transition: all 0.2s;
                 `;
                 
-                // Sự kiện click chọn màu
+                // Khi click chọn màu
                 btn.onclick = function() {
                     Array.from(colorButtonsContainer.children).forEach(b => {
                         b.style.backgroundColor = '#ffffff';
@@ -347,26 +402,32 @@
                     btn.style.color = '#ffffff';
 
                     modalImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
+
+                    const chenhLech = Number(item.chenh_lech_gia) || 0;
+                    updateModalPrice(giaGoc + chenhLech);
                 };
 
                 colorButtonsContainer.appendChild(btn);
             });
 
-            // Hiển thị mặc định ảnh của màu đầu tiên
+            // Mặc định hiển thị màu đầu tiên
             modalImg.src = "{{ url_for('static', filename='uploads/') }}" + colors[0].hinh_anh_mau;
             modalImg.style.display = 'block';
             noImgText.style.display = 'none';
 
+            const chenhLechDau = Number(colors[0].chenh_lech_gia) || 0;
+            updateModalPrice(giaGoc + chenhLechDau);
+
         } else if (defaultImg && defaultImg.trim() !== '') {
-            // Trường hợp không có bảng màu riêng nhưng có ảnh đại diện mặc định
             modalImg.src = defaultImg;
             modalImg.style.display = 'block';
             noImgText.style.display = 'none';
+            updateModalPrice(giaGoc);
         } else {
-            // Không có ảnh nào
             modalImg.src = '';
             modalImg.style.display = 'none';
             noImgText.style.display = 'block';
+            updateModalPrice(giaGoc);
         }
         
         modal.style.display = 'flex';

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Hệ thống Nam Sương{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f4f6ef;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        .btn {
+            border-radius: 6px;
+        }
+        @media (max-width: 991px) {
+            .navbar .container-fluid {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .navbar-brand { margin: 0 auto; }
+            .navbar .d-flex { width: 100%; justify-content: center; flex-wrap: wrap; gap: 5px; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Header / Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm px-3">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="/admin">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Nam Sương" style="height: 38px; width: auto; object-fit: contain;" class="me-2">
+                <div>
+                    <span class="text-warning fs-5">NAM SƯƠNG</span>
+                    <span class="d-block text-muted" style="font-size: 10px; letter-spacing: 1px;">QUẢN LÝ KHO & GIÁ XE</span>
+                </div>
+            </a>
+            <div class="d-flex mt-lg-0 mt-2 align-items-center">
+                <a href="/home" class="btn btn-outline-light btn-sm me-2">
+                    <i class="fa-solid fa-house me-1"></i> Trang chủ
+                </a>
+                <a href="/register" class="btn btn-warning btn-sm me-2 fw-semibold text-dark">
+                    <i class="fa-solid fa-user-plus me-1"></i> Đăng ký TK
+                </a>
+                <a href="{{ url_for('manage_users') }}" class="btn btn-outline-warning btn-sm me-2">
+                    <i class="fas fa-users-cog me-1"></i> Quản lý tài khoản
+                </a>
+                <a href="/logout" class="btn btn-danger btn-sm">
+                    <i class="fa-solid fa-right-from-bracket me-1"></i> Đăng xuất
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- NỘI DUNG CHÍNH -->
+    <div class="container-fluid px-lg-4 px-2">
+        <!-- HIỂN THỊ THÔNG BÁO FLASH -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'danger' else 'danger' }} alert-dismissible fade show shadow-sm mb-3" role="alert">
+                        <i class="fa-solid {% if category == 'success' %}fa-circle-check{% elif category == 'warning' %}fa-triangle-exclamation{% else %}fa-circle-exclamation{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- JavaScript chung -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('click', function(event) {
+            const alerts = document.querySelectorAll('.alert');
+            if (event.target.closest('.alert') || event.target.closest('.btn-close')) {
+                return;
+            }
+            alerts.forEach(function(alert) {
+                const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                bsAlert.close();
+            });
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
