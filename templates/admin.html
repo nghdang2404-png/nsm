@@ -27,30 +27,58 @@
             text-transform: uppercase;
             font-size: 11px;
             letter-spacing: 0.5px;
-        }
-        .col-small {
-            width: 55px !important;
             text-align: center;
+        }
+        
+        /* PHÂN NHÓM MÀU SẮC TRỰC QUAN CHO CÁC CỘT */
+        .col-gia { background-color: #faf8f0 !important; }
+        .col-tonkho { background-color: #f0f6ff !important; }
+
+        /* Tinh chỉnh ô input */
+        .table td {
+            vertical-align: middle;
+            padding: 6px !important;
         }
         .form-control-sm, .form-select-sm {
             border-radius: 6px;
+            border-color: #cbd5e1;
         }
+        .form-control-sm:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+        }
+        
+        /* Cột tồn kho - Tăng độ rộng để thấy rõ số */
+        .col-small {
+            min-width: 75px !important;
+            text-align: center;
+        }
+
+        /* Ẩn mũi tên tăng/giảm của input số ở cột tồn kho để tiết kiệm không gian */
+        .col-tonkho input[type=number]::-webkit-inner-spin-button, 
+        .col-tonkho input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        .col-tonkho input[type=number] {
+            -moz-appearance: textfield;
+        }
+
         .btn {
             border-radius: 6px;
         }
         .color-row-item {
-            background: #f8f9fa;
-            border: 1px dashed #ced4da;
-            padding: 6px;
+            background: #ffffff;
+            border: 1px dashed #cbd5e1;
+            padding: 8px;
             border-radius: 6px;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
         }
 
         /* =======================================================
            CSS ĐÁP ỨNG CHO THIẾT BỊ DI ĐỘNG (DƯỚI 992px)
            ======================================================= */
         @media (max-width: 991px) {
-            /* Sắp xếp lại thanh Navbar */
             .navbar .container-fluid {
                 flex-direction: column;
                 gap: 12px;
@@ -58,9 +86,8 @@
             .navbar-brand { margin: 0 auto; }
             .navbar .d-flex { width: 100%; justify-content: center; }
 
-            /* Chuyển Bảng thành dạng Khối (Card View) */
             .table-responsive { border: none; }
-            .table thead { display: none; /* Ẩn tiêu đề ngang */ }
+            .table thead { display: none; }
             .table tbody, .table tr, .table td { display: block; width: 100%; }
             
             .table tr {
@@ -78,15 +105,14 @@
                 align-items: center;
                 justify-content: space-between;
                 text-align: right;
-                padding: 10px 15px;
+                padding: 10px 15px !important;
                 border-bottom: 1px dashed #e9ecef;
             }
             .table td:last-child { border-bottom: none; }
             
-            /* Thêm nhãn (label) tự động phía trước các ô nhập liệu */
             .table td::before {
                 content: attr(data-label);
-                flex-basis: 35%;
+                flex-basis: 40%;
                 text-align: left;
                 font-size: 12px;
                 font-weight: 700;
@@ -95,15 +121,13 @@
                 margin-right: 10px;
             }
             
-            /* Điều chỉnh kích thước ô nhập liệu cho vừa vặn */
-            .table td > input, .table td > select {
+            .table td > input, .table td > select, .table td > textarea {
                 flex: 1;
                 width: 100%;
-                max-width: 60%;
+                max-width: 55%;
                 margin: 0 !important;
             }
 
-            /* Xử lý riêng giao diện cột Hình ảnh & Màu sắc */
             .table td:nth-child(13) {
                 flex-direction: column;
                 align-items: flex-start;
@@ -119,13 +143,12 @@
             }
             .table td:nth-child(13) > div { width: 100%; max-width: 100%; }
 
-            /* Xử lý cột Hành động (Nút bấm) */
             .table td:nth-child(14) {
                 flex-direction: row;
                 gap: 10px;
                 background-color: #eef2f5;
             }
-            .table td:nth-child(14)::before { display: none; /* Ẩn chữ Hành động để lấy chỗ cho nút */ }
+            .table td:nth-child(14)::before { display: none; }
             .table td:nth-child(14) > button, 
             .table td:nth-child(14) > a {
                 flex: 1;
@@ -217,23 +240,25 @@
         <div class="card shadow-sm mb-5">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover align-middle text-center mb-0">
+                    <table class="table table-bordered align-middle text-center mb-0">
                         <thead>
                             <tr>
-                                <th style="width: 90px;">Loại</th>
-                                <th style="width: 130px;">Tên xe</th>
-                                <th style="width: 100px;">Phiên bản</th>
-                                <th style="width: 90px;">Giá xe</th>
-                                <th style="width: 80px;">Phường</th>
-                                <th style="width: 80px;">Xã</th>
-                                <th class="col-small">NS1</th>
-                                <th class="col-small">NS2</th>
-                                <th class="col-small">NS3</th>
-                                <th class="col-small">NS4</th>
-                                <th class="col-small">NS5</th>
-                                <th class="col-small">NSM1</th>
-                                <th style="width: 250px;">Hình ảnh & Màu sắc xe</th>
-                                <th style="width: 100px;">Hành động</th>
+                                <th style="min-width: 100px;">Loại</th>
+                                <!-- Tăng min-width lên 220px để chứa đủ các mã xe dài -->
+                                <th style="min-width: 220px;">Tên xe</th> 
+                                <th style="min-width: 180px;">Phiên bản</th>
+                                <!-- Tăng min-width lên 120px để hiển thị trọn vẹn các số 0 của giá tiền -->
+                                <th style="min-width: 120px;" class="col-gia">Giá xe</th>
+                                <th style="min-width: 110px;" class="col-gia">Phường</th>
+                                <th style="min-width: 110px;" class="col-gia">Xã</th>
+                                <th class="col-small col-tonkho" title="Tồn kho NS1">NS1</th>
+                                <th class="col-small col-tonkho" title="Tồn kho NS2">NS2</th>
+                                <th class="col-small col-tonkho" title="Tồn kho NS3">NS3</th>
+                                <th class="col-small col-tonkho" title="Tồn kho NS4">NS4</th>
+                                <th class="col-small col-tonkho" title="Tồn kho NS5">NS5</th>
+                                <th class="col-small col-tonkho" title="Tồn kho NSM1">NSM1</th>
+                                <th style="min-width: 260px;">Hình ảnh & Màu sắc xe</th>
+                                <th style="min-width: 100px;">Hành động</th>
                             </tr>
                         </thead>
                         <tbody style="font-size: 13px;">
@@ -242,20 +267,21 @@
                             <form action="/admin/add" method="POST" enctype="multipart/form-data" id="form_add_xe">
                                 <tr class="table-info">
                                     <td data-label="Loại xe"><input type="text" name="loai_xe" class="form-control form-control-sm" placeholder="Loại..." required></td>
-                                    <td data-label="Tên xe"><input type="text" name="ten_xe" class="form-control form-control-sm" placeholder="Tên xe..." required></td>
-                                    <td data-label="Phiên bản"><input type="text" name="phien_ban" class="form-control form-control-sm" placeholder="Phiên bản..."></td>
-                                    <td data-label="Giá xe"><input type="number" name="gia_xe" class="form-control form-control-sm" placeholder="Giá..."></td>
-                                    <td data-label="Giấy tờ Phường"><input type="number" name="gia_giay_to_phuong" class="form-control form-control-sm" placeholder="Phường..."></td>
-                                    <td data-label="Giấy tờ Xã"><input type="number" name="gia_giay_to_xa" class="form-control form-control-sm" placeholder="Xã..."></td>
-                                    <td data-label="Tồn NS1"><input type="number" name="ns1" class="form-control form-control-sm p-1 text-center" value="0"></td>
-                                    <td data-label="Tồn NS2"><input type="number" name="ns2" class="form-control form-control-sm p-1 text-center" value="0"></td>
-                                    <td data-label="Tồn NS3"><input type="number" name="ns3" class="form-control form-control-sm p-1 text-center" value="0"></td>
-                                    <td data-label="Tồn NS4"><input type="number" name="ns4" class="form-control form-control-sm p-1 text-center" value="0"></td>
-                                    <td data-label="Tồn NS5"><input type="number" name="ns5" class="form-control form-control-sm p-1 text-center" value="0"></td>
-                                    <td data-label="Tồn NSM1"><input type="number" name="nsm1" class="form-control form-control-sm p-1 text-center" value="0"></td>
-                                    <td data-label="Quản lý Hình ảnh & Màu sắc" class="text-start">
+                                    <td data-label="Tên xe"><textarea name="ten_xe" class="form-control form-control-sm" rows="2" style="resize: vertical; min-height: 40px;" placeholder="Tên xe..." required></textarea></td>
+                                    <td data-label="Phiên bản"><textarea name="phien_ban" class="form-control form-control-sm" rows="2" style="resize: vertical; min-height: 40px;" placeholder="Phiên bản..."></textarea></td>
+                                    <td data-label="Giá xe" class="col-gia"><input type="number" name="gia_xe" class="form-control form-control-sm" placeholder="Giá..."></td>
+                                    <td data-label="Giấy tờ Phường" class="col-gia"><input type="number" name="gia_giay_to_phuong" class="form-control form-control-sm" placeholder="Phường..."></td>
+                                    <td data-label="Giấy tờ Xã" class="col-gia"><input type="number" name="gia_giay_to_xa" class="form-control form-control-sm" placeholder="Xã..."></td>
+                                    <td data-label="Tồn NS1" class="col-tonkho"><input type="number" name="ns1" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
+                                    <td data-label="Tồn NS2" class="col-tonkho"><input type="number" name="ns2" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
+                                    <td data-label="Tồn NS3" class="col-tonkho"><input type="number" name="ns3" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
+                                    <td data-label="Tồn NS4" class="col-tonkho"><input type="number" name="ns4" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
+                                    <td data-label="Tồn NS5" class="col-tonkho"><input type="number" name="ns5" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
+                                    <td data-label="Tồn NSM1" class="col-tonkho"><input type="number" name="nsm1" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
+                                    
+                                    <td data-label="Quản lý Hình ảnh & Màu sắc" class="text-start bg-white">
                                         <div class="mb-1">
-                                            <label class="form-label small fw-bold mb-0">Ảnh đại diện chung:</label>
+                                            <label class="form-label small fw-bold mb-0 text-muted">Ảnh đại diện chung:</label>
                                             <input type="file" name="hinh_anh" class="form-control form-control-sm" accept="image/*">
                                         </div>
                                         <hr class="my-2">
@@ -266,11 +292,11 @@
                                                 <input type="file" name="hinh_anh_mau[]" class="form-control form-control-sm" accept="image/*">
                                             </div>
                                         </div>
-                                        <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2 mt-1 w-100 w-lg-auto" style="font-size: 11px;" onclick="addColorRow('addColorContainer_new', 'form_add_xe')">
+                                        <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2 mt-1 w-100" style="font-size: 11px;" onclick="addColorRow('addColorContainer_new', 'form_add_xe')">
                                             <i class="fa-solid fa-plus"></i> Thêm màu
                                         </button>
                                     </td>
-                                    <td data-label="Hành động"><button type="submit" class="btn btn-success btn-sm w-100 fw-semibold"><i class="fa-solid fa-plus me-1"></i> Thêm xe</button></td>
+                                    <td data-label="Hành động"><button type="submit" class="btn btn-success btn-sm w-100 fw-semibold shadow-sm"><i class="fa-solid fa-plus me-1"></i> Thêm xe</button></td>
                                 </tr>
                             </form>
 
@@ -279,22 +305,21 @@
                             <form action="/admin/edit/{{ xe.id }}" method="POST" enctype="multipart/form-data" id="form_edit_{{ xe.id }}">
                                 <tr>
                                     <td data-label="Loại xe"><input type="text" name="loai_xe" value="{{ xe.loai_xe }}" class="form-control form-control-sm"></td>
-                                    <td data-label="Tên xe"><input type="text" name="ten_xe" value="{{ xe.ten_xe }}" class="form-control form-control-sm"></td>
-                                    <td data-label="Phiên bản"><input type="text" name="phien_ban" value="{{ xe.phien_ban }}" class="form-control form-control-sm"></td>
-                                    <td data-label="Giá xe"><input type="number" name="gia_xe" value="{{ xe.gia_xe }}" class="form-control form-control-sm"></td>
-                                    <td data-label="Giấy tờ Phường"><input type="number" name="gia_giay_to_phuong" value="{{ xe.gia_giay_to_phuong }}" class="form-control form-control-sm"></td>
-                                    <td data-label="Giấy tờ Xã"><input type="number" name="gia_giay_to_xa" value="{{ xe.gia_giay_to_xa }}" class="form-control form-control-sm"></td>
-                                    <td data-label="Tồn NS1"><input type="number" name="ns1" value="{{ xe.ns1 }}" class="form-control form-control-sm p-1 text-center"></td>
-                                    <td data-label="Tồn NS2"><input type="number" name="ns2" value="{{ xe.ns2 }}" class="form-control form-control-sm p-1 text-center"></td>
-                                    <td data-label="Tồn NS3"><input type="number" name="ns3" value="{{ xe.ns3 }}" class="form-control form-control-sm p-1 text-center"></td>
-                                    <td data-label="Tồn NS4"><input type="number" name="ns4" value="{{ xe.ns4 }}" class="form-control form-control-sm p-1 text-center"></td>
-                                    <td data-label="Tồn NS5"><input type="number" name="ns5" value="{{ xe.ns5 }}" class="form-control form-control-sm p-1 text-center"></td>
-                                    <td data-label="Tồn NSM1"><input type="number" name="nsm1" value="{{ xe.nsm1 }}" class="form-control form-control-sm p-1 text-center"></td>
+                                    <td data-label="Tên xe"><textarea name="ten_xe" class="form-control form-control-sm fw-semibold" rows="2" style="resize: vertical; min-height: 40px;">{{ xe.ten_xe }}</textarea></td>
+                                    <td data-label="Phiên bản"><textarea name="phien_ban" class="form-control form-control-sm" rows="2" style="resize: vertical; min-height: 40px;">{{ xe.phien_ban }}</textarea></td>
+                                    <td data-label="Giá xe" class="col-gia"><input type="number" name="gia_xe" value="{{ xe.gia_xe }}" class="form-control form-control-sm"></td>
+                                    <td data-label="Giấy tờ Phường" class="col-gia"><input type="number" name="gia_giay_to_phuong" value="{{ xe.gia_giay_to_phuong }}" class="form-control form-control-sm"></td>
+                                    <td data-label="Giấy tờ Xã" class="col-gia"><input type="number" name="gia_giay_to_xa" value="{{ xe.gia_giay_to_xa }}" class="form-control form-control-sm"></td>
+                                    <td data-label="Tồn NS1" class="col-tonkho"><input type="number" name="ns1" value="{{ xe.ns1 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
+                                    <td data-label="Tồn NS2" class="col-tonkho"><input type="number" name="ns2" value="{{ xe.ns2 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
+                                    <td data-label="Tồn NS3" class="col-tonkho"><input type="number" name="ns3" value="{{ xe.ns3 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
+                                    <td data-label="Tồn NS4" class="col-tonkho"><input type="number" name="ns4" value="{{ xe.ns4 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
+                                    <td data-label="Tồn NS5" class="col-tonkho"><input type="number" name="ns5" value="{{ xe.ns5 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
+                                    <td data-label="Tồn NSM1" class="col-tonkho"><input type="number" name="nsm1" value="{{ xe.nsm1 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
                                     
-                                    <!-- Quản lý ảnh đại diện & danh sách màu chi tiết của xe -->
-                                    <td data-label="Cập nhật Hình ảnh & Màu sắc" class="text-start">
+                                    <td data-label="Cập nhật Hình ảnh & Màu sắc" class="text-start bg-white">
                                         <div class="mb-1">
-                                            <span class="small text-muted">Ảnh chính: <strong>{{ xe.hinh_anh if xe.hinh_anh else 'Chưa có' }}</strong></span>
+                                            <span class="small text-muted">Ảnh chính: <strong class="text-dark">{{ xe.hinh_anh if xe.hinh_anh else 'Chưa có' }}</strong></span>
                                             <input type="file" name="hinh_anh" class="form-control form-control-sm mt-1" accept="image/*">
                                         </div>
                                         <hr class="my-2">
@@ -303,7 +328,7 @@
                                             {% for mau in xe.mau_xe %}
                                             <div class="color-row-item">
                                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                                    <input type="text" name="edit_ten_mau_{{ mau.id }}" value="{{ mau.ten_mau }}" class="form-control form-control-sm" style="width: 80%;">
+                                                    <input type="text" name="edit_ten_mau_{{ mau.id }}" value="{{ mau.ten_mau }}" class="form-control form-control-sm" style="width: 82%;">
                                                     <a href="/admin/delete-mau/{{ mau.id }}" class="text-danger small fw-bold text-decoration-none" onclick="return confirm('Xóa màu này?')" title="Xóa màu này">
                                                         <i class="fa-solid fa-trash fs-6"></i>
                                                     </a>
@@ -318,16 +343,15 @@
                                             <div class="text-muted small fst-italic mb-2">Chưa thiết lập màu sắc riêng.</div>
                                         {% endif %}
 
-                                        <!-- Khu vực thêm màu mới cho xe này -->
                                         <div id="addColorContainer_{{ xe.id }}"></div>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 mt-2 w-100 w-lg-auto" style="font-size: 11px;" onclick="addColorRow('addColorContainer_{{ xe.id }}', 'form_edit_{{ xe.id }}')">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 mt-2 w-100" style="font-size: 11px;" onclick="addColorRow('addColorContainer_{{ xe.id }}', 'form_edit_{{ xe.id }}')">
                                             <i class="fa-solid fa-plus"></i> Thêm màu mới
                                         </button>
                                     </td>
 
                                     <td data-label="Hành động">
-                                        <button type="submit" class="btn btn-primary btn-sm px-2 mb-1 w-100" title="Lưu thay đổi"><i class="fa-solid fa-floppy-disk"></i> Lưu</button>
-                                        <a href="/admin/delete/{{ xe.id }}" class="btn btn-danger btn-sm px-2 mb-1 w-100" onclick="return confirm('Bạn có chắc muốn xóa xe này cùng toàn bộ thông tin màu sắc liên quan?')" title="Xóa"><i class="fa-solid fa-trash"></i> Xóa</a>
+                                        <button type="submit" class="btn btn-primary btn-sm px-2 mb-1 w-100 shadow-sm" title="Lưu thay đổi"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu</button>
+                                        <a href="/admin/delete/{{ xe.id }}" class="btn btn-danger btn-sm px-2 mb-1 w-100 shadow-sm" onclick="return confirm('Bạn có chắc muốn xóa xe này cùng toàn bộ thông tin màu sắc liên quan?')" title="Xóa"><i class="fa-solid fa-trash me-1"></i> Xóa</a>
                                     </td>
                                 </tr>
                             </form>
@@ -339,7 +363,7 @@
         </div>
     </div>
 
-    <!-- JavaScript hỗ trợ thêm dòng nhập màu và ẩn cảnh báo khi click ra ngoài -->
+    <!-- JavaScript xử lý giao diện -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function addColorRow(containerId, formId) {
@@ -356,20 +380,16 @@
             container.appendChild(div);
         }
         
-        // Lắng nghe sự kiện click trên toàn trang để ẩn thông báo khi click ra vùng trống
         document.addEventListener('click', function(event) {
             const alerts = document.querySelectorAll('.alert');
-            
             if (event.target.closest('.alert') || event.target.closest('.btn-close')) {
                 return;
             }
-
             alerts.forEach(function(alert) {
                 const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
                 bsAlert.close();
             });
         });
     </script>
-
 </body>
 </html>
