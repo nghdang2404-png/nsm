@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta  # <--- Đã bổ sung import timedelta
 from functools import wraps
 from flask import Flask, render_template, request, flash, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
@@ -10,6 +11,9 @@ from gia_theo_vung import format_xe_data_home
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key'
+
+# --- CẤU HÌNH THỜI GIAN SỐNG CHO PHIÊN ĐĂNG NHẬP ---
+app.permanent_session_lifetime = timedelta(days=30)  # Giữ phiên đăng nhập trong 30 ngày
 
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -139,6 +143,11 @@ def login():
     if request.method == "POST":
         user = User.query.filter_by(username=request.form.get("username")).first()
         if user and check_password_hash(user.password, request.form.get("password")):
+            session.clear()
+            
+            # Kích hoạt duy trì phiên đăng nhập lâu dài (mặc định luôn bật hoặc theo checkbox)
+            session.permanent = True 
+            
             session['username'] = user.username
             session['role'] = user.role
             session['vung'] = user.khu_vuc or 'Cà Mau'
@@ -216,7 +225,6 @@ def register():
         bo_phan = request.form.get("bo_phan", "")
         khu_vuc = request.form.get("khu_vuc", "Cà Mau")
         
-        # Hỗ trợ cả trường hợp gửi form từ checkbox "is_admin" hoặc select "role"
         is_admin = request.form.get("is_admin")
         role = "admin" if is_admin == "yes" else request.form.get("role", "user")
 
@@ -365,7 +373,6 @@ def edit_xe(id):
         if request.files.get('hinh_anh') and request.files.get('hinh_anh').filename != '':
             xe.hinh_anh = save_image(request.files.get('hinh_anh'))
         
-        # 1. Cập nhật màu hiện tại
         for mau in xe.mau_xe:
             mau.ten_mau = request.form.get(f"edit_ten_mau_{mau.id}", mau.ten_mau)
             mau.chenh_lech_cm = float(request.form.get(f"edit_chenh_lech_cm_{mau.id}") or 0)
@@ -373,7 +380,6 @@ def edit_xe(id):
             if request.files.get(f"edit_hinh_anh_mau_{mau.id}") and request.files.get(f"edit_hinh_anh_mau_{mau.id}").filename != '': 
                 mau.hinh_anh_mau = save_image(request.files.get(f"edit_hinh_anh_mau_{mau.id}"))
             
-        # 2. Thêm màu mới bổ sung
         new_tens = request.form.getlist("new_ten_mau[]")
         new_cms = request.form.getlist("new_chenh_lech_cm[]")
         new_bls = request.form.getlist("new_chenh_lech_bl[]")

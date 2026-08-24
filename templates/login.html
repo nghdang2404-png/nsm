@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -35,46 +34,47 @@
                 <input type="password" id="password" name="password" placeholder="Mật khẩu" required>
             </div>
             
-            <a href="#" class="forgot-password">Quên mật khẩu?</a>
+            <!-- Tùy chọn nhớ phiên đăng nhập -->
+            <div class="remember-group" style="text-align: left; margin-bottom: 20px; font-size: 14px;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" name="remember" checked style="width: 16px; height: 16px;">
+                    Nhớ phiên đăng nhập (30 ngày)
+                </label>
+            </div>
             
             <button type="submit" class="login-btn">ĐĂNG NHẬP</button>
         </form>
-        
-        <div class="footer-links">
-            <a href="#">Đăng ký tài khoản mới</a>
-            <span class="separator">|</span>
-            <a href="https://namsuongmotor.com/">Quay lại trang chủ</a>
-        </div>
     </div>
+
+    <style>
+        /* Bắt buộc set body và html chiếm toàn bộ chiều cao màn hình */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            display: flex; /* Kích hoạt Flexbox */
+            justify-content: center; /* Căn giữa theo chiều ngang */
+            align-items: center; /* Căn giữa theo chiều dọc */
+            background-color: #f4f7f9; /* Màu nền nhẹ nhàng */
+        }
+
+        /* Container đăng nhập của bạn */
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); /* Đổ bóng nhẹ cho chuyên nghiệp */
+            width: 100%;
+            max-width: 400px; /* Giới hạn độ rộng tối đa */
+            text-align: center;
+            border: 1px solid #eee;
+        }
+
+        /* Đảm bảo hình ảnh logo không bị quá to */
+        .brand-logo {
+            max-width: 200px;
+            margin-bottom: 20px;
+        }
+    </style>
 </body>
 </html>
-<style>
-    /* Bắt buộc set body và html chiếm toàn bộ chiều cao màn hình */
-    html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        display: flex; /* Kích hoạt Flexbox */
-        justify-content: center; /* Căn giữa theo chiều ngang */
-        align-items: center; /* Căn giữa theo chiều dọc */
-        background-color: #f4f7f9; /* Màu nền nhẹ nhàng */
-    }
-
-    /* Container đăng nhập của bạn */
-    .login-container {
-        background: white;
-        padding: 40px;
-        border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08); /* Đổ bóng nhẹ cho chuyên nghiệp */
-        width: 100%;
-        max-width: 400px; /* Giới hạn độ rộng tối đa */
-        text-align: center;
-        border: 1px solid #eee;
-    }
-
-    /* Đảm bảo hình ảnh logo không bị quá to */
-    .brand-logo {
-        max-width: 200px;
-        margin-bottom: 20px;
-    }
-</style>
