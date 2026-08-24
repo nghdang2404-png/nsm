@@ -9,9 +9,18 @@ import pandas as pd
 
 from gia_theo_vung import format_xe_data_home
 
+
 app = Flask(__name__)
 app.secret_key = 'super_secret_key'
 
+# --- BỔ SUNG CẤU HÌNH COOKIE ĐỂ GIỮ PHIÊN TRÊN ĐIỆN THOẠI ---
+app.permanent_session_lifetime = timedelta(days=30)  # Giữ phiên đăng nhập trong 30 ngày
+app.config['SESSION_COOKIE_NAME'] = 'namsuong_session'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+# Nếu ứng dụng của bạn chạy HTTPS (có SSL), hãy bật dòng dưới thành True. 
+# Nếu chạy HTTP thông thường trên mạng nội bộ/IP thì để False:
+app.config['SESSION_COOKIE_SECURE'] = False
 # --- CẤU HÌNH THỜI GIAN SỐNG CHO PHIÊN ĐĂNG NHẬP ---
 app.permanent_session_lifetime = timedelta(days=30)  # Giữ phiên đăng nhập trong 30 ngày
 
@@ -145,7 +154,7 @@ def login():
         if user and check_password_hash(user.password, request.form.get("password")):
             session.clear()
             
-            # Kích hoạt duy trì phiên đăng nhập lâu dài (mặc định luôn bật hoặc theo checkbox)
+            # Đánh dấu phiên làm việc kéo dài lâu dài (theo app.permanent_session_lifetime)
             session.permanent = True 
             
             session['username'] = user.username
