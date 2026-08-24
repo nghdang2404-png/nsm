@@ -1,11 +1,11 @@
 import os
+from functools import wraps
 from flask import Flask, render_template, request, flash, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import pandas as pd
 
-# Import module giá theo vùng vừa tách
 from gia_theo_vung import format_xe_data_home
 
 app = Flask(__name__)
@@ -44,7 +44,6 @@ class Xe(db.Model):
     gia_bl_trung = db.Column(db.Float, default=0)
     gia_bl_cao = db.Column(db.Float, default=0)
 
-    # Giấy tờ phân theo khu vực Cà Mau và Bạc Liêu
     gia_gt_phuong_cm = db.Column(db.Float, default=0)
     gia_gt_xa_cm = db.Column(db.Float, default=0)
     gia_gt_phuong_bl = db.Column(db.Float, default=0)
@@ -74,7 +73,16 @@ class XeMau(db.Model):
             'hinh_anh_mau': self.hinh_anh_mau
         }
 
-# --- HELPER FUNCTIONS ---
+# --- HELPER FUNCTIONS & DECORATORS ---
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session or session.get('role') != 'admin':
+            flash("Bạn không có quyền truy cập trang quản trị!", "danger")
+            return redirect(url_for('home'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 def save_image(file):
     if file and file.filename != '':
         filename = secure_filename(file.filename)
@@ -105,11 +113,9 @@ def lay_danh_sach_ma_mau(ten_mau):
             if ma_hex not in danh_sach_kq: danh_sach_kq.append(ma_hex)
         elif tu.startswith('#'):
             if tu not in danh_sach_kq: danh_sach_kq.append(tu)
-    if not danh_sach_kq: danh_sach_kq.append('#cccccc')
-    return danh_sach_kq
+    return danh_sach_kq if danh_sach_kq else ['#cccccc']
 
 def safe_float(val, default=0.0):
-    """Chuyển đổi dữ liệu số thực từ Excel an toàn"""
     try:
         if pd.isna(val): return default
         if isinstance(val, (int, float)): return float(val)
@@ -119,7 +125,6 @@ def safe_float(val, default=0.0):
         return default
 
 def safe_int(val, default=0):
-    """Chuyển đổi dữ liệu số nguyên từ Excel an toàn"""
     try:
         if pd.isna(val): return default
         if isinstance(val, (int, float)): return int(val)
@@ -128,7 +133,7 @@ def safe_int(val, default=0):
     except Exception:
         return default
 
-# --- ROUTES ---
+# --- ROUTES AUTH & USER ---
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -140,6 +145,11 @@ def login():
             return redirect(url_for('home'))
         flash("Sai thông tin đăng nhập!", "danger")
     return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 @app.route("/home")
 def home():
@@ -157,11 +167,8 @@ def home():
     if loai_filter:
         query = query.filter_by(loai_xe=loai_filter)
         
-    query = query.order_by(Xe.loai_xe.asc(), Xe.ten_xe.asc())
-    danh_sach_xe = query.all()
+    danh_sach_xe = query.order_by(Xe.loai_xe.asc(), Xe.ten_xe.asc()).all()
     danh_sach_loai = [l[0] for l in db.session.query(Xe.loai_xe).distinct().all() if l[0]]
-
-    # Gọi hàm format dữ liệu từ module gia_theo_vung
     data = [format_xe_data_home(xe, khu_vuc_user) for xe in danh_sach_xe]
         
     return render_template(
@@ -174,12 +181,10 @@ def home():
         user_vung=khu_vuc_user
     )
 
+# --- ADMIN ROUTES ---
 @app.route("/admin")
+@admin_required
 def admin_panel():
-    if 'username' not in session or session.get('role') != 'admin':
-        flash("Bạn không có quyền truy cập trang quản trị!", "danger")
-        return redirect(url_for('home'))
-    
     search_query = request.args.get('search', '')
     loai_filter = request.args.get('loai', '')
     
@@ -195,34 +200,37 @@ def admin_panel():
     return render_template("admin.html", danh_sach_xe=danh_sach_xe, search_query=search_query, loai_filter=loai_filter, danh_sach_loai=danh_sach_loai, username=session.get('username'))
 
 @app.route("/admin/users")
+@admin_required
 def manage_users():
-    if 'username' not in session or session.get('role') != 'admin':
-        flash("Bạn không có quyền truy cập!", "danger")
-        return redirect(url_for('home'))
     users = User.query.all()
     return render_template("manage_users.html", users=users, username=session.get('username'))
 
+@app.route("/register", methods=["GET", "POST"])
 @app.route("/admin/register", methods=["GET", "POST"])
+@admin_required
 def register():
-    if 'username' not in session or session.get('role') != 'admin':
-        flash("Bạn không có quyền thực hiện thao tác này!", "danger")
-        return redirect(url_for('home'))
-        
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password")
-        role = request.form.get("role", "user")
+        confirm_password = request.form.get("confirm_password")
         bo_phan = request.form.get("bo_phan", "")
         khu_vuc = request.form.get("khu_vuc", "Cà Mau")
+        
+        # Hỗ trợ cả trường hợp gửi form từ checkbox "is_admin" hoặc select "role"
+        is_admin = request.form.get("is_admin")
+        role = "admin" if is_admin == "yes" else request.form.get("role", "user")
+
+        if confirm_password and password != confirm_password:
+            flash("Mật khẩu xác nhận không trùng khớp!", "danger")
+            return redirect(url_for('register'))
 
         if User.query.filter_by(username=username).first():
             flash(f"Tài khoản '{username}' đã tồn tại!", "danger")
             return redirect(url_for('register'))
 
-        hashed_password = generate_password_hash(password)
         new_user = User(
             username=username, 
-            password=hashed_password, 
+            password=generate_password_hash(password), 
             role=role, 
             bo_phan=bo_phan, 
             khu_vuc=khu_vuc
@@ -235,148 +243,190 @@ def register():
         
     return render_template("register.html", username=session.get('username'))
 
+@app.route("/admin/users/edit/<int:id>", methods=["POST"])
+@admin_required
+def edit_user(id):
+    user = User.query.get_or_404(id)
+    new_password = request.form.get("password")
+    if new_password:
+        user.password = generate_password_hash(new_password)
+        
+    user.bo_phan = request.form.get("bo_phan")
+    user.khu_vuc = request.form.get("khu_vuc")
+    user.role = 'admin' if request.form.get("is_admin") == 'yes' else 'user'
+    
+    db.session.commit()
+    flash(f"Cập nhật tài khoản {user.username} thành công!", "success")
+    return redirect(url_for('manage_users'))
+
+@app.route("/admin/users/delete/<int:id>")
+@admin_required
+def delete_user(id):
+    user = User.query.get_or_404(id)
+    if user.username == session.get('username'):
+        flash("Không thể xóa tài khoản của chính bạn!", "danger")
+        return redirect(url_for('manage_users'))
+        
+    db.session.delete(user)
+    db.session.commit()
+    flash("Đã xóa tài khoản thành công!", "success")
+    return redirect(url_for('manage_users'))
+
+# --- QUẢN LÝ XE & MÀU ---
 @app.route("/admin/add", methods=["POST"])
+@admin_required
 def add_xe():
-    if 'username' not in session or session.get('role') != 'admin': return redirect(url_for('home'))
     ten_xe_nhap = request.form.get("ten_xe", "").strip()
     if Xe.query.filter_by(ten_xe=ten_xe_nhap).first():
         flash(f"Lỗi: Tên xe '{ten_xe_nhap}' đã tồn tại!", "danger")
         return redirect(url_for('admin_panel'))
 
-    new_xe = Xe(
-        loai_xe=request.form.get("loai_xe"), 
-        ten_xe=ten_xe_nhap,
-        phien_ban=request.form.get("phien_ban"), 
-        
-        gia_cm_thap=float(request.form.get("gia_cm_thap") or 0),
-        gia_cm_trung=float(request.form.get("gia_cm_trung") or 0),
-        gia_cm_cao=float(request.form.get("gia_cm_cao") or 0),
-        gia_bl_thap=float(request.form.get("gia_bl_thap") or 0),
-        gia_bl_trung=float(request.form.get("gia_bl_trung") or 0),
-        gia_bl_cao=float(request.form.get("gia_bl_cao") or 0),
-        
-        gia_gt_phuong_cm=float(request.form.get("gia_gt_phuong_cm") or 0),
-        gia_gt_xa_cm=float(request.form.get("gia_gt_xa_cm") or 0),
-        gia_gt_phuong_bl=float(request.form.get("gia_gt_phuong_bl") or 0),
-        gia_gt_xa_bl=float(request.form.get("gia_gt_xa_bl") or 0),
-
-        ns1=int(request.form.get("ns1") or 0), ns2=int(request.form.get("ns2") or 0),
-        ns3=int(request.form.get("ns3") or 0), ns4=int(request.form.get("ns4") or 0),
-        ns5=int(request.form.get("ns5") or 0), nsm1=int(request.form.get("nsm1") or 0),
-        hinh_anh=save_image(request.files.get('hinh_anh'))
-    )
-    db.session.add(new_xe)
-    db.session.commit()
-    
-    ten_maus = request.form.getlist("ten_mau[]")
-    chenh_lechs_cm = request.form.getlist("chenh_lech_cm[]")
-    chenh_lechs_bl = request.form.getlist("chenh_lech_bl[]")
-    anh_maus = request.files.getlist("hinh_anh_mau[]")
-    
-    for i in range(len(ten_maus)):
-        if ten_maus[i].strip():
-            c_cm = float(chenh_lechs_cm[i]) if (i < len(chenh_lechs_cm) and chenh_lechs_cm[i]) else 0
-            c_bl = float(chenh_lechs_bl[i]) if (i < len(chenh_lechs_bl) and chenh_lechs_bl[i]) else 0
-            db.session.add(XeMau(
-                xe_id=new_xe.id, 
-                ten_mau=ten_maus[i].strip(), 
-                chenh_lech_cm=c_cm,
-                chenh_lech_bl=c_bl,
-                hinh_anh_mau=save_image(anh_maus[i] if i < len(anh_maus) else None)
-            ))
+    try:
+        new_xe = Xe(
+            loai_xe=request.form.get("loai_xe"), 
+            ten_xe=ten_xe_nhap,
+            phien_ban=request.form.get("phien_ban"), 
             
-    db.session.commit()
-    flash("Thêm xe mới thành công!", "success")
+            gia_cm_thap=float(request.form.get("gia_cm_thap") or 0),
+            gia_cm_trung=float(request.form.get("gia_cm_trung") or 0),
+            gia_cm_cao=float(request.form.get("gia_cm_cao") or 0),
+            gia_bl_thap=float(request.form.get("gia_bl_thap") or 0),
+            gia_bl_trung=float(request.form.get("gia_bl_trung") or 0),
+            gia_bl_cao=float(request.form.get("gia_bl_cao") or 0),
+            
+            gia_gt_phuong_cm=float(request.form.get("gia_gt_phuong_cm") or 0),
+            gia_gt_xa_cm=float(request.form.get("gia_gt_xa_cm") or 0),
+            gia_gt_phuong_bl=float(request.form.get("gia_gt_phuong_bl") or 0),
+            gia_gt_xa_bl=float(request.form.get("gia_gt_xa_bl") or 0),
+
+            ns1=int(request.form.get("ns1") or 0), ns2=int(request.form.get("ns2") or 0),
+            ns3=int(request.form.get("ns3") or 0), ns4=int(request.form.get("ns4") or 0),
+            ns5=int(request.form.get("ns5") or 0), nsm1=int(request.form.get("nsm1") or 0),
+            hinh_anh=save_image(request.files.get('hinh_anh'))
+        )
+        db.session.add(new_xe)
+        db.session.flush()
+        
+        ten_maus = request.form.getlist("ten_mau[]")
+        chenh_lechs_cm = request.form.getlist("chenh_lech_cm[]")
+        chenh_lechs_bl = request.form.getlist("chenh_lech_bl[]")
+        anh_maus = request.files.getlist("hinh_anh_mau[]")
+        
+        for i in range(len(ten_maus)):
+            if ten_maus[i].strip():
+                c_cm = float(chenh_lechs_cm[i]) if (i < len(chenh_lechs_cm) and chenh_lechs_cm[i]) else 0
+                c_bl = float(chenh_lechs_bl[i]) if (i < len(chenh_lechs_bl) and chenh_lechs_bl[i]) else 0
+                db.session.add(XeMau(
+                    xe_id=new_xe.id, 
+                    ten_mau=ten_maus[i].strip(), 
+                    chenh_lech_cm=c_cm,
+                    chenh_lech_bl=c_bl,
+                    hinh_anh_mau=save_image(anh_maus[i] if i < len(anh_maus) else None)
+                ))
+                
+        db.session.commit()
+        flash("Thêm xe mới thành công!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Có lỗi xảy ra: {str(e)}", "danger")
+
     return redirect(url_for('admin_panel'))
 
 @app.route("/admin/edit/<int:id>", methods=["POST"])
+@admin_required
 def edit_xe(id):
-    if 'username' not in session or session.get('role') != 'admin': return redirect(url_for('home'))
     xe = Xe.query.get_or_404(id)
     ten_xe_moi = request.form.get("ten_xe", "").strip()
     if ten_xe_moi and ten_xe_moi != xe.ten_xe and Xe.query.filter_by(ten_xe=ten_xe_moi).first():
         flash(f"Lỗi: Tên xe '{ten_xe_moi}' đã tồn tại!", "danger")
         return redirect(url_for('admin_panel'))
 
-    xe.loai_xe = request.form.get("loai_xe")
-    xe.ten_xe = ten_xe_moi
-    xe.phien_ban = request.form.get("phien_ban")
-    
-    xe.gia_cm_thap = float(request.form.get("gia_cm_thap") or 0)
-    xe.gia_cm_trung = float(request.form.get("gia_cm_trung") or 0)
-    xe.gia_cm_cao = float(request.form.get("gia_cm_cao") or 0)
-    xe.gia_bl_thap = float(request.form.get("gia_bl_thap") or 0)
-    xe.gia_bl_trung = float(request.form.get("gia_bl_trung") or 0)
-    xe.gia_bl_cao = float(request.form.get("gia_bl_cao") or 0)
-
-    xe.gia_gt_phuong_cm = float(request.form.get("gia_gt_phuong_cm") or 0)
-    xe.gia_gt_xa_cm = float(request.form.get("gia_gt_xa_cm") or 0)
-    xe.gia_gt_phuong_bl = float(request.form.get("gia_gt_phuong_bl") or 0)
-    xe.gia_gt_xa_bl = float(request.form.get("gia_gt_xa_bl") or 0)
-
-    xe.ns1 = int(request.form.get("ns1") or 0); xe.ns2 = int(request.form.get("ns2") or 0)
-    xe.ns3 = int(request.form.get("ns3") or 0); xe.ns4 = int(request.form.get("ns4") or 0)
-    xe.ns5 = int(request.form.get("ns5") or 0); xe.nsm1 = int(request.form.get("nsm1") or 0)
-    
-    if request.files.get('hinh_anh') and request.files.get('hinh_anh').filename != '':
-        xe.hinh_anh = save_image(request.files.get('hinh_anh'))
-    
-    # 1. Cập nhật các màu hiện có
-    for mau in xe.mau_xe:
-        mau.ten_mau = request.form.get(f"edit_ten_mau_{mau.id}", mau.ten_mau)
-        mau.chenh_lech_cm = float(request.form.get(f"edit_chenh_lech_cm_{mau.id}") or 0)
-        mau.chenh_lech_bl = float(request.form.get(f"edit_chenh_lech_bl_{mau.id}") or 0)
-        if request.files.get(f"edit_hinh_anh_mau_{mau.id}") and request.files.get(f"edit_hinh_anh_mau_{mau.id}").filename != '': 
-            mau.hinh_anh_mau = save_image(request.files.get(f"edit_hinh_anh_mau_{mau.id}"))
+    try:
+        xe.loai_xe = request.form.get("loai_xe")
+        xe.ten_xe = ten_xe_moi
+        xe.phien_ban = request.form.get("phien_ban")
         
-    # 2. Thêm màu mới bổ sung
-    new_tens = request.form.getlist("new_ten_mau[]")
-    new_cms = request.form.getlist("new_chenh_lech_cm[]")
-    new_bls = request.form.getlist("new_chenh_lech_bl[]")
-    new_anhs = request.files.getlist("new_hinh_anh_mau[]")
-    
-    for i in range(len(new_tens)):
-        if new_tens[i].strip():
-            c_cm = float(new_cms[i]) if (i < len(new_cms) and new_cms[i]) else 0
-            c_bl = float(new_bls[i]) if (i < len(new_bls) and new_bls[i]) else 0
-            db.session.add(XeMau(
-                xe_id=xe.id, 
-                ten_mau=new_tens[i].strip(), 
-                chenh_lech_cm=c_cm,
-                chenh_lech_bl=c_bl,
-                hinh_anh_mau=save_image(new_anhs[i] if i < len(new_anhs) else None)
-            ))
+        xe.gia_cm_thap = float(request.form.get("gia_cm_thap") or 0)
+        xe.gia_cm_trung = float(request.form.get("gia_cm_trung") or 0)
+        xe.gia_cm_cao = float(request.form.get("gia_cm_cao") or 0)
+        xe.gia_bl_thap = float(request.form.get("gia_bl_thap") or 0)
+        xe.gia_bl_trung = float(request.form.get("gia_bl_trung") or 0)
+        xe.gia_bl_cao = float(request.form.get("gia_bl_cao") or 0)
 
-    db.session.commit()
-    flash("Cập nhật thông tin xe thành công!", "success")
+        xe.gia_gt_phuong_cm = float(request.form.get("gia_gt_phuong_cm") or 0)
+        xe.gia_gt_xa_cm = float(request.form.get("gia_gt_xa_cm") or 0)
+        xe.gia_gt_phuong_bl = float(request.form.get("gia_gt_phuong_bl") or 0)
+        xe.gia_gt_xa_bl = float(request.form.get("gia_gt_xa_bl") or 0)
+
+        xe.ns1 = int(request.form.get("ns1") or 0); xe.ns2 = int(request.form.get("ns2") or 0)
+        xe.ns3 = int(request.form.get("ns3") or 0); xe.ns4 = int(request.form.get("ns4") or 0)
+        xe.ns5 = int(request.form.get("ns5") or 0); xe.nsm1 = int(request.form.get("nsm1") or 0)
+        
+        if request.files.get('hinh_anh') and request.files.get('hinh_anh').filename != '':
+            xe.hinh_anh = save_image(request.files.get('hinh_anh'))
+        
+        # 1. Cập nhật màu hiện tại
+        for mau in xe.mau_xe:
+            mau.ten_mau = request.form.get(f"edit_ten_mau_{mau.id}", mau.ten_mau)
+            mau.chenh_lech_cm = float(request.form.get(f"edit_chenh_lech_cm_{mau.id}") or 0)
+            mau.chenh_lech_bl = float(request.form.get(f"edit_chenh_lech_bl_{mau.id}") or 0)
+            if request.files.get(f"edit_hinh_anh_mau_{mau.id}") and request.files.get(f"edit_hinh_anh_mau_{mau.id}").filename != '': 
+                mau.hinh_anh_mau = save_image(request.files.get(f"edit_hinh_anh_mau_{mau.id}"))
+            
+        # 2. Thêm màu mới bổ sung
+        new_tens = request.form.getlist("new_ten_mau[]")
+        new_cms = request.form.getlist("new_chenh_lech_cm[]")
+        new_bls = request.form.getlist("new_chenh_lech_bl[]")
+        new_anhs = request.files.getlist("new_hinh_anh_mau[]")
+        
+        for i in range(len(new_tens)):
+            if new_tens[i].strip():
+                c_cm = float(new_cms[i]) if (i < len(new_cms) and new_cms[i]) else 0
+                c_bl = float(new_bls[i]) if (i < len(new_bls) and new_bls[i]) else 0
+                db.session.add(XeMau(
+                    xe_id=xe.id, 
+                    ten_mau=new_tens[i].strip(), 
+                    chenh_lech_cm=c_cm,
+                    chenh_lech_bl=c_bl,
+                    hinh_anh_mau=save_image(new_anhs[i] if i < len(new_anhs) else None)
+                ))
+
+        db.session.commit()
+        flash("Cập nhật thông tin xe thành công!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Có lỗi xảy ra: {str(e)}", "danger")
+
     return redirect(url_for('admin_panel'))
 
 @app.route("/admin/delete/<int:id>", methods=["GET"])
+@admin_required
 def delete_xe(id):
-    if 'username' not in session or session.get('role') != 'admin': return redirect(url_for('home'))
-    db.session.delete(Xe.query.get_or_404(id))
-    db.session.commit()
-    flash("Đã xóa xe thành công!", "success")
+    try:
+        db.session.delete(Xe.query.get_or_404(id))
+        db.session.commit()
+        flash("Đã xóa xe thành công!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Không thể xóa xe: {str(e)}", "danger")
     return redirect(url_for('admin_panel'))
 
 @app.route("/admin/delete-mau/<int:id>", methods=["GET"])
+@admin_required
 def delete_mau(id):
-    if 'username' not in session or session.get('role') != 'admin': return redirect(url_for('home'))
-    db.session.delete(XeMau.query.get_or_404(id))
-    db.session.commit()
-    flash("Đã xóa màu thành công!", "success")
+    try:
+        db.session.delete(XeMau.query.get_or_404(id))
+        db.session.commit()
+        flash("Đã xóa màu thành công!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Không thể xóa màu: {str(e)}", "danger")
     return redirect(url_for('admin_panel'))
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for('login'))
-
+# --- IMPORT EXCEL ---
 @app.route("/admin/import", methods=["POST"])
+@admin_required
 def import_excel():
-    if 'username' not in session or session.get('role') != 'admin': 
-        return redirect(url_for('home'))
-    
     file = request.files.get('file_excel')
     if not file or not file.filename.endswith(('.xlsx', '.xls')):
         flash("Vui lòng chọn tập tin Excel hợp lệ (.xlsx, .xls)!", "danger")
@@ -394,11 +444,9 @@ def import_excel():
             if not ten_xe_excel or ten_xe_excel == '0': 
                 continue
             
-            # Tìm xem xe đã tồn tại trong DB chưa
             xe = Xe.query.filter_by(ten_xe=ten_xe_excel).first()
             
             if xe:
-                # 1. CẬP NHẬT XE ĐÃ TỒN TẠI
                 if row.get('loai_xe'): xe.loai_xe = str(row.get('loai_xe')).strip()
                 if row.get('phien_ban'): xe.phien_ban = str(row.get('phien_ban')).strip()
                 
@@ -424,7 +472,6 @@ def import_excel():
                 
                 so_luong_cap_nhat += 1
             else:
-                # 2. THÊM MỚI XE
                 xe = Xe(
                     loai_xe=str(row.get('loai_xe', '')).strip(),
                     ten_xe=ten_xe_excel,
@@ -451,7 +498,6 @@ def import_excel():
                 db.session.flush()
                 so_luong_them += 1
 
-            # 3. NHẬP MÀU XE VÀ CHÊNH LỆCH GIÁ (NẾU FILE EXCEL CÓ COLUMNS TƯƠNG ỨNG)
             ten_mau_excel = str(row.get('ten_mau', '')).strip()
             if ten_mau_excel and ten_mau_excel != '0':
                 mau_existing = XeMau.query.filter_by(xe_id=xe.id, ten_mau=ten_mau_excel).first()
@@ -477,39 +523,6 @@ def import_excel():
         flash(f"Lỗi khi xử lý file Excel: {str(e)}", "danger")
 
     return redirect(url_for('admin_panel'))
-
-@app.route("/admin/users/edit/<int:id>", methods=["POST"])
-def edit_user(id):
-    if 'username' not in session or session.get('role') != 'admin':
-        return redirect(url_for('home'))
-    
-    user = User.query.get_or_404(id)
-    new_password = request.form.get("password")
-    if new_password:
-        user.password = generate_password_hash(new_password)
-        
-    user.bo_phan = request.form.get("bo_phan")
-    user.khu_vuc = request.form.get("khu_vuc")
-    user.role = 'admin' if request.form.get("is_admin") == 'yes' else 'user'
-    
-    db.session.commit()
-    flash(f"Cập nhật tài khoản {user.username} thành công!", "success")
-    return redirect(url_for('manage_users'))
-
-@app.route("/admin/users/delete/<int:id>")
-def delete_user(id):
-    if 'username' not in session or session.get('role') != 'admin':
-        return redirect(url_for('home'))
-        
-    user = User.query.get_or_404(id)
-    if user.username == session.get('username'):
-        flash("Không thể xóa tài khoản của chính bạn!", "danger")
-        return redirect(url_for('manage_users'))
-        
-    db.session.delete(user)
-    db.session.commit()
-    flash("Đã xóa tài khoản thành công!", "success")
-    return redirect(url_for('manage_users'))
 
 if __name__ == "__main__":
     with app.app_context(): 

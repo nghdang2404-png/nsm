@@ -13,26 +13,29 @@
         }
         .card {
             border: none;
-            border-radius: 10px;
-            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.075);
+            border-radius: 12px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
         }
     </style>
 </head>
 <body>
 
-    <!-- Navbar đơn giản -->
+    <!-- Navbar -->
     <nav class="navbar navbar-dark bg-dark mb-4 shadow-sm px-3">
         <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="/admin">
-                <span class="text-warning fs-5 me-2">NAM SƯƠNG</span> <span class="text-muted fs-6">| Quản trị hệ thống</span>
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('admin_panel') if 'admin_panel' in endpoints else '/admin' }}">
+                <span class="text-warning fs-5 me-2 fw-bold">NAM SƯƠNG</span> 
+                <span class="text-muted fs-6">| Quản trị hệ thống</span>
             </a>
             <div>
-                <a href="/admin" class="btn btn-outline-light btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Quay lại trang Quản trị</a>
+                <a href="/admin" class="btn btn-outline-light btn-sm">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Quay lại trang Quản trị
+                </a>
             </div>
         </div>
     </nav>
 
-    <div class="container" style="max-width: 600px;">
+    <div class="container" style="max-width: 550px;">
         
         <!-- HIỂN THỊ THÔNG BÁO FLASH -->
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -46,54 +49,80 @@
             {% endif %}
         {% endwith %}
 
-        <div class="card p-4">
-            <h4 class="text-primary fw-bold mb-3 text-center"><i class="fa-solid fa-user-plus me-2"></i> Đăng Ký Tài Khoản Nhân Viên</h4>
-            <p class="text-muted text-center small mb-4">Tài khoản được tạo sẽ chỉ có quyền truy cập xem thông tin tại trang chủ.</p>
+        <div class="card p-4 bg-white">
+            <h4 class="text-primary fw-bold mb-2 text-center">
+                <i class="fa-solid fa-user-plus me-2"></i> Đăng Ký Tài Khoản
+            </h4>
+            <p class="text-muted text-center small mb-4">
+                Tạo tài khoản truy cập hệ thống cho nhân viên các bộ phận.
+            </p>
 
-            <form action="/register" method="POST">
-    <div class="mb-3">
-        <label class="form-label fw-semibold small">Tên đăng nhập:</label>
-        <input type="text" name="username" class="form-control form-control-sm" placeholder="Nhập tên đăng nhập..." required>
-    </div>
+            <form action="{{ url_for('register') }}" method="POST" id="registerForm">
+                
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Tên đăng nhập:</label>
+                    <input type="text" name="username" class="form-control form-control-sm" placeholder="Nhập tên đăng nhập..." required autocomplete="off">
+                </div>
 
-    <div class="mb-3">
-        <label class="form-label fw-semibold small">Mật khẩu:</label>
-        <input type="password" name="password" class="form-control form-control-sm" placeholder="Nhập mật khẩu..." required>
-    </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold small">Mật khẩu:</label>
+                        <input type="password" id="password" name="password" class="form-control form-control-sm" placeholder="Nhập mật khẩu..." required>
+                    </div>
 
-    <div class="mb-3">
-        <label class="form-label fw-semibold small">Nhập lại mật khẩu:</label>
-        <input type="password" name="confirm_password" class="form-control form-control-sm" placeholder="Xác nhận lại mật khẩu..." required>
-    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold small">Nhập lại mật khẩu:</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-control form-control-sm" placeholder="Xác nhận mật khẩu..." required>
+                    </div>
+                </div>
 
-    <div class="mb-3">
-        <label class="form-label fw-semibold small">Bộ phận làm việc:</label>
-        <input type="text" name="bo_phan" class="form-control form-control-sm" placeholder="VD: Kế toán dịch vụ, Phụ tùng...">
-    </div>
+                <div id="passwordError" class="text-danger small mb-3 d-none">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i> Mật khẩu xác nhận không trùng khớp!
+                </div>
 
-    <div class="mb-3">
-        <label class="form-label fw-semibold small">Khu vực làm việc:</label>
-        <select name="khu_vuc" class="form-select form-select-sm" required>
-            <option value="" disabled selected>-- Chọn khu vực --</option>
-            <option value="Cà Mau">Cà Mau</option>
-            <option value="Bạc Liêu">Bạc Liêu</option>
-        </select>
-    </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Bộ phận làm việc:</label>
+                    <input type="text" name="bo_phan" class="form-control form-control-sm" placeholder="VD: Kế toán dịch vụ, Phụ tùng...">
+                </div>
 
-    <div class="mb-4 form-check">
-        <input type="checkbox" name="is_admin" value="yes" class="form-check-input" id="adminCheck">
-        <label class="form-check-label small fw-semibold text-danger" for="adminCheck">
-            Cấp quyền Quản trị viên (Admin) cho tài khoản này
-        </label>
-    </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small">Khu vực làm việc:</label>
+                    <select name="khu_vuc" class="form-select form-select-sm" required>
+                        <option value="" disabled selected>-- Chọn khu vực --</option>
+                        <option value="Cà Mau">Cà Mau</option>
+                        <option value="Bạc Liêu">Bạc Liêu</option>
+                    </select>
+                </div>
 
-    <button type="submit" class="btn btn-primary w-100 fw-semibold py-2">
-        <i class="fa-solid fa-check me-1"></i> Tạo tài khoản
-    </button>
-</form>
+                <div class="mb-4 form-check bg-light p-2 rounded border ms-1">
+                    <input type="checkbox" name="is_admin" value="yes" class="form-check-input ms-1" id="adminCheck">
+                    <label class="form-check-label small fw-semibold text-danger ms-2" for="adminCheck">
+                        Cấp quyền Quản trị viên (Admin)
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 fw-semibold py-2">
+                    <i class="fa-solid fa-check me-1"></i> Tạo tài khoản
+                </button>
+            </form>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Kiểm tra khớp mật khẩu trước khi submit
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            const pass = document.getElementById('password').value;
+            const confirmPass = document.getElementById('confirm_password').value;
+            const errorDiv = document.getElementById('passwordError');
+
+            if (pass !== confirmPass) {
+                e.preventDefault();
+                errorDiv.classList.remove('d-none');
+            } else {
+                errorDiv.classList.add('d-none');
+            }
+        });
+    </script>
 </body>
 </html>
