@@ -11,25 +11,22 @@
     <style>
         .table-responsive { width: 100%; overflow-x: auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 40px; border: 1px solid #eef2f5; }
         .price-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-        .price-table th { background-color: #1a1a1a; color: #ffffff; padding: 14px 12px; font-weight: 600; text-transform: uppercase; font-size: 13px; }
-        .price-table td { padding: 12px; border-bottom: 1px solid #eef2f5; color: #2c3e50; vertical-align: middle; }
+        .price-table th { background-color: #1a1a1a; color: #ffffff; padding: 14px 16px; font-weight: 600; text-transform: uppercase; font-size: 13px; }
+        .price-table td { padding: 14px 16px; border-bottom: 1px solid #eef2f5; color: #2c3e50; vertical-align: middle; }
         .price-table tbody tr { cursor: pointer; transition: background-color 0.2s; }
         .price-table tbody tr:hover { background-color: #f1f5f9; }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         .price-highlight { color: #d32f2f; font-weight: 700; }
-        .stock-badge { display: inline-block; min-width: 28px; padding: 4px 6px; border-radius: 4px; font-weight: 600; font-size: 12px; text-align: center; }
-        .stock-in { background-color: #e8f5e9; color: #2e7d32; }
-        .stock-zero { background-color: #ffebee; color: #c62828; }
-
+        
         .color-dots-container {
             display: inline-flex;
             align-items: center;
             gap: 6px;
         }
         .color-dot {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             display: inline-block;
             border: 1px solid #bbb;
@@ -112,12 +109,18 @@
             font-weight: 600;
         }
 
+        .view-detail-hint {
+            color: #0056b3;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
         @media (max-width: 768px) {
             .filter-form { flex-direction: column; align-items: stretch; }
             .filter-input, .filter-select, .filter-btn { width: 100%; margin-bottom: 5px; }
-            .price-table th, .price-table td { padding: 8px 4px; font-size: 12px; white-space: normal; word-wrap: break-word; vertical-align: middle; }
-            .price-table th { font-size: 11px; padding: 10px 4px; }
-            .stock-badge { min-width: 22px; padding: 3px 4px; font-size: 11px; }
+            .price-table th, .price-table td { padding: 12px 8px; font-size: 13px; }
+            .price-table th { font-size: 12px; }
+            .view-detail-hint { font-size: 11px; }
         }
     </style>
 </head>
@@ -151,11 +154,11 @@
 </nav>
 
 <header class="hero-banner">
-    <h1>Hệ Thống Quản Lý Giá Xe & Tồn Kho Hệ Thống</h1>
+    <h1>Hệ Thống Tra Cứu Danh Mục & Giá Xe Lăn Bánh</h1>
     <p>Cập nhật số liệu trực tuyến toàn hệ thống các chi nhánh Nam Sương</p>
 </header>
 
-<div class="container" style="max-width: 1400px; padding: 0 15px;">
+<div class="container" style="max-width: 1200px; padding: 0 15px;">
     
     <div class="filter-container">
         <form method="GET" action="{{ url_for('home') }}" class="filter-form">
@@ -177,7 +180,7 @@
     </div>
 
     <div class="section-header">
-        <h2 class="section-title">BẢNG GIÁ NIÊM YẾT VÀ TỒN KHO CHI NHÁNH</h2>
+        <h2 class="section-title">DANH MỤC SẢN PHẨM & DỰ TOÁN LĂN BÁNH</h2>
     </div>
 
     <div class="table-responsive">
@@ -188,20 +191,12 @@
                     <th>Tên xe</th> 
                     <th>Phiên bản</th>
                     <th>Màu sắc</th>
-                    <th class="text-right">Giá xe (VNĐ)</th>
-                    <!-- ĐÃ ẨN CỘT GIẤY TỜ PHƯỜNG & XÃ KHỎI BẢNG CHÍNH -->
-                    <th class="text-center">NS1</th> 
-                    <th class="text-center">NS2</th>
-                    <th class="text-center">NS3</th> 
-                    <th class="text-center">NS4</th>
-                    <th class="text-center">NS5</th> 
-                    <th class="text-center">NSM1</th>
+                    <th class="text-center">Chi tiết</th>
                 </tr>
             </thead>
             <tbody>
                 {% if danh_sach_xe %}
                     {% for xe in danh_sach_xe %}
-                    <!-- TRUYỀN THÊM GIÁ GIẤY TỜ VÀ KHU VỰC VÀO HAM showCarImage -->
                     <tr onclick='showCarImage(
                         "{{ xe.ten_xe }} - {{ xe.phien_ban }}", 
                         "{{ url_for("static", filename="uploads/" ~ xe.hinh_anh) if xe.hinh_anh else "" }}", 
@@ -240,21 +235,16 @@
                             {% endif %}
                         </td>
 
-                        <td class="text-right price-highlight">{{ "{:,.0f}".format(xe.gia_hien_thi) }}</td>
-                        
-                        <!-- ĐÃ BỎ 2 CỘT GIẤY TỜ TẠI ĐÂY -->
-
-                        <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.ns1 > 0 else 'stock-zero' }}">{{ xe.ns1 }}</span></td>
-                        <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.ns2 > 0 else 'stock-zero' }}">{{ xe.ns2 }}</span></td>
-                        <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.ns3 > 0 else 'stock-zero' }}">{{ xe.ns3 }}</span></td>
-                        <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.ns4 > 0 else 'stock-zero' }}">{{ xe.ns4 }}</span></td>
-                        <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.ns5 > 0 else 'stock-zero' }}">{{ xe.ns5 }}</span></td>
-                        <td class="text-center"><span class="stock-badge {{ 'stock-in' if xe.nsm1 > 0 else 'stock-zero' }}">{{ xe.nsm1 }}</span></td>
+                        <td class="text-center">
+                            <span class="view-detail-hint">
+                                <i class="fas fa-eye"></i> Xem giá
+                            </span>
+                        </td>
                     </tr>
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="11" class="text-center" style="padding: 30px; color: #777;">Không tìm thấy dòng xe phù hợp.</td>
+                        <td colspan="5" class="text-center" style="padding: 30px; color: #777;">Không tìm thấy dòng xe phù hợp.</td>
                     </tr>
                 {% endif %}
             </tbody>
