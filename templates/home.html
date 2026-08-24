@@ -60,23 +60,10 @@
             font-weight: 600;
             font-size: 14px;
             transition: background 0.2s;
+            white-space: nowrap;
         }
         .filter-btn:hover {
             background-color: #333;
-        }
-        .reset-btn {
-            background-color: #e0e0e0;
-            color: #333;
-            text-decoration: none;
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
-            display: inline-block;
-            transition: background 0.2s;
-        }
-        .reset-btn:hover {
-            background-color: #d0d0d0;
         }
 
         /* CSS cho Modal hiển thị ảnh xe & chọn màu */
@@ -85,6 +72,71 @@
         .car-modal-close { position: absolute; top: 10px; right: 15px; font-size: 26px; cursor: pointer; color: #666; font-weight: bold; }
         .car-modal-close:hover { color: #000; }
         .car-modal-img { width: 100%; max-height: 350px; object-fit: contain; border-radius: 6px; margin-top: 10px; border: 1px solid #eee; }
+
+        /* =========================================================
+           THÊM CSS ĐÁP ỨNG (RESPONSIVE) DÀNH RIÊNG CHO ĐIỆN THOẠI
+           ========================================================= */
+        @media (max-width: 768px) {
+            /* Thanh tìm kiếm xếp dọc để dễ bấm trên điện thoại */
+            .filter-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-input, .filter-select, .filter-btn {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+
+            /* Bảng giá điều chỉnh ép chữ xuống dòng, thu nhỏ font và padding */
+            .price-table th, .price-table td {
+                padding: 8px 4px;
+                font-size: 12px;
+                white-space: normal; /* Cho phép chữ xuống dòng */
+                word-wrap: break-word; /* Cắt chữ quá dài */
+                vertical-align: middle;
+            }
+            .price-table th {
+                font-size: 11px;
+                padding: 10px 4px;
+            }
+
+            /* Giới hạn độ rộng các cột văn bản để dành không gian cho các cột số */
+            .price-table td:nth-child(1), .price-table th:nth-child(1) { min-width: 50px; } /* Loại xe */
+            .price-table td:nth-child(2), .price-table th:nth-child(2) { min-width: 80px; } /* Tên xe */
+            .price-table td:nth-child(3), .price-table th:nth-child(3) { min-width: 70px; } /* Phiên bản */
+            
+            /* Thu nhỏ các huy hiệu số lượng tồn kho */
+            .stock-badge {
+                min-width: 22px;
+                padding: 3px 4px;
+                font-size: 11px;
+            }
+
+            /* Tùy chỉnh Navbar nếu style.css chưa hỗ trợ mobile */
+            .navbar {
+                flex-direction: column;
+                padding: 10px;
+                gap: 10px;
+                text-align: center;
+            }
+            .main-menu {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .main-menu a[style*="border-left"] {
+                border-left: none !important;
+                padding-left: 0 !important;
+                margin-left: 0 !important;
+                display: block;
+                width: 100%;
+                margin-top: 5px;
+            }
+            .user-panel {
+                width: 100%;
+                justify-content: space-between;
+                margin-top: 5px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -118,7 +170,7 @@
     <p>Cập nhật số liệu trực tuyến toàn hệ thống các chi nhánh Nam Sương</p>
 </header>
 
-<div class="container" style="max-width: 1400px;">
+<div class="container" style="max-width: 1400px; padding: 0 15px;">
     
     <!-- KHUNG TÌM KIẾM VÀ BỘ LỌC -->
     <div class="filter-container">
