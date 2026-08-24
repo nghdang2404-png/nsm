@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bảng Giá & Tồn Kho - Nam Sương Motor</title>
+    
+    <!-- CẤU HÌNH PWA CHO ANDROID & IOS -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#1a1a1a">
+    
+    <!-- Cấu hình riêng cho iOS (Apple) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Nam Sương Motor">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
+
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -337,7 +348,6 @@
         const noImgText = document.getElementById('modalNoImgText');
         const colorButtonsContainer = document.getElementById('modalColorButtons');
 
-        // Cập nhật thông tin vùng áp dụng
         const khuVuc = userVung || 'Cà Mau';
         document.getElementById('modalRegionBadge').innerText = khuVuc;
 
@@ -348,7 +358,6 @@
         const phiPhuong = Number(giaPhuong) || 0;
         const phiXa = Number(giaXa) || 0;
 
-        // Hàm cập nhật bảng giá trong modal
         function updateModalPrice(currentBasePrice) {
             document.getElementById('modalBasePrice').innerText = formatCurrency(currentBasePrice);
             document.getElementById('modalGiaPhuong').innerText = formatCurrency(phiPhuong);
@@ -382,7 +391,6 @@
                     transition: all 0.2s;
                 `;
                 
-                // Khi click chọn màu
                 btn.onclick = function() {
                     Array.from(colorButtonsContainer.children).forEach(b => {
                         b.style.backgroundColor = '#ffffff';
@@ -400,7 +408,6 @@
                 colorButtonsContainer.appendChild(btn);
             });
 
-            // Mặc định hiển thị màu đầu tiên
             modalImg.src = "{{ url_for('static', filename='uploads/') }}" + colors[0].hinh_anh_mau;
             modalImg.style.display = 'block';
             noImgText.style.display = 'none';
@@ -432,6 +439,21 @@
         if (event.target === modal) {
             modal.style.display = 'none';
         }
+    }
+</script>
+
+<!-- ĐĂNG KÝ SERVICE WORKER CHO PWA -->
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+                .then(registration => {
+                    console.log('PWA: Đăng ký Service Worker thành công!');
+                })
+                .catch(error => {
+                    console.log('PWA: Lỗi đăng ký Service Worker:', error);
+                });
+        });
     }
 </script>
 
