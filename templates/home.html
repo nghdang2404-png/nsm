@@ -9,7 +9,6 @@
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#1a1a1a">
     
-    <!-- Cấu hình riêng cho iOS (Apple) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nam Sương Motor">
@@ -17,9 +16,23 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Liên kết tới file CSS bên ngoài -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <style>
+        .color-dot {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1px solid rgba(0,0,0,0.2);
+            flex-shrink: 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        }
+        /* Thêm hiệu ứng con trỏ chuột khi hover vào dòng xe */
+        .car-row-item {
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
 
@@ -42,7 +55,7 @@
     <div class="user-panel">
         <div class="user-badge">
             <i class="fas fa-circle" style="color: #2e7d32;"></i>
-            <span>Xin chào, <strong>{{ username }}</strong> (Khu vực: <strong>{{ user_vung | default(session.get('vung', 'Cà Mau')) }}</strong>)</span>
+            <span>Xin chào, <strong>{{ username }}</strong> (Khu vực: <strong>{{ user_vung | default(session.get('vung', 'Cà Mau'), true) }}</strong>)</span>
         </div>
         <a href="{{ url_for('logout') }}" class="logout-btn">
             <i class="fas fa-sign-out-alt"></i> Đăng xuất
@@ -59,7 +72,7 @@
     
     <div class="filter-container">
         <form method="GET" action="{{ url_for('home') }}" class="filter-form">
-            <input type="text" name="search" value="{{ search_query }}" class="filter-input" placeholder="🔍 Nhập tên xe hoặc phiên bản cần tìm...">
+            <input type="text" name="search" value="{{ search_query }}" class="filter-input" placeholder="🔍 Nhập tên xe cần tìm...">
             
             <select name="loai" class="filter-select">
                 <option value="">-- Tất cả loại xe --</option>
@@ -86,7 +99,6 @@
                 <tr>
                     <th>Loại xe</th> 
                     <th>Tên xe</th> 
-                    <th>Phiên bản</th>
                     <th>Màu sắc</th>
                     <th class="text-center">Chi tiết</th>
                 </tr>
@@ -94,39 +106,31 @@
             <tbody>
                 {% if danh_sach_xe %}
                     {% for xe in danh_sach_xe %}
-                    <tr onclick='showCarImage(
-                        "{{ xe.ten_xe }} - {{ xe.phien_ban }}", 
-                        "{{ url_for("static", filename="uploads/" ~ xe.hinh_anh) if xe.hinh_anh else "" }}", 
-                        {{ xe.mau_xe | tojson | safe }}, 
-                        {{ xe.gia_hien_thi | default(0) }},
-                        {{ xe.gia_giay_to_phuong | default(0) }},
-                        {{ xe.gia_giay_to_xa | default(0) }},
-                        {{ xe.gia_thap | default(0) }},
-                        {{ xe.gia_trung | default(0) }},
-                        "{{ user_vung | default(session.get("vung", "Cà Mau")) }}"
-                    )' title="Click để xem hình ảnh và dự toán chi phí lăn bánh">
+                    <!-- Sử dụng nháy đơn ' ' cho data-colors để tránh xung đột với nháy kép " " của chuỗi JSON -->
+                    <tr class="car-row-item" 
+                        data-name="{{ xe.ten_xe }} "
+                        data-img="{{ url_for('static', filename='uploads/' ~ xe.hinh_anh) if xe.hinh_anh else '' }}"
+                        data-colors='{{ xe.mau_xe | tojson | safe }}'
+                        data-base-price="{{ xe.gia_cao | default(xe.gia_hien_thi, true) | default(0, true) }}"
+                        data-gia-phuong="{{ xe.gia_giay_to_phuong | default(0, true) }}"
+                        data-gia-xa="{{ xe.gia_giay_to_xa | default(0, true) }}"
+                        data-gia-thap="{{ xe.gia_thap | default(0, true) }}"
+                        data-gia-trung="{{ xe.gia_trung | default(0, true) }}"
+                        data-vung="{{ user_vung | default(session.get('vung', 'Cà Mau'), true) }}"
+                        title="Click để xem hình ảnh và dự toán chi phí lăn bánh">
+                        
                         <td><strong>{{ xe.loai_xe }}</strong></td>
                         <td>{{ xe.ten_xe }}</td>
-                        <td>{{ xe.phien_ban }}</td>
                         
+                        <!-- HIỂN THỊ CHẤM MÀU KÈM TÊN MÀU BÊN NGOÀI -->
                         <td>
                             {% if xe.mau_xe and xe.mau_xe|length > 0 %}
-                                <div class="color-dots-container" title="Các màu sắc có sẵn">
+                                <div style="display: flex; flex-direction: column; gap: 5px;">
                                     {% for mau in xe.mau_xe %}
-                                        {% if mau.ds_ma_mau and mau.ds_ma_mau|length > 0 %}
-                                            {% set num_colors = mau.ds_ma_mau|length %}
-                                            {% if num_colors == 1 %}
-                                                <span class="color-dot" style="background-color: {{ mau.ds_ma_mau[0] }};" title="{{ mau.ten_mau }}"></span>
-                                            {% elif num_colors == 2 %}
-                                                <span class="color-dot" style="background: linear-gradient(135deg, {{ mau.ds_ma_mau[0] }} 50%, {{ mau.ds_ma_mau[1] }} 50%);" title="{{ mau.ten_mau }}"></span>
-                                            {% else %}
-                                                <span class="color-dot" style="background: linear-gradient(135deg, 
-                                                    {% for m in mau.ds_ma_mau %}
-                                                        {{ m }} {{ loop.index0 * (100 / num_colors) }}%, {{ m }} {{ loop.index * (100 / num_colors) }}{% if not loop.last %}, {% endif %}
-                                                    {% endfor %}
-                                                );" title="{{ mau.ten_mau }}"></span>
-                                            {% endif %}
-                                        {% endif %}
+                                        <div style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                                            <span class="color-dot" data-color-name="{{ mau.ten_mau }}"></span>
+                                            <span style="color: #333; font-weight: 500;">{{ mau.ten_mau }}</span>
+                                        </div>
                                     {% endfor %}
                                 </div>
                             {% else %}
@@ -143,7 +147,7 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="5" class="text-center" style="padding: 30px; color: #777;">Không tìm thấy dòng xe phù hợp.</td>
+                        <td colspan="4" class="text-center" style="padding: 30px; color: #777;">Không tìm thấy dòng xe phù hợp.</td>
                     </tr>
                 {% endif %}
             </tbody>
@@ -200,13 +204,11 @@
 
             <!-- Khối mở rộng giá thấp/trung -->
             <div class="expand-price-section">
-                <!-- Nút bấm chứa mũi tên -->
                 <div class="expand-toggle" onclick="toggleExtraPrices(this)">
-                    <span class="toggle-text">Xem thêm giá bán thấp và trung</span>
+                    <span class="toggle-text">Xem thêm</span>
                     <i class="fas fa-chevron-down"></i>
                 </div>
                 
-                <!-- Nội dung bị ẩn mặc định -->
                 <div class="extra-prices-content" style="display: none; padding-top: 5px;">
                     <div class="price-row">
                         <span>Giá bán thấp:</span>
@@ -219,7 +221,7 @@
                 </div>
             </div>
 
-            <!-- KHỐI TỒN KHO 6 CHI NHÁNH THEO MÀU (Nằm ngay bên dưới khối xem thêm giá thấp và trung) -->
+            <!-- KHỐI TỒN KHO 6 CHI NHÁNH THEO MÀU -->
             <div class="inventory-section" style="margin-top: 12px; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
                 <div style="font-weight: bold; color: #1a1a1a; margin-bottom: 8px; font-size: 13px; text-align: left;">
                     <i class="fas fa-warehouse" style="color: #f57c00;"></i> Tồn kho chi tiết theo màu:
@@ -260,12 +262,82 @@
 </footer>
 
 <script>
-    // Hàm định dạng số tiền sang chuẩn VNĐ
     function formatCurrency(amount) {
         return new Intl.NumberFormat('vi-VN').format(amount).replace(/,/g, '.') + ' VNĐ';
     }
 
-    function showCarImage(carName, defaultImg, colorsJson, basePrice, giaPhuong, giaXa, giaThap, giaTrung, userVung) {
+function getCssColors(colorName) {
+    if (!colorName) return ['#757575'];
+    
+    // 1. Chuẩn hóa Unicode (NFC) và chuyển thành chữ thường
+    const t = colorName.normalize('NFC').toLowerCase();
+    
+    // 2. Tạo chuỗi không dấu để kiểm tra dự phòng
+    const noAccent = t.normalize('NFD')
+                      .replace(/[\u0300-\u036f]/g, '')
+                      .replace(/đ/g, 'd');
+
+    let cols = [];
+
+    // 3. Kiểm tra từ khóa (Cả có dấu lẫn không dấu)
+    if (t.includes('đen') || noAccent.includes('den')) cols.push('#1a1a1a');
+    if (t.includes('đỏ') || noAccent.includes('do')) cols.push('#e53935');
+    if (t.includes('xanh')) cols.push('#1e88e5');
+    if (t.includes('xám') || t.includes('ghi') || noAccent.includes('xam')) cols.push('#757575');
+    if (t.includes('trắng') || noAccent.includes('trang')) cols.push('#e0e0e0');
+    if (t.includes('bạc') || noAccent.includes('bac')) cols.push('#b0bec5');
+    if (t.includes('vàng') || noAccent.includes('vang')) cols.push('#fbc02d');
+    if (t.includes('cam')) cols.push('#fb8c00');
+    if (t.includes('nâu') || noAccent.includes('nau')) cols.push('#6d4c41');
+
+    return cols.length > 0 ? cols : ['#757575', '#1a1a1a'];
+}
+
+    document.addEventListener("DOMContentLoaded", function() {
+        // 1. Xử lý hiển thị chấm màu ở bảng chính (sẽ tạo màu pha gradient nếu xe có 2 màu trở lên)
+        document.querySelectorAll('.color-dot[data-color-name]').forEach(dot => {
+            const colorName = dot.getAttribute('data-color-name');
+            const cArr = getCssColors(colorName);
+            if (cArr.length === 1) {
+                dot.style.background = cArr[0];
+            } else if (cArr.length === 2) {
+                dot.style.background = `linear-gradient(135deg, ${cArr[0]} 50%, ${cArr[1]} 50%)`;
+            } else if (cArr.length > 2) {
+                let grad = 'linear-gradient(135deg, ';
+                cArr.forEach((m, idx) => {
+                    grad += `${m.trim()} ${idx * (100 / cArr.length)}%, ${m.trim()} ${(idx + 1) * (100 / cArr.length)}%`;
+                    if (idx < cArr.length - 1) grad += ', ';
+                });
+                grad += ')';
+                dot.style.background = grad;
+            }
+        });
+
+        // 2. Lắng nghe sự kiện click trên từng dòng sản phẩm để mở modal
+        document.querySelectorAll('.car-row-item').forEach(row => {
+            row.addEventListener('click', function() {
+                const carName = this.getAttribute('data-name');
+                const defaultImg = this.getAttribute('data-img');
+                let colors = [];
+                try {
+                    colors = JSON.parse(this.getAttribute('data-colors') || '[]');
+                } catch (e) {
+                    console.error("Lỗi parse JSON colors:", e);
+                    colors = [];
+                }
+                const basePrice = Number(this.getAttribute('data-base-price')) || 0;
+                const giaPhuong = Number(this.getAttribute('data-gia-phuong')) || 0;
+                const giaXa = Number(this.getAttribute('data-gia-xa')) || 0;
+                const giaThap = Number(this.getAttribute('data-gia-thap')) || 0;
+                const giaTrung = Number(this.getAttribute('data-gia-trung')) || 0;
+                const userVung = this.getAttribute('data-vung');
+
+                showCarImage(carName, defaultImg, colors, basePrice, giaPhuong, giaXa, giaThap, giaTrung, userVung);
+            });
+        });
+    });
+
+    function showCarImage(carName, defaultImg, colors, basePrice, giaPhuong, giaXa, giaThap, giaTrung, userVung) {
         const modal = document.getElementById('carImageModal');
         const modalTitle = document.getElementById('modalCarTitle');
         const modalImg = document.getElementById('modalCarImg');
@@ -296,17 +368,16 @@
             document.getElementById('modalGiaTrung').innerText = formatCurrency(currentTrung);
         }
 
-        // Hàm cập nhật tồn kho 6 cửa hàng theo dữ liệu từng màu
         function updateStockDisplay(colorItem) {
             const setVal = (id, val) => {
                 const el = document.getElementById(id);
                 const num = Number(val) || 0;
                 if (num > 0) {
                     el.innerText = num + " xe";
-                    el.style.color = "#2e7d32"; // Màu xanh nếu còn hàng
+                    el.style.color = "#2e7d32";
                 } else {
                     el.innerText = "Hết hàng";
-                    el.style.color = "#d32f2f"; // Màu đỏ nếu hết hàng
+                    el.style.color = "#d32f2f";
                 }
             };
 
@@ -318,28 +389,28 @@
             setVal('stockNsm1', colorItem ? colorItem.nsm1 : 0);
         }
 
-        let colors = [];
-        try {
-            colors = colorsJson;
-        } catch (e) {
-            colors = [];
-        }
-
         if (colors && colors.length > 0) {
             colors.forEach((item, index) => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.innerText = item.ten_mau;
+                
+                const cArr = getCssColors(item.ten_mau);
+                let bgStyle = cArr.length === 1 ? cArr[0] : `linear-gradient(135deg, ${cArr[0]} 50%, ${cArr[1]} 50%)`;
+                
+                btn.innerHTML = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:${bgStyle}; margin-right:6px; border:1px solid rgba(0,0,0,0.2); vertical-align:middle;"></span> ${item.ten_mau}`;
+                
                 btn.className = 'btn btn-sm ' + (index === 0 ? 'btn-dark' : 'btn-outline-dark');
                 btn.style.cssText = `
                     border-radius: 20px; 
-                    padding: 5px 15px; 
+                    padding: 6px 14px; 
                     border: 1px solid #1a1a1a; 
                     cursor: pointer; 
                     font-size: 13px; 
                     font-weight: 500;
                     background-color: ${index === 0 ? '#1a1a1a' : '#ffffff'};
                     color: ${index === 0 ? '#ffffff' : '#1a1a1a'};
+                    display: inline-flex;
+                    align-items: center;
                     transition: all 0.2s;
                 `;
                 
@@ -355,8 +426,6 @@
 
                     const chenhLech = Number(item.chenh_lech_gia) || 0;
                     updateModalPrice(giaGoc + chenhLech, thapGoc + chenhLech, trungGoc + chenhLech);
-                    
-                    // Cập nhật tồn kho theo màu được chọn
                     updateStockDisplay(item);
                 };
 
@@ -369,7 +438,7 @@
 
             const chenhLechDau = Number(colors[0].chenh_lech_gia) || 0;
             updateModalPrice(giaGoc + chenhLechDau, thapGoc + chenhLechDau, trungGoc + chenhLechDau);
-            updateStockDisplay(colors[0]); // Mặc định hiển thị tồn kho của màu đầu tiên
+            updateStockDisplay(colors[0]);
 
         } else if (defaultImg && defaultImg.trim() !== '') {
             modalImg.src = defaultImg;
@@ -385,7 +454,6 @@
             updateStockDisplay(null);
         }
         
-        // Luôn thu gọn phần giá thấp/trung khi mở modal mới lên
         document.querySelector('.extra-prices-content').style.display = 'none';
         document.querySelector('.expand-toggle').classList.remove('active');
         document.querySelector('.toggle-text').innerText = "Xem thêm giá bán thấp và trung";
@@ -419,7 +487,6 @@
     }
 </script>
 
-<!-- ĐĂNG KÝ SERVICE WORKER CHO PWA -->
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

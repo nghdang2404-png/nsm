@@ -1,8 +1,11 @@
 import os
+import re
+import unicodedata
 from datetime import timedelta
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import case
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import pandas as pd
@@ -11,7 +14,7 @@ app = Flask(__name__)
 app.secret_key = 'super_secret_key'
 
 # --- CẤU HÌNH COOKIE ĐỂ GIỮ PHIÊN TRÊN ĐIỆN THOẠI ---
-app.permanent_session_lifetime = timedelta(days=30)  # Giữ phiên đăng nhập trong 30 ngày
+app.permanent_session_lifetime = timedelta(days=30)
 app.config['SESSION_COOKIE_NAME'] = 'namsuong_session'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -26,6 +29,27 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True, 'pool_recycle': 300}
 
 db = SQLAlchemy(app)
+
+# --- HÀM TỰ ĐỘNG PHÂN LOẠI DỰA TRÊN TỪ KHÓA TÊN XE ---
+def tu_dong_phan_loai(ten_xe):
+    if not ten_xe:
+        return "Chưa phân loại"
+    
+    t = unicodedata.normalize('NFC', str(ten_xe)).lower()
+    
+    # 1. Ưu tiên nhận diện Xe ga trước (để chứa các từ khóa như 'airblade', 'vision',...)
+    if any(kw in t for kw in ['airblade', 'air blade', 'vision', 'lead', 'sh mode', 'sh', 'vario', 'scoopy', 'pcx']):
+        return "Xe ga"
+    
+    # 2. Sau đó mới nhận diện Xe số (chứa 'blade' đứng độc lập, 'wave',...)
+    elif any(kw in t for kw in ['wave', 'blade', 'future', 'super cub', 'dream']):
+        return "Xe số"
+        
+    # 3. Nhận diện Xe côn tay / Thể thao
+    elif any(kw in t for kw in ['winner', 'cb', 'cbr', 'rebel', 'sonic', 'côn tay']):
+        return "Xe côn tay & Thể thao"
+        
+    return "Chưa phân loại"
 
 # --- MODELS ---
 class User(db.Model):
@@ -70,7 +94,6 @@ class XeMau(db.Model):
     chenh_lech_bl = db.Column(db.Float, default=0)
     hinh_anh_mau = db.Column(db.String(200), default='')
 
-    # --- ĐÃ BỔ SUNG CÁC CỘT TỒN KHO CHO TỪNG MÀU ---
     ns1 = db.Column(db.Integer, default=0)
     ns2 = db.Column(db.Integer, default=0)
     ns3 = db.Column(db.Integer, default=0)
@@ -86,7 +109,6 @@ class XeMau(db.Model):
             'chenh_lech_gia': chenh_lech_vung,
             'ds_ma_mau': lay_danh_sach_ma_mau(self.ten_mau),
             'hinh_anh_mau': self.hinh_anh_mau,
-            # --- ĐÃ TRUYỀN DỮ LIỆU TỒN KHO SANG JAVASCRIPT GIAO DIỆN ---
             'ns1': self.ns1 or 0,
             'ns2': self.ns2 or 0,
             'ns3': self.ns3 or 0,
@@ -113,7 +135,12 @@ def save_image(file):
     return ''
 
 def lay_danh_sach_ma_mau(ten_mau):
-    if not ten_mau: return ['#cccccc']
+    if not ten_mau: 
+        return ['#cccccc']
+    
+    ten_mau_norm = unicodedata.normalize('NFC', str(ten_mau))
+    text = re.sub(r'\([^)]*\)', '', ten_mau_norm).lower().strip()
+    
     bang_mau = {
         'đỏ': '#ff0000', 'do': '#ff0000',
         'đen': '#000000', 'den': '#000000', 'đen nhám': '#222222', 'den nham': '#222222', 'nhám': '#222222', 'nham': '#222222',
@@ -122,19 +149,26 @@ def lay_danh_sach_ma_mau(ten_mau):
         'bạc': '#c0c0c0', 'bac': '#c0c0c0', 'xám': '#808080', 'xam': '#808080', 'xám xi măng': '#6c757d', 'xam xi mang': '#6c757d', 'xi': '#6c757d', 'măng': '#6c757d',
         'vàng': '#ffc107', 'vang': '#ffc107', 'cam': '#fd7e14', 'hồng': '#e83e8c', 'hong': '#e83e8c', 'xám mờ': '#555555'
     }
-    text = ten_mau.lower().strip()
+    
     danh_sach_kq = []
+    
     for tu_khoa, ma in sorted(bang_mau.items(), key=lambda x: len(x[0]), reverse=True):
-        if tu_khoa in text and len(tu_khoa.split()) > 1:
-            if ma not in danh_sach_kq: danh_sach_kq.append(ma)
+        if tu_khoa in text:
+            if ma not in danh_sach_kq: 
+                danh_sach_kq.append(ma)
             text = text.replace(tu_khoa, ' ')
+            
     tu_list = text.split()
     for tu in tu_list:
-        if tu in bang_mau:
-            ma_hex = bang_mau[tu]
-            if ma_hex not in danh_sach_kq: danh_sach_kq.append(ma_hex)
+        tu_sach = tu.strip()
+        if tu_sach in bang_mau:
+            ma_hex = bang_mau[tu_sach]
+            if ma_hex not in danh_sach_kq: 
+                danh_sach_kq.append(ma_hex)
         elif tu.startswith('#'):
-            if tu not in danh_sach_kq: danh_sach_kq.append(tu)
+            if tu not in danh_sach_kq: 
+                danh_sach_kq.append(tu)
+                
     return danh_sach_kq if danh_sach_kq else ['#cccccc']
 
 def safe_float(val, default=0.0):
@@ -154,6 +188,14 @@ def safe_int(val, default=0):
         return int(float(s)) if s else default
     except Exception:
         return default
+
+def get_order_priority():
+    return case(
+        (Xe.loai_xe == 'Xe số', 1),
+        (Xe.loai_xe == 'Xe ga', 2),
+        (Xe.loai_xe.ilike('%côn tay%'), 3),
+        else_=4
+    )
 
 # --- ROUTES AUTH & USER ---
 @app.route("/", methods=["GET", "POST"])
@@ -191,7 +233,7 @@ def home():
     if loai_filter:
         query = query.filter_by(loai_xe=loai_filter)
         
-    danh_sach_xe = query.order_by(Xe.loai_xe.asc(), Xe.ten_xe.asc()).all()
+    danh_sach_xe = query.order_by(get_order_priority(), Xe.ten_xe.asc()).all()
     danh_sach_loai = [l[0] for l in db.session.query(Xe.loai_xe).distinct().all() if l[0]]
     data = [format_xe_data_home(xe, khu_vuc_user) for xe in danh_sach_xe]
         
@@ -218,7 +260,7 @@ def admin_panel():
     if loai_filter:
         query = query.filter_by(loai_xe=loai_filter)
         
-    danh_sach_xe = query.order_by(Xe.id.desc()).all()
+    danh_sach_xe = query.order_by(get_order_priority(), Xe.ten_xe.asc()).all()
     danh_sach_loai = [l[0] for l in db.session.query(Xe.loai_xe).distinct().all() if l[0]]
     
     return render_template("admin.html", danh_sach_xe=danh_sach_xe, search_query=search_query, loai_filter=loai_filter, danh_sach_loai=danh_sach_loai, username=session.get('username'))
@@ -304,9 +346,13 @@ def add_xe():
         flash(f"Lỗi: Tên xe '{ten_xe_nhap}' đã tồn tại!", "danger")
         return redirect(url_for('admin_panel'))
 
+    loai_xe_nhap = request.form.get("loai_xe", "").strip()
+    if not loai_xe_nhap or loai_xe_nhap == "Chưa phân loại":
+        loai_xe_nhap = tu_dong_phan_loai(ten_xe_nhap)
+
     try:
         new_xe = Xe(
-            loai_xe=request.form.get("loai_xe"), 
+            loai_xe=loai_xe_nhap, 
             ten_xe=ten_xe_nhap,
             phien_ban=request.form.get("phien_ban"), 
             
@@ -364,8 +410,12 @@ def edit_xe(id):
         flash(f"Lỗi: Tên xe '{ten_xe_moi}' đã tồn tại!", "danger")
         return redirect(url_for('admin_panel'))
 
+    loai_xe_nhap = request.form.get("loai_xe", "").strip()
+    if not loai_xe_nhap or loai_xe_nhap == "Chưa phân loại":
+        loai_xe_nhap = tu_dong_phan_loai(ten_xe_moi if ten_xe_moi else xe.ten_xe)
+
     try:
-        xe.loai_xe = request.form.get("loai_xe")
+        xe.loai_xe = loai_xe_nhap
         xe.ten_xe = ten_xe_moi
         xe.phien_ban = request.form.get("phien_ban")
         
@@ -467,8 +517,12 @@ def import_excel():
             
             xe = Xe.query.filter_by(ten_xe=ten_xe_excel).first()
             
+            loai_xe_excel = str(row.get('loai_xe', '')).strip()
+            if not loai_xe_excel or loai_xe_excel == '0' or loai_xe_excel == 'Chưa phân loại':
+                loai_xe_excel = tu_dong_phan_loai(ten_xe_excel)
+            
             if xe:
-                if row.get('loai_xe'): xe.loai_xe = str(row.get('loai_xe')).strip()
+                if loai_xe_excel: xe.loai_xe = loai_xe_excel
                 if row.get('phien_ban'): xe.phien_ban = str(row.get('phien_ban')).strip()
                 
                 xe.gia_cm_thap = safe_float(row.get('gia_cm_thap'), xe.gia_cm_thap)
@@ -494,7 +548,7 @@ def import_excel():
                 so_luong_cap_nhat += 1
             else:
                 xe = Xe(
-                    loai_xe=str(row.get('loai_xe', '')).strip(),
+                    loai_xe=loai_xe_excel,
                     ten_xe=ten_xe_excel,
                     phien_ban=str(row.get('phien_ban', '')).strip(),
                     
@@ -525,7 +579,6 @@ def import_excel():
                 cl_cm = safe_float(row.get('chenh_lech_cm'))
                 cl_bl = safe_float(row.get('chenh_lech_bl'))
                 
-                # Cập nhật tồn kho theo màu nếu có trong file Excel
                 m_ns1 = safe_int(row.get('mau_ns1', row.get('ns1', 0)))
                 m_ns2 = safe_int(row.get('mau_ns2', row.get('ns2', 0)))
                 m_ns3 = safe_int(row.get('mau_ns3', row.get('ns3', 0)))
@@ -564,25 +617,17 @@ def import_excel():
         flash(f"Lỗi khi xử lý file Excel: {str(e)}", "danger")
 
     return redirect(url_for('admin_panel'))
-from flask import request, jsonify
-
-from flask import request, jsonify
-
-from flask import request, jsonify
-# Đảm bảo bạn đã import Xe và MauXe ở đầu file app.py:
-# from app.models import Xe, MauXe
 
 @app.route('/api/sync-inventory', methods=['POST'])
 def sync_inventory_api():
     try:
         data = request.json
-        store_code = data.get('store_code')  # Mã kho (VD: "NS1", "NS2",...)
-        rows = data.get('rows', [])          # Danh sách dữ liệu các dòng
+        store_code = data.get('store_code')
+        rows = data.get('rows', [])
         
         if not store_code or not rows:
             return jsonify({"status": "error", "message": "Thiếu dữ liệu"}), 400
             
-        # Lấy trước toàn bộ xe và màu hiện có vào bộ nhớ để tối ưu tốc độ (Dùng XeMau thay vì MauXe)
         all_xe = {xe.ten_xe: xe for xe in Xe.query.all()}
         all_mau = {(m.xe_id, m.ten_mau): m for m in XeMau.query.all()}
         
@@ -594,16 +639,17 @@ def sync_inventory_api():
             if not ten_xe:
                 continue
             
-            # Kiểm tra hoặc tạo Tên xe (Lọc trùng tự động)
             if ten_xe not in all_xe:
-                xe_obj = Xe(ten_xe=ten_xe, loai_xe="Chưa phân loại")
+                loai_xe_auto = tu_dong_phan_loai(ten_xe)
+                xe_obj = Xe(ten_xe=ten_xe, loai_xe=loai_xe_auto)
                 db.session.add(xe_obj)
                 db.session.flush() 
                 all_xe[ten_xe] = xe_obj
             else:
                 xe_obj = all_xe[ten_xe]
+                if not xe_obj.loai_xe or xe_obj.loai_xe == "Chưa phân loại":
+                    xe_obj.loai_xe = tu_dong_phan_loai(ten_xe)
 
-            # Kiểm tra hoặc tạo Màu xe (Dùng XeMau thay vì MauXe)
             key_mau = (xe_obj.id, ten_mau)
             if key_mau not in all_mau:
                 mau_obj = XeMau(xe_id=xe_obj.id, ten_mau=ten_mau)
@@ -613,7 +659,6 @@ def sync_inventory_api():
             else:
                 mau_obj = all_mau[key_mau]
 
-            # Gán giá trị tồn cuối vào cột kho tương ứng
             if store_code == "NS1":
                 mau_obj.ns1 = ton_cuoi
             elif store_code == "NS2":
@@ -627,7 +672,6 @@ def sync_inventory_api():
             elif store_code == "NSM1":
                 mau_obj.nsm1 = ton_cuoi
                 
-        # Lưu vào Database 1 lần duy nhất
         db.session.commit()
         return jsonify({"status": "success", "message": f"Đồng bộ thành công kho {store_code}"})
         
@@ -635,10 +679,10 @@ def sync_inventory_api():
         db.session.rollback()
         print("LỖI:", str(e))
         return jsonify({"status": "error", "message": str(e)}), 500
+
 def format_xe_data_home(xe, khu_vuc_user):
     is_bl = 'bạc liêu' in (khu_vuc_user or '').lower()
     
-    # Lựa chọn giá theo khu vực (Bạc Liêu hoặc Cà Mau)
     gia_thap = xe.gia_bl_thap if is_bl else xe.gia_cm_thap
     gia_trung = xe.gia_bl_trung if is_bl else xe.gia_cm_trung
     gia_cao = xe.gia_bl_cao if is_bl else xe.gia_cm_cao
@@ -661,8 +705,14 @@ def format_xe_data_home(xe, khu_vuc_user):
         'nsm1': xe.nsm1
     }
 
-
 if __name__ == "__main__":
     with app.app_context(): 
         db.create_all()
+        # Đã sửa lỗi: Tách truy vấn thành biến độc lập và an toàn tránh NameError
+        danh_sach_tat_ca_xe = Xe.query.all()
+        for xe in danh_sach_tat_ca_xe:
+            xe.loai_xe = tu_dong_phan_loai(xe.ten_xe)
+        db.session.commit()
+        print(f"Đã làm mới phân loại thành công!")
+        
     app.run(debug=True)
