@@ -582,9 +582,9 @@ def sync_inventory_api():
         if not store_code or not rows:
             return jsonify({"status": "error", "message": "Thiếu dữ liệu"}), 400
             
-        # Lấy trước toàn bộ xe và màu hiện có vào bộ nhớ để tối ưu tốc độ
+        # Lấy trước toàn bộ xe và màu hiện có vào bộ nhớ để tối ưu tốc độ (Dùng XeMau thay vì MauXe)
         all_xe = {xe.ten_xe: xe for xe in Xe.query.all()}
-        all_mau = {(m.xe_id, m.ten_mau): m for m in MauXe.query.all()}
+        all_mau = {(m.xe_id, m.ten_mau): m for m in XeMau.query.all()}
         
         for item in rows:
             ten_xe = item.get('ten_xe')
@@ -603,10 +603,10 @@ def sync_inventory_api():
             else:
                 xe_obj = all_xe[ten_xe]
 
-            # Kiểm tra hoặc tạo Màu xe
+            # Kiểm tra hoặc tạo Màu xe (Dùng XeMau thay vì MauXe)
             key_mau = (xe_obj.id, ten_mau)
             if key_mau not in all_mau:
-                mau_obj = MauXe(xe_id=xe_obj.id, ten_mau=ten_mau)
+                mau_obj = XeMau(xe_id=xe_obj.id, ten_mau=ten_mau)
                 db.session.add(mau_obj)
                 db.session.flush()
                 all_mau[key_mau] = mau_obj
@@ -635,31 +635,6 @@ def sync_inventory_api():
         db.session.rollback()
         print("LỖI:", str(e))
         return jsonify({"status": "error", "message": str(e)}), 500
-def format_xe_data_home(xe, khu_vuc_user):
-    is_bl = 'bạc liêu' in (khu_vuc_user or '').lower()
-    
-    # Lựa chọn giá theo khu vực (Bạc Liêu hoặc Cà Mau)
-    gia_thap = xe.gia_bl_thap if is_bl else xe.gia_cm_thap
-    gia_trung = xe.gia_bl_trung if is_bl else xe.gia_cm_trung
-    gia_cao = xe.gia_bl_cao if is_bl else xe.gia_cm_cao
-    
-    return {
-        'id': xe.id,
-        'loai_xe': xe.loai_xe,
-        'ten_xe': xe.ten_xe,
-        'phien_ban': xe.phien_ban,
-        'gia_thap': gia_thap,
-        'gia_trung': gia_trung,
-        'gia_cao': gia_cao,
-        'hinh_anh': xe.hinh_anh,
-        'mau_xe': [mau.to_dict(khu_vuc_user) for mau in xe.mau_xe],
-        'ns1': xe.ns1,
-        'ns2': xe.ns2,
-        'ns3': xe.ns3,
-        'ns4': xe.ns4,
-        'ns5': xe.ns5,
-        'nsm1': xe.nsm1
-    }
 
 if __name__ == "__main__":
     with app.app_context(): 
