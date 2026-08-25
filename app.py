@@ -569,53 +569,70 @@ def import_excel():
     return redirect(url_for('admin_panel'))
 from flask import request, jsonify
 
+from flask import request, jsonify
+
 @app.route('/api/sync-inventory', methods=['POST'])
 def sync_inventory_api():
-    data = request.json
-    store_code = data.get('store_code')  # Mã kho (VD: "NS1", "NS2",...)
-    rows = data.get('rows')             # Danh sách dữ liệu các dòng
-    
-    if not store_code or not rows:
-        return jsonify({"status": "error", "message": "Thiếu dữ liệu"}), 400
+    try:
+        data = request.json
+        store_code = data.get('store_code')  # Mã kho (VD: "NS1", "NS2",...)
+        rows = data.get('rows')             # Danh sách dữ liệu các dòng
         
-    for item in rows:
-        ten_xe = item.get('ten_xe')
-        ten_mau = item.get('ten_mau')
-        ton_cuoi = item.get('ton_cuoi', 0)
-        
-        if not ten_xe:
-            continue
-        
-        # 1. Đồng bộ Tên xe vào Database (Lọc trùng tự động)
-        xe_obj = Xe.query.filter_by(ten_xe=ten_xe).first()
-        if not xe_obj:
-            xe_obj = Xe(ten_xe=ten_xe, loai_xe="Chưa phân loại")
-            db.session.add(xe_obj)
-            db.session.commit()
-
-        # 2. Đồng bộ Màu xe tương ứng
-        mau_obj = MauXe.query.filter_by(xe_id=xe_obj.id, ten_mau=ten_mau).first()
-        if not mau_obj:
-            mau_obj = MauXe(xe_id=xe_obj.id, ten_mau=ten_mau)
-            db.session.add(mau_obj)
-            db.session.commit()
-
-        # 3. Cập nhật tồn cuối vào cột kho tương ứng
-        if store_code == "NS1":
-            mau_obj.ns1 = ton_cuoi
-        elif store_code == "NS2":
-            mau_obj.ns2 = ton_cuoi
-        elif store_code == "NS3":
-            mau_obj.ns3 = ton_cuoi
-        elif store_code == "NS4":
-            mau_obj.ns4 = ton_cuoi
-        elif store_code == "NS5":
-            mau_obj.ns5 = ton_cuoi
-        elif store_code == "NSM1":
-            mau_obj.nsm1 = ton_cuoi
+        if not store_code or not rows:
+            return jsonify({"status": "error", "message": "Thiếu dữ liệu"}), 400
             
-    db.session.commit()
-    return jsonify({"status": "success", "message": f"Đồng bộ thành công kho {store_code}"})
+        # 1. Lấy trước toàn bộ xe và màu hiện có vào bộ nhớ để giảm tối đa số lần query database
+        all_xe = {xe.ten_xe: xe for xe in Xe.query.all()}
+        all_mau = {(m.xe_id, m.ten_mau): m for m in MauXe.query.all()}
+        
+        for item in rows:
+            ten_xe = item.get('ten_xe')
+            ten_mau = item.get('ten_mau')
+            ton_cuoi = item.get('ton_cuoi', 0)
+            
+            if not ten_xe:
+                continue
+            
+            # Kiểm tra hoặc tạo Tên xe (Lọc trùng tự động)
+            if ten_xe not in all_xe:
+                xe_obj = Xe(ten_xe=ten_xe, loai_xe="Chưa phân loại")
+                db.session.add(xe_obj)
+                db.session.flush() # Tạo ID tạm thời mà chưa cần commit toàn bộ
+                all_xe[ten_xe] = xe_obj
+            else:
+                xe_obj = all_xe[ten_xe]
+
+            # Kiểm tra hoặc tạo Màu xe
+            key_mau = (xe_obj.id, ten_mau)
+            if key_mau not in all_mau:
+                mau_obj = MauXe(xe_id=xe_obj.id, ten_mau=ten_mau)
+                db.session.add(mau_obj)
+                db.session.flush()
+                all_mau[key_mau] = mau_obj
+            else:
+                mau_obj = all_mau[key_mau]
+
+            # Gán giá trị tồn cuối vào kho tương ứng
+            if store_code == "NS1":
+                mau_obj.ns1 = ton_cuoi
+            elif store_code == "NS2":
+                mau_obj.ns2 = ton_cuoi
+            elif store_code == "NS3":
+                mau_obj.ns3 = ton_cuoi
+            elif store_code == "NS4":
+                mau_obj.ns4 = ton_cuoi
+            elif store_code == "NS5":
+                mau_obj.ns5 = ton_cuoi
+            elif store_code == "NSM1":
+                mau_obj.nsm1 = ton_cuoi
+                
+        # 2. COMMIT DUY NHẤT 1 LẦN Ở CUỐI (Cực kỳ nhanh, loại bỏ hoàn toàn lỗi timeout)
+        db.session.commit()
+        return jsonify({"status": "success", "message": f"Đồng bộ thành công kho {store_code}"})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == "__main__":
     with app.app_context(): 
