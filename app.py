@@ -1,14 +1,11 @@
 import os
 from datetime import timedelta
 from functools import wraps
-from flask import Flask, render_template, request, flash, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import pandas as pd
-
-from gia_theo_vung import format_xe_data_home
-
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key'
@@ -571,17 +568,21 @@ from flask import request, jsonify
 
 from flask import request, jsonify
 
+from flask import request, jsonify
+# Đảm bảo bạn đã import Xe và MauXe ở đầu file app.py:
+# from app.models import Xe, MauXe
+
 @app.route('/api/sync-inventory', methods=['POST'])
 def sync_inventory_api():
     try:
         data = request.json
         store_code = data.get('store_code')  # Mã kho (VD: "NS1", "NS2",...)
-        rows = data.get('rows')             # Danh sách dữ liệu các dòng
+        rows = data.get('rows', [])          # Danh sách dữ liệu các dòng
         
         if not store_code or not rows:
             return jsonify({"status": "error", "message": "Thiếu dữ liệu"}), 400
             
-        # 1. Lấy trước toàn bộ xe và màu hiện có vào bộ nhớ để giảm tối đa số lần query database
+        # Lấy trước toàn bộ xe và màu hiện có vào bộ nhớ để tối ưu tốc độ
         all_xe = {xe.ten_xe: xe for xe in Xe.query.all()}
         all_mau = {(m.xe_id, m.ten_mau): m for m in MauXe.query.all()}
         
@@ -597,7 +598,7 @@ def sync_inventory_api():
             if ten_xe not in all_xe:
                 xe_obj = Xe(ten_xe=ten_xe, loai_xe="Chưa phân loại")
                 db.session.add(xe_obj)
-                db.session.flush() # Tạo ID tạm thời mà chưa cần commit toàn bộ
+                db.session.flush() 
                 all_xe[ten_xe] = xe_obj
             else:
                 xe_obj = all_xe[ten_xe]
@@ -612,7 +613,7 @@ def sync_inventory_api():
             else:
                 mau_obj = all_mau[key_mau]
 
-            # Gán giá trị tồn cuối vào kho tương ứng
+            # Gán giá trị tồn cuối vào cột kho tương ứng
             if store_code == "NS1":
                 mau_obj.ns1 = ton_cuoi
             elif store_code == "NS2":
@@ -626,13 +627,39 @@ def sync_inventory_api():
             elif store_code == "NSM1":
                 mau_obj.nsm1 = ton_cuoi
                 
-        # 2. COMMIT DUY NHẤT 1 LẦN Ở CUỐI (Cực kỳ nhanh, loại bỏ hoàn toàn lỗi timeout)
+        # Lưu vào Database 1 lần duy nhất
         db.session.commit()
         return jsonify({"status": "success", "message": f"Đồng bộ thành công kho {store_code}"})
         
     except Exception as e:
         db.session.rollback()
+        print("LỖI:", str(e))
         return jsonify({"status": "error", "message": str(e)}), 500
+def format_xe_data_home(xe, khu_vuc_user):
+    is_bl = 'bạc liêu' in (khu_vuc_user or '').lower()
+    
+    # Lựa chọn giá theo khu vực (Bạc Liêu hoặc Cà Mau)
+    gia_thap = xe.gia_bl_thap if is_bl else xe.gia_cm_thap
+    gia_trung = xe.gia_bl_trung if is_bl else xe.gia_cm_trung
+    gia_cao = xe.gia_bl_cao if is_bl else xe.gia_cm_cao
+    
+    return {
+        'id': xe.id,
+        'loai_xe': xe.loai_xe,
+        'ten_xe': xe.ten_xe,
+        'phien_ban': xe.phien_ban,
+        'gia_thap': gia_thap,
+        'gia_trung': gia_trung,
+        'gia_cao': gia_cao,
+        'hinh_anh': xe.hinh_anh,
+        'mau_xe': [mau.to_dict(khu_vuc_user) for mau in xe.mau_xe],
+        'ns1': xe.ns1,
+        'ns2': xe.ns2,
+        'ns3': xe.ns3,
+        'ns4': xe.ns4,
+        'ns5': xe.ns5,
+        'nsm1': xe.nsm1
+    }
 
 if __name__ == "__main__":
     with app.app_context(): 
