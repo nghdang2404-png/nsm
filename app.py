@@ -1,5 +1,5 @@
 import os
-from datetime import timedelta  # <--- Đã bổ sung import timedelta
+from datetime import timedelta
 from functools import wraps
 from flask import Flask, render_template, request, flash, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
@@ -13,16 +13,12 @@ from gia_theo_vung import format_xe_data_home
 app = Flask(__name__)
 app.secret_key = 'super_secret_key'
 
-# --- BỔ SUNG CẤU HÌNH COOKIE ĐỂ GIỮ PHIÊN TRÊN ĐIỆN THOẠI ---
+# --- CẤU HÌNH COOKIE ĐỂ GIỮ PHIÊN TRÊN ĐIỆN THOẠI ---
 app.permanent_session_lifetime = timedelta(days=30)  # Giữ phiên đăng nhập trong 30 ngày
 app.config['SESSION_COOKIE_NAME'] = 'namsuong_session'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-# Nếu ứng dụng của bạn chạy HTTPS (có SSL), hãy bật dòng dưới thành True. 
-# Nếu chạy HTTP thông thường trên mạng nội bộ/IP thì để False:
 app.config['SESSION_COOKIE_SECURE'] = False
-# --- CẤU HÌNH THỜI GIAN SỐNG CHO PHIÊN ĐĂNG NHẬP ---
-app.permanent_session_lifetime = timedelta(days=30)  # Giữ phiên đăng nhập trong 30 ngày
 
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -69,12 +65,21 @@ class Xe(db.Model):
     mau_xe = db.relationship('XeMau', backref='xe', cascade='all, delete-orphan')
 
 class XeMau(db.Model):
+    __tablename__ = 'xe_mau'
     id = db.Column(db.Integer, primary_key=True)
     xe_id = db.Column(db.Integer, db.ForeignKey('xe.id'), nullable=False)
     ten_mau = db.Column(db.String(50), nullable=False)
     chenh_lech_cm = db.Column(db.Float, default=0)
     chenh_lech_bl = db.Column(db.Float, default=0)
     hinh_anh_mau = db.Column(db.String(200), default='')
+
+    # --- ĐÃ BỔ SUNG CÁC CỘT TỒN KHO CHO TỪNG MÀU ---
+    ns1 = db.Column(db.Integer, default=0)
+    ns2 = db.Column(db.Integer, default=0)
+    ns3 = db.Column(db.Integer, default=0)
+    ns4 = db.Column(db.Integer, default=0)
+    ns5 = db.Column(db.Integer, default=0)
+    nsm1 = db.Column(db.Integer, default=0)
 
     def to_dict(self, khu_vuc_user=None):
         is_bl = 'bạc liêu' in (khu_vuc_user or '').lower()
@@ -83,7 +88,14 @@ class XeMau(db.Model):
             'ten_mau': self.ten_mau, 
             'chenh_lech_gia': chenh_lech_vung,
             'ds_ma_mau': lay_danh_sach_ma_mau(self.ten_mau),
-            'hinh_anh_mau': self.hinh_anh_mau
+            'hinh_anh_mau': self.hinh_anh_mau,
+            # --- ĐÃ TRUYỀN DỮ LIỆU TỒN KHO SANG JAVASCRIPT GIAO DIỆN ---
+            'ns1': self.ns1 or 0,
+            'ns2': self.ns2 or 0,
+            'ns3': self.ns3 or 0,
+            'ns4': self.ns4 or 0,
+            'ns5': self.ns5 or 0,
+            'nsm1': self.nsm1 or 0
         }
 
 # --- HELPER FUNCTIONS & DECORATORS ---
@@ -153,10 +165,7 @@ def login():
         user = User.query.filter_by(username=request.form.get("username")).first()
         if user and check_password_hash(user.password, request.form.get("password")):
             session.clear()
-            
-            # Đánh dấu phiên làm việc kéo dài lâu dài (theo app.permanent_session_lifetime)
             session.permanent = True 
-            
             session['username'] = user.username
             session['role'] = user.role
             session['vung'] = user.khu_vuc or 'Cà Mau'
@@ -519,15 +528,35 @@ def import_excel():
                 cl_cm = safe_float(row.get('chenh_lech_cm'))
                 cl_bl = safe_float(row.get('chenh_lech_bl'))
                 
+                # Cập nhật tồn kho theo màu nếu có trong file Excel
+                m_ns1 = safe_int(row.get('mau_ns1', row.get('ns1', 0)))
+                m_ns2 = safe_int(row.get('mau_ns2', row.get('ns2', 0)))
+                m_ns3 = safe_int(row.get('mau_ns3', row.get('ns3', 0)))
+                m_ns4 = safe_int(row.get('mau_ns4', row.get('ns4', 0)))
+                m_ns5 = safe_int(row.get('mau_ns5', row.get('ns5', 0)))
+                m_nsm1 = safe_int(row.get('mau_nsm1', row.get('nsm1', 0)))
+
                 if mau_existing:
                     mau_existing.chenh_lech_cm = cl_cm
                     mau_existing.chenh_lech_bl = cl_bl
+                    mau_existing.ns1 = m_ns1
+                    mau_existing.ns2 = m_ns2
+                    mau_existing.ns3 = m_ns3
+                    mau_existing.ns4 = m_ns4
+                    mau_existing.ns5 = m_ns5
+                    mau_existing.nsm1 = m_nsm1
                 else:
                     db.session.add(XeMau(
                         xe_id=xe.id,
                         ten_mau=ten_mau_excel,
                         chenh_lech_cm=cl_cm,
-                        chenh_lech_bl=cl_bl
+                        chenh_lech_bl=cl_bl,
+                        ns1=m_ns1,
+                        ns2=m_ns2,
+                        ns3=m_ns3,
+                        ns4=m_ns4,
+                        ns5=m_ns5,
+                        nsm1=m_nsm1
                     ))
 
         db.session.commit()
@@ -538,6 +567,55 @@ def import_excel():
         flash(f"Lỗi khi xử lý file Excel: {str(e)}", "danger")
 
     return redirect(url_for('admin_panel'))
+from flask import request, jsonify
+
+@app.route('/api/sync-inventory', methods=['POST'])
+def sync_inventory_api():
+    data = request.json
+    store_code = data.get('store_code')  # Mã kho (VD: "NS1", "NS2",...)
+    rows = data.get('rows')             # Danh sách dữ liệu các dòng
+    
+    if not store_code or not rows:
+        return jsonify({"status": "error", "message": "Thiếu dữ liệu"}), 400
+        
+    for item in rows:
+        ten_xe = item.get('ten_xe')
+        ten_mau = item.get('ten_mau')
+        ton_cuoi = item.get('ton_cuoi', 0)
+        
+        if not ten_xe:
+            continue
+        
+        # 1. Đồng bộ Tên xe vào Database (Lọc trùng tự động)
+        xe_obj = Xe.query.filter_by(ten_xe=ten_xe).first()
+        if not xe_obj:
+            xe_obj = Xe(ten_xe=ten_xe, loai_xe="Chưa phân loại")
+            db.session.add(xe_obj)
+            db.session.commit()
+
+        # 2. Đồng bộ Màu xe tương ứng
+        mau_obj = MauXe.query.filter_by(xe_id=xe_obj.id, ten_mau=ten_mau).first()
+        if not mau_obj:
+            mau_obj = MauXe(xe_id=xe_obj.id, ten_mau=ten_mau)
+            db.session.add(mau_obj)
+            db.session.commit()
+
+        # 3. Cập nhật tồn cuối vào cột kho tương ứng
+        if store_code == "NS1":
+            mau_obj.ns1 = ton_cuoi
+        elif store_code == "NS2":
+            mau_obj.ns2 = ton_cuoi
+        elif store_code == "NS3":
+            mau_obj.ns3 = ton_cuoi
+        elif store_code == "NS4":
+            mau_obj.ns4 = ton_cuoi
+        elif store_code == "NS5":
+            mau_obj.ns5 = ton_cuoi
+        elif store_code == "NSM1":
+            mau_obj.nsm1 = ton_cuoi
+            
+    db.session.commit()
+    return jsonify({"status": "success", "message": f"Đồng bộ thành công kho {store_code}"})
 
 if __name__ == "__main__":
     with app.app_context(): 

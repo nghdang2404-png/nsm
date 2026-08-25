@@ -15,9 +15,7 @@
     }
 
     /* ĐỊNH DẠNG MÀU SẮC KHU VỰC CÀ MAU (XANH DƯƠNG) */
-    .col-cm { 
-        background-color: #edf5ff !important; 
-    }
+    .col-cm { background-color: #edf5ff !important; }
     .box-cm {
         background-color: #e0edff;
         border: 1px solid #b6d4fe;
@@ -37,9 +35,7 @@
     }
 
     /* ĐỊNH DẠNG MÀU SẮC KHU VỰC BẠC LIÊU (XANH LÁ) */
-    .col-bl { 
-        background-color: #f0fdf4 !important; 
-    }
+    .col-bl { background-color: #f0fdf4 !important; }
     .box-bl {
         background-color: #dcfce7;
         border: 1px solid #86efac;
@@ -58,8 +54,6 @@
         margin-bottom: 4px;
     }
 
-    .col-tonkho { background-color: #fafafa !important; }
-
     .table td {
         vertical-align: middle;
         padding: 6px !important;
@@ -73,27 +67,13 @@
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
     }
-    
-    .col-small {
-        min-width: 70px !important;
-        text-align: center;
-    }
-
-    .col-tonkho input[type=number]::-webkit-inner-spin-button, 
-    .col-tonkho input[type=number]::-webkit-outer-spin-button { 
-        -webkit-appearance: none; 
-        margin: 0; 
-    }
-    .col-tonkho input[type=number] {
-        -moz-appearance: textfield;
-    }
 
     .color-row-item {
         background: #ffffff;
         border: 1px dashed #cbd5e1;
         padding: 8px;
         border-radius: 6px;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
     }
 
     .price-label-tag {
@@ -102,76 +82,35 @@
         margin-bottom: 2px;
         display: block;
     }
+    
+    /* HIỂN THỊ TỒN KHO MẶC ĐỊNH (HẾT HÀNG = 0) */
+    .tonkho-badge {
+        font-size: 11px;
+        font-weight: 500;
+        padding: 3px 6px;
+        background: #f1f3f5;
+        border: 1px solid #dee2e6;
+        color: #adb5bd;
+        border-radius: 4px;
+        display: inline-block;
+        margin-right: 3px;
+        margin-bottom: 4px;
+    }
 
-    @media (max-width: 991px) {
-        .table-responsive { border: none; }
-        .table thead { display: none; }
-        .table tbody, .table tr, .table td { display: block; width: 100%; }
-        
-        .table tr {
-            margin-bottom: 20px;
-            background-color: #fff;
-            border: 1px solid #dee2e6;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            overflow: hidden;
-        }
-        .table-info { background-color: #e6f7f2 !important; border-color: #c3e6cb !important; }
+    /* HIGHLIGHT TỒN KHO CÓ HÀNG (> 0) NỔI BẬT - MÀU ĐỎ NHẠT */
+    .tonkho-badge.has-stock {
+        background: #ffe5e5;
+        border: 1px solid #ff9999;
+        color: #d32f2f;
+        font-weight: 700;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
 
-        .table td {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            text-align: right;
-            padding: 10px 15px !important;
-            border-bottom: 1px dashed #e9ecef;
-        }
-        .table td:last-child { border-bottom: none; }
-        
-        .table td::before {
-            content: attr(data-label);
-            flex-basis: 40%;
-            text-align: left;
-            font-size: 12px;
-            font-weight: 700;
-            color: #495057;
-            text-transform: uppercase;
-            margin-right: 10px;
-        }
-        
-        .table td > input, .table td > select, .table td > textarea {
-            flex: 1;
-            width: 100%;
-            max-width: 55%;
-            margin: 0 !important;
-        }
-
-        .table td:nth-child(13) {
-            flex-direction: column;
-            align-items: flex-start;
-            background-color: #f8f9fa;
-        }
-        .table td:nth-child(13)::before {
-            flex-basis: 100%;
-            width: 100%;
-            margin-bottom: 10px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #dee2e6;
-            color: #0d6efd;
-        }
-        .table td:nth-child(13) > div { width: 100%; max-width: 100%; }
-
-        .table td:nth-child(14) {
-            flex-direction: row;
-            gap: 10px;
-            background-color: #eef2f5;
-        }
-        .table td:nth-child(14)::before { display: none; }
-        .table td:nth-child(14) > button, 
-        .table td:nth-child(14) > a {
-            flex: 1;
-            margin: 0 !important;
-        }
+    /* HIGHLIGHT Ô TÊN MÀU VỚI MÀU ĐỎ NHẠT */
+    .highlight-ten-mau {
+        background-color: #fff5f5 !important;
+        border-color: #ffb3b3 !important;
+        color: #c53030 !important;
     }
 </style>
 {% endblock %}
@@ -226,18 +165,11 @@
                 <thead>
                     <tr>
                         <th style="min-width: 90px;">Loại</th>
-                        <th style="min-width: 180px;">Tên xe</th> 
-                        <th style="min-width: 150px;">Phiên bản</th>
-                        <th style="min-width: 190px;">Giá xe (6 vùng)</th>
-                        <th style="min-width: 135px;" class="bg-primary text-white">Giấy tờ Cà Mau</th>
-                        <th style="min-width: 135px;" class="bg-success text-white">Giấy tờ Bạc Liêu</th>
-                        <th class="col-small col-tonkho" title="Tồn kho NS1">NS1</th>
-                        <th class="col-small col-tonkho" title="Tồn kho NS2">NS2</th>
-                        <th class="col-small col-tonkho" title="Tồn kho NS3">NS3</th>
-                        <th class="col-small col-tonkho" title="Tồn kho NS4">NS4</th>
-                        <th class="col-small col-tonkho" title="Tồn kho NS5">NS5</th>
-                        <th class="col-small col-tonkho" title="Tồn kho NSM1">NSM1</th>
-                        <th style="min-width: 250px;">Hình ảnh & Màu sắc xe</th>
+                        <th style="min-width: 160px;">Tên xe</th> 
+                        <th style="min-width: 130px;">Phiên bản</th>
+                        <th style="min-width: 180px;">Giá xe chung (6 mốc)</th>
+                        <th style="min-width: 160px;" class="bg-dark text-white">Giấy tờ (Cà Mau / Bạc Liêu)</th>
+                        <th style="min-width: 320px;">Hình ảnh, Chênh lệch màu & Tồn kho</th>
                         <th style="min-width: 90px;">Hành động</th>
                     </tr>
                 </thead>
@@ -246,97 +178,60 @@
                     <!-- 1. DÒNG THÊM MỚI XE -->
                     <form action="/admin/add" method="POST" enctype="multipart/form-data" id="form_add_xe">
                         <tr class="table-info">
-                            <td data-label="Loại xe"><input type="text" name="loai_xe" class="form-control form-control-sm" placeholder="Loại..." required></td>
-                            <td data-label="Tên xe"><textarea name="ten_xe" class="form-control form-control-sm" rows="2" style="resize: vertical; min-height: 40px;" placeholder="Tên xe..." required></textarea></td>
-                            <td data-label="Phiên bản"><textarea name="phien_ban" class="form-control form-control-sm" rows="2" style="resize: vertical; min-height: 40px;" placeholder="Phiên bản..."></textarea></td>
+                            <td><input type="text" name="loai_xe" class="form-control form-control-sm" placeholder="Loại..." required></td>
+                            <td><textarea name="ten_xe" class="form-control form-control-sm" rows="2" placeholder="Tên xe..." required></textarea></td>
+                            <td><textarea name="phien_ban" class="form-control form-control-sm" rows="2" placeholder="Phiên bản..."></textarea></td>
                             
-                            <td data-label="Giá xe" class="text-start">
-                                <!-- Khung Cà Mau -->
+                            <td class="text-start">
                                 <div class="box-cm">
                                     <span class="badge-cm">CÀ MAU</span>
-                                    <div class="mb-1">
-                                        <span class="price-label-tag text-primary">CM Thấp:</span>
-                                        <input type="number" name="gia_cm_thap" class="form-control form-control-sm" placeholder="CM Thấp...">
-                                    </div>
-                                    <div class="mb-1">
-                                        <span class="price-label-tag text-primary">CM Trung:</span>
-                                        <input type="number" name="gia_cm_trung" class="form-control form-control-sm" placeholder="CM Trung...">
-                                    </div>
-                                    <div>
-                                        <span class="price-label-tag text-primary">CM Cao:</span>
-                                        <input type="number" name="gia_cm_cao" class="form-control form-control-sm" placeholder="CM Cao...">
-                                    </div>
+                                    <input type="number" name="gia_cm_thap" class="form-control form-control-sm mb-1" placeholder="CM Thấp...">
+                                    <input type="number" name="gia_cm_trung" class="form-control form-control-sm mb-1" placeholder="CM Trung...">
+                                    <input type="number" name="gia_cm_cao" class="form-control form-control-sm" placeholder="CM Cao...">
                                 </div>
-                                <!-- Khung Bạc Liêu -->
                                 <div class="box-bl">
                                     <span class="badge-bl">BẠC LIÊU</span>
-                                    <div class="mb-1">
-                                        <span class="price-label-tag text-success">BL Thấp:</span>
-                                        <input type="number" name="gia_bl_thap" class="form-control form-control-sm" placeholder="BL Thấp...">
-                                    </div>
-                                    <div class="mb-1">
-                                        <span class="price-label-tag text-success">BL Trung:</span>
-                                        <input type="number" name="gia_bl_trung" class="form-control form-control-sm" placeholder="BL Trung...">
-                                    </div>
-                                    <div>
-                                        <span class="price-label-tag text-success">BL Cao:</span>
-                                        <input type="number" name="gia_bl_cao" class="form-control form-control-sm" placeholder="BL Cao...">
-                                    </div>
+                                    <input type="number" name="gia_bl_thap" class="form-control form-control-sm mb-1" placeholder="BL Thấp...">
+                                    <input type="number" name="gia_bl_trung" class="form-control form-control-sm mb-1" placeholder="BL Trung...">
+                                    <input type="number" name="gia_bl_cao" class="form-control form-control-sm" placeholder="BL Cao...">
                                 </div>
                             </td>
 
-                            <!-- Giấy tờ Cà Mau (Xanh dương) -->
-                            <td data-label="Giấy tờ Cà Mau" class="col-cm text-start">
-                                <div class="mb-1">
-                                    <span class="price-label-tag text-primary">CM Phường:</span>
-                                    <input type="number" name="gia_gt_phuong_cm" class="form-control form-control-sm" placeholder="Phường CM...">
-                                </div>
-                                <div>
-                                    <span class="price-label-tag text-primary">CM Xã:</span>
+                            <!-- CỘT GỘP: CÀ MAU Ở TRÊN, BẠC LIÊU Ở DƯỚI -->
+                            <td class="text-start">
+                                <div class="box-cm mb-1">
+                                    <span class="badge-cm">CÀ MAU</span>
+                                    <input type="number" name="gia_gt_phuong_cm" class="form-control form-control-sm mb-1" placeholder="Phường CM...">
                                     <input type="number" name="gia_gt_xa_cm" class="form-control form-control-sm" placeholder="Xã CM...">
                                 </div>
-                            </td>
-
-                            <!-- Giấy tờ Bạc Liêu (Xanh lá) -->
-                            <td data-label="Giấy tờ Bạc Liêu" class="col-bl text-start">
-                                <div class="mb-1">
-                                    <span class="price-label-tag text-success">BL Phường:</span>
-                                    <input type="number" name="gia_gt_phuong_bl" class="form-control form-control-sm" placeholder="Phường BL...">
-                                </div>
-                                <div>
-                                    <span class="price-label-tag text-success">BL Xã:</span>
+                                <div class="box-bl mb-0">
+                                    <span class="badge-bl">BẠC LIÊU</span>
+                                    <input type="number" name="gia_gt_phuong_bl" class="form-control form-control-sm mb-1" placeholder="Phường BL...">
                                     <input type="number" name="gia_gt_xa_bl" class="form-control form-control-sm" placeholder="Xã BL...">
                                 </div>
                             </td>
-
-                            <td data-label="Tồn NS1" class="col-tonkho"><input type="number" name="ns1" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
-                            <td data-label="Tồn NS2" class="col-tonkho"><input type="number" name="ns2" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
-                            <td data-label="Tồn NS3" class="col-tonkho"><input type="number" name="ns3" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
-                            <td data-label="Tồn NS4" class="col-tonkho"><input type="number" name="ns4" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
-                            <td data-label="Tồn NS5" class="col-tonkho"><input type="number" name="ns5" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
-                            <td data-label="Tồn NSM1" class="col-tonkho"><input type="number" name="nsm1" class="form-control form-control-sm p-1 text-center fw-bold text-primary" value="0"></td>
                             
-                            <td data-label="Quản lý Hình ảnh & Màu sắc" class="text-start bg-white">
+                            <td class="text-start bg-white">
                                 <div class="mb-1">
-                                    <label class="form-label small fw-bold mb-0 text-muted">Ảnh đại diện chung:</label>
+                                    <label class="form-label small fw-bold mb-0 text-muted">Ảnh đại diện:</label>
                                     <input type="file" name="hinh_anh" class="form-control form-control-sm" accept="image/*">
                                 </div>
                                 <hr class="my-2">
-                                <div id="addColorContainer_new" class="mb-1">
-                                    <label class="form-label small fw-bold mb-1 text-primary">Các màu xe:</label>
-                                    <div class="color-row-item mb-1">
-                                        <input type="text" name="ten_mau[]" class="form-control form-control-sm mb-1" placeholder="Tên màu (VD: Đỏ đen)">
+                                <div id="addColorContainer_new">
+                                    <label class="form-label small fw-bold mb-1 text-primary">Màu xe & Chênh lệch:</label>
+                                    <div class="color-row-item">
+                                        <input type="text" name="ten_mau[]" class="form-control form-control-sm mb-1 highlight-ten-mau" placeholder="Tên màu (VD: Đỏ đen)">
                                         <div class="row g-1 mb-1">
                                             <div class="col-6">
                                                 <div class="p-1 rounded" style="background-color: #edf5ff; border: 1px solid #b6d4fe;">
                                                     <span class="price-label-tag text-primary">CL Cà Mau:</span>
-                                                    <input type="number" name="chenh_lech_cm[]" class="form-control form-control-sm" placeholder="CL CM" value="0">
+                                                    <input type="number" name="chenh_lech_cm[]" class="form-control form-control-sm" value="0">
                                                 </div>
                                             </div>
                                             <div class="col-6">
                                                 <div class="p-1 rounded" style="background-color: #f0fdf4; border: 1px solid #86efac;">
                                                     <span class="price-label-tag text-success">CL Bạc Liêu:</span>
-                                                    <input type="number" name="chenh_lech_bl[]" class="form-control form-control-sm" placeholder="CL BL" value="0">
+                                                    <input type="number" name="chenh_lech_bl[]" class="form-control form-control-sm" value="0">
                                                 </div>
                                             </div>
                                         </div>
@@ -347,7 +242,7 @@
                                     <i class="fa-solid fa-plus"></i> Thêm màu
                                 </button>
                             </td>
-                            <td data-label="Hành động"><button type="submit" class="btn btn-success btn-sm w-100 fw-semibold shadow-sm"><i class="fa-solid fa-plus me-1"></i> Thêm xe</button></td>
+                            <td><button type="submit" class="btn btn-success btn-sm w-100 fw-semibold shadow-sm"><i class="fa-solid fa-plus me-1"></i> Thêm xe</button></td>
                         </tr>
                     </form>
 
@@ -355,109 +250,84 @@
                     {% for xe in danh_sach_xe %}
                     <form action="/admin/edit/{{ xe.id }}" method="POST" enctype="multipart/form-data" id="form_edit_{{ xe.id }}">
                         <tr>
-                            <td data-label="Loại xe"><input type="text" name="loai_xe" value="{{ xe.loai_xe }}" class="form-control form-control-sm"></td>
-                            <td data-label="Tên xe"><textarea name="ten_xe" class="form-control form-control-sm fw-semibold" rows="2" style="resize: vertical; min-height: 40px;">{{ xe.ten_xe }}</textarea></td>
-                            <td data-label="Phiên bản"><textarea name="phien_ban" class="form-control form-control-sm" rows="2" style="resize: vertical; min-height: 40px;">{{ xe.phien_ban }}</textarea></td>
+                            <td><input type="text" name="loai_xe" value="{{ xe.loai_xe }}" class="form-control form-control-sm"></td>
+                            <td><textarea name="ten_xe" class="form-control form-control-sm fw-semibold" rows="2">{{ xe.ten_xe }}</textarea></td>
+                            <td><textarea name="phien_ban" class="form-control form-control-sm" rows="2">{{ xe.phien_ban }}</textarea></td>
                             
-                            <td data-label="Giá xe" class="text-start">
-                                <!-- Khung Cà Mau -->
+                            <td class="text-start">
                                 <div class="box-cm">
                                     <span class="badge-cm">CÀ MAU</span>
-                                    <div class="mb-1">
-                                        <span class="price-label-tag text-primary">CM Thấp:</span>
-                                        <input type="number" name="gia_cm_thap" value="{{ xe.gia_cm_thap|default(0) }}" class="form-control form-control-sm">
-                                    </div>
-                                    <div class="mb-1">
-                                        <span class="price-label-tag text-primary">CM Trung:</span>
-                                        <input type="number" name="gia_cm_trung" value="{{ xe.gia_cm_trung|default(0) }}" class="form-control form-control-sm">
-                                    </div>
-                                    <div>
-                                        <span class="price-label-tag text-primary">CM Cao:</span>
-                                        <input type="number" name="gia_cm_cao" value="{{ xe.gia_cm_cao|default(0) }}" class="form-control form-control-sm">
-                                    </div>
+                                    <input type="number" name="gia_cm_thap" value="{{ xe.gia_cm_thap|default(0) }}" class="form-control form-control-sm mb-1">
+                                    <input type="number" name="gia_cm_trung" value="{{ xe.gia_cm_trung|default(0) }}" class="form-control form-control-sm mb-1">
+                                    <input type="number" name="gia_cm_cao" value="{{ xe.gia_cm_cao|default(0) }}" class="form-control form-control-sm">
                                 </div>
-                                <!-- Khung Bạc Liêu -->
                                 <div class="box-bl">
                                     <span class="badge-bl">BẠC LIÊU</span>
-                                    <div class="mb-1">
-                                        <span class="price-label-tag text-success">BL Thấp:</span>
-                                        <input type="number" name="gia_bl_thap" value="{{ xe.gia_bl_thap|default(0) }}" class="form-control form-control-sm">
-                                    </div>
-                                    <div class="mb-1">
-                                        <span class="price-label-tag text-success">BL Trung:</span>
-                                        <input type="number" name="gia_bl_trung" value="{{ xe.gia_bl_trung|default(0) }}" class="form-control form-control-sm">
-                                    </div>
-                                    <div>
-                                        <span class="price-label-tag text-success">BL Cao:</span>
-                                        <input type="number" name="gia_bl_cao" value="{{ xe.gia_bl_cao|default(0) }}" class="form-control form-control-sm">
-                                    </div>
+                                    <input type="number" name="gia_bl_thap" value="{{ xe.gia_bl_thap|default(0) }}" class="form-control form-control-sm mb-1">
+                                    <input type="number" name="gia_bl_trung" value="{{ xe.gia_bl_trung|default(0) }}" class="form-control form-control-sm mb-1">
+                                    <input type="number" name="gia_bl_cao" value="{{ xe.gia_bl_cao|default(0) }}" class="form-control form-control-sm">
                                 </div>
                             </td>
 
-                            <!-- Giấy tờ Cà Mau (Xanh dương) -->
-                            <td data-label="Giấy tờ Cà Mau" class="col-cm text-start">
-                                <div class="mb-1">
-                                    <span class="price-label-tag text-primary">CM Phường:</span>
-                                    <input type="number" name="gia_gt_phuong_cm" value="{{ xe.gia_gt_phuong_cm|default(0) }}" class="form-control form-control-sm">
+                            <!-- CỘT GỘP: CÀ MAU Ở TRÊN, BẠC LIÊU Ở DƯỚI -->
+                            <td class="text-start">
+                                <div class="box-cm mb-1">
+                                    <span class="badge-cm">CÀ MAU</span>
+                                    <input type="number" name="gia_gt_phuong_cm" value="{{ xe.gia_gt_phuong_cm|default(0) }}" class="form-control form-control-sm mb-1" placeholder="Phường CM...">
+                                    <input type="number" name="gia_gt_xa_cm" value="{{ xe.gia_gt_xa_cm|default(0) }}" class="form-control form-control-sm" placeholder="Xã CM...">
                                 </div>
-                                <div>
-                                    <span class="price-label-tag text-primary">CM Xã:</span>
-                                    <input type="number" name="gia_gt_xa_cm" value="{{ xe.gia_gt_xa_cm|default(0) }}" class="form-control form-control-sm">
-                                </div>
-                            </td>
-
-                            <!-- Giấy tờ Bạc Liêu (Xanh lá) -->
-                            <td data-label="Giấy tờ Bạc Liêu" class="col-bl text-start">
-                                <div class="mb-1">
-                                    <span class="price-label-tag text-success">BL Phường:</span>
-                                    <input type="number" name="gia_gt_phuong_bl" value="{{ xe.gia_gt_phuong_bl|default(0) }}" class="form-control form-control-sm">
-                                </div>
-                                <div>
-                                    <span class="price-label-tag text-success">BL Xã:</span>
-                                    <input type="number" name="gia_gt_xa_bl" value="{{ xe.gia_gt_xa_bl|default(0) }}" class="form-control form-control-sm">
+                                <div class="box-bl mb-0">
+                                    <span class="badge-bl">BẠC LIÊU</span>
+                                    <input type="number" name="gia_gt_phuong_bl" value="{{ xe.gia_gt_phuong_bl|default(0) }}" class="form-control form-control-sm mb-1" placeholder="Phường BL...">
+                                    <input type="number" name="gia_gt_xa_bl" value="{{ xe.gia_gt_xa_bl|default(0) }}" class="form-control form-control-sm" placeholder="Xã BL...">
                                 </div>
                             </td>
-
-                            <td data-label="Tồn NS1" class="col-tonkho"><input type="number" name="ns1" value="{{ xe.ns1 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
-                            <td data-label="Tồn NS2" class="col-tonkho"><input type="number" name="ns2" value="{{ xe.ns2 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
-                            <td data-label="Tồn NS3" class="col-tonkho"><input type="number" name="ns3" value="{{ xe.ns3 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
-                            <td data-label="Tồn NS4" class="col-tonkho"><input type="number" name="ns4" value="{{ xe.ns4 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
-                            <td data-label="Tồn NS5" class="col-tonkho"><input type="number" name="ns5" value="{{ xe.ns5 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
-                            <td data-label="Tồn NSM1" class="col-tonkho"><input type="number" name="nsm1" value="{{ xe.nsm1 }}" class="form-control form-control-sm p-1 text-center fw-bold text-primary"></td>
                             
-                            <td data-label="Cập nhật Hình ảnh & Màu sắc" class="text-start bg-white">
+                            <td class="text-start bg-white">
                                 <div class="mb-1">
                                     <span class="small text-muted">Ảnh chính: <strong class="text-dark">{{ xe.hinh_anh if xe.hinh_anh else 'Chưa có' }}</strong></span>
                                     <input type="file" name="hinh_anh" class="form-control form-control-sm mt-1" accept="image/*">
                                 </div>
                                 <hr class="my-2">
-                                <div class="small fw-bold text-secondary mb-2">Màu sắc hiện có:</div>
+                                <div class="small fw-bold text-secondary mb-2">Màu sắc, Chênh lệch & Tồn kho (DB):</div>
                                 {% if xe.mau_xe %}
                                     {% for mau in xe.mau_xe %}
                                     <div class="color-row-item mb-2">
                                         <div class="d-flex gap-1 align-items-center mb-1">
-                                            <input type="text" name="edit_ten_mau_{{ mau.id }}" value="{{ mau.ten_mau }}" class="form-control form-control-sm fw-bold" placeholder="Tên màu">
+                                            <!-- Highlight ô tên màu -->
+                                            <input type="text" name="edit_ten_mau_{{ mau.id }}" value="{{ mau.ten_mau }}" class="form-control form-control-sm fw-bold highlight-ten-mau" placeholder="Tên màu">
                                             <a href="/admin/delete-mau/{{ mau.id }}" class="text-danger small fw-bold text-decoration-none ms-auto p-1" onclick="return confirm('Xóa màu này?')" title="Xóa màu này">
                                                 <i class="fa-solid fa-trash fs-6"></i>
                                             </a>
                                         </div>
-                                        <div class="row g-1 mb-1">
+                                        
+                                        <!-- Ô nhập chênh lệch giá theo màu -->
+                                        <div class="row g-1 mb-2">
                                             <div class="col-6">
                                                 <div class="p-1 rounded" style="background-color: #edf5ff; border: 1px solid #b6d4fe;">
                                                     <span class="price-label-tag text-primary">CL Cà Mau:</span>
-                                                    <input type="number" name="edit_chenh_lech_cm_{{ mau.id }}" value="{{ mau.chenh_lech_cm|default(0) }}" class="form-control form-control-sm" placeholder="CL CM">
+                                                    <input type="number" name="edit_chenh_lech_cm_{{ mau.id }}" value="{{ mau.chenh_lech_cm|default(0) }}" class="form-control form-control-sm">
                                                 </div>
                                             </div>
                                             <div class="col-6">
                                                 <div class="p-1 rounded" style="background-color: #f0fdf4; border: 1px solid #86efac;">
                                                     <span class="price-label-tag text-success">CL Bạc Liêu:</span>
-                                                    <input type="number" name="edit_chenh_lech_bl_{{ mau.id }}" value="{{ mau.chenh_lech_bl|default(0) }}" class="form-control form-control-sm" placeholder="CL BL">
+                                                    <input type="number" name="edit_chenh_lech_bl_{{ mau.id }}" value="{{ mau.chenh_lech_bl|default(0) }}" class="form-control form-control-sm">
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="small text-truncate text-muted mb-1" style="max-width: 220px;" title="{{ mau.hinh_anh_mau }}">
-                                            <i class="fa-solid fa-image"></i> {{ mau.hinh_anh_mau if mau.hinh_anh_mau else 'Chưa có ảnh' }}
+
+                                        <!-- Hiển thị tồn kho lấy từ Database có Highlight tự động -->
+                                        <div class="mb-2 p-1 bg-light border rounded">
+                                            <span class="text-muted" style="font-size: 9px; display: block; font-weight: bold; margin-bottom: 2px;">TỒN KHO CỬA HÀNG:</span>
+                                            <span class="tonkho-badge {% if mau.ns1 and mau.ns1 > 0 %}has-stock{% endif %}" title="Kho NS1">NS1: <b>{{ mau.ns1|default(0) }}</b></span>
+                                            <span class="tonkho-badge {% if mau.ns2 and mau.ns2 > 0 %}has-stock{% endif %}" title="Kho NS2">NS2: <b>{{ mau.ns2|default(0) }}</b></span>
+                                            <span class="tonkho-badge {% if mau.ns3 and mau.ns3 > 0 %}has-stock{% endif %}" title="Kho NS3">NS3: <b>{{ mau.ns3|default(0) }}</b></span>
+                                            <span class="tonkho-badge {% if mau.ns4 and mau.ns4 > 0 %}has-stock{% endif %}" title="Kho NS4">NS4: <b>{{ mau.ns4|default(0) }}</b></span>
+                                            <span class="tonkho-badge {% if mau.ns5 and mau.ns5 > 0 %}has-stock{% endif %}" title="Kho NS5">NS5: <b>{{ mau.ns5|default(0) }}</b></span>
+                                            <span class="tonkho-badge {% if mau.nsm1 and mau.nsm1 > 0 %}has-stock{% endif %}" title="Kho NSM1">NSM1: <b>{{ mau.nsm1|default(0) }}</b></span>
                                         </div>
+
                                         <input type="file" name="edit_hinh_anh_mau_{{ mau.id }}" class="form-control form-control-sm" accept="image/*">
                                     </div>
                                     {% endfor %}
@@ -471,7 +341,7 @@
                                 </button>
                             </td>
 
-                            <td data-label="Hành động">
+                            <td>
                                 <button type="submit" class="btn btn-primary btn-sm px-2 mb-1 w-100 shadow-sm" title="Lưu thay đổi"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu</button>
                                 <a href="/admin/delete/{{ xe.id }}" class="btn btn-danger btn-sm px-2 mb-1 w-100 shadow-sm" onclick="return confirm('Bạn có chắc muốn xóa xe này cùng toàn bộ thông tin màu sắc liên quan?')" title="Xóa"><i class="fa-solid fa-trash me-1"></i> Xóa</a>
                             </td>
@@ -500,20 +370,20 @@
 
         div.innerHTML = `
             <div class="d-flex gap-1 align-items-center mb-1">
-                <input type="text" name="${nameMau}" form="${formId}" class="form-control form-control-sm fw-bold" placeholder="Tên màu mới...">
+                <input type="text" name="${nameMau}" form="${formId}" class="form-control form-control-sm fw-bold highlight-ten-mau" placeholder="Tên màu mới...">
                 <button type="button" class="btn btn-sm text-danger p-0 ms-auto" onclick="this.parentElement.parentElement.remove()"><i class="fa-solid fa-circle-xmark fs-5"></i></button>
             </div>
             <div class="row g-1 mb-1">
                 <div class="col-6">
                     <div class="p-1 rounded" style="background-color: #edf5ff; border: 1px solid #b6d4fe;">
                         <span class="price-label-tag text-primary">CL Cà Mau:</span>
-                        <input type="number" name="${nameCm}" form="${formId}" class="form-control form-control-sm" placeholder="CL CM" value="0">
+                        <input type="number" name="${nameCm}" form="${formId}" class="form-control form-control-sm" value="0">
                     </div>
                 </div>
                 <div class="col-6">
                     <div class="p-1 rounded" style="background-color: #f0fdf4; border: 1px solid #86efac;">
                         <span class="price-label-tag text-success">CL Bạc Liêu:</span>
-                        <input type="number" name="${nameBl}" form="${formId}" class="form-control form-control-sm" placeholder="CL BL" value="0">
+                        <input type="number" name="${nameBl}" form="${formId}" class="form-control form-control-sm" value="0">
                     </div>
                 </div>
             </div>

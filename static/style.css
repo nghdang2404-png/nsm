@@ -28,7 +28,58 @@ body {
     background-color: var(--bg-color);
     color: var(--text-dark);
 }
+/* Đường kẻ phân cách */
+.expand-price-section {
+    margin-top: 15px;
+    border-top: 1px dashed #ccc;
+    padding-top: 12px;
+}
 
+/* Nút bấm hiển thị/ẩn */
+.expand-toggle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: #6c757d; /* Màu xám nhạt */
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.expand-toggle:hover {
+    color: #d32f2f; /* Chuyển màu đỏ khi trỏ chuột */
+}
+
+/* Hiệu ứng xoay mũi tên */
+.expand-toggle i {
+    transition: transform 0.3s ease;
+}
+.expand-toggle.active i {
+    transform: rotate(180deg);
+}
+
+/* Box chứa giá chi tiết */
+.extra-prices-content {
+    margin-top: 12px;
+    background-color: #ffffff;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+.extra-prices-content .price-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #333;
+}
+
+.extra-prices-content .price-row:last-child {
+    margin-bottom: 0;
+}
 /* 1. Thanh điều hướng Topbar */
 .navbar {
     background-color: #1a1a1a;
@@ -493,4 +544,189 @@ body {
 
 .separator {
     margin: 0 8px;
+}
+.table-responsive { width: 100%; overflow-x: auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 40px; border: 1px solid #eef2f5; }
+.price-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+.price-table th { background-color: #1a1a1a; color: #ffffff; padding: 14px 16px; font-weight: 600; text-transform: uppercase; font-size: 13px; }
+.price-table td { padding: 14px 16px; border-bottom: 1px solid #eef2f5; color: #2c3e50; vertical-align: middle; }
+.price-table tbody tr { cursor: pointer; transition: background-color 0.2s; }
+.price-table tbody tr:hover { background-color: #f1f5f9; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.price-highlight { color: #d32f2f; font-weight: 700; }
+
+.color-dots-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.color-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 1px solid #bbb;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+}
+
+.filter-container {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin-bottom: 25px;
+    border: 1px solid #eef2f5;
+}
+.filter-form {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.filter-input, .filter-select {
+    flex: 1;
+    min-width: 220px;
+    padding: 10px 15px;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.filter-input:focus, .filter-select:focus {
+    border-color: #1a1a1a;
+}
+.filter-btn {
+    background-color: #1a1a1a;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+.filter-btn:hover {
+    background-color: #333;
+}
+
+/* Modal hiển thị ảnh xe & bảng tính giá theo khu vực */
+.car-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+.car-modal-content { background: #fff; padding: 25px; border-radius: 12px; text-align: center; max-width: 520px; width: 90%; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+.car-modal-close { position: absolute; top: 10px; right: 15px; font-size: 26px; cursor: pointer; color: #666; font-weight: bold; }
+.car-modal-close:hover { color: #000; }
+.car-modal-img { width: 100%; max-height: 260px; object-fit: contain; border-radius: 6px; margin-top: 10px; border: 1px solid #eee; }
+
+/* Khối chi tiết giá theo phân vùng khu vực */
+.price-breakdown-box {
+    margin-top: 15px;
+    text-align: left;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 14px;
+}
+.region-badge {
+    background-color: #d32f2f;
+    color: #ffffff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.view-detail-hint {
+    color: #0056b3;
+    font-weight: 500;
+    font-size: 13px;
+}
+
+/* CSS cho phần mở rộng giá thấp/trung */
+.expand-price-section {
+    margin-top: 15px;
+    border-top: 1px dashed #cbd5e1;
+    padding-top: 10px;
+    text-align: left;
+}
+.expand-toggle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: #666;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 0;
+}
+.expand-toggle:hover {
+    color: #1a1a1a;
+}
+.expand-toggle i {
+    transition: transform 0.3s ease;
+}
+.expand-toggle.active i {
+    transform: rotate(180deg);
+}
+.text-danger {
+    color: #d32f2f !important;
+}
+
+@media (max-width: 768px) {
+    .filter-form { flex-direction: column; align-items: stretch; }
+    .filter-input, .filter-select, .filter-btn { width: 100%; margin-bottom: 5px; }
+    .price-table th, .price-table td { padding: 12px 8px; font-size: 13px; }
+    .price-table th { font-size: 12px; }
+    .view-detail-hint { font-size: 11px; }
+}
+/* Khối hiển thị tồn kho */
+.inventory-section {
+    margin-top: 15px;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    text-align: left;
+}
+.inventory-title {
+    font-weight: bold;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eef2f5;
+    padding-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Chia làm 2 cột */
+    gap: 10px 20px;
+}
+.inventory-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 4px 0;
+    border-bottom: 1px dashed #e2e8f0;
+}
+.inventory-item:last-child, .inventory-item:nth-last-child(2) {
+    border-bottom: none; /* Bỏ gạch ngang ở 2 dòng cuối */
+}
+.stock-count {
+    font-weight: 700;
+    color: #2e7d32; /* Màu xanh nếu có hàng */
+}
+.stock-out {
+    color: #d32f2f; /* Màu đỏ nếu hết hàng */
 }

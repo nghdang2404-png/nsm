@@ -17,123 +17,9 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     
-    <style>
-        .table-responsive { width: 100%; overflow-x: auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 40px; border: 1px solid #eef2f5; }
-        .price-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-        .price-table th { background-color: #1a1a1a; color: #ffffff; padding: 14px 16px; font-weight: 600; text-transform: uppercase; font-size: 13px; }
-        .price-table td { padding: 14px 16px; border-bottom: 1px solid #eef2f5; color: #2c3e50; vertical-align: middle; }
-        .price-table tbody tr { cursor: pointer; transition: background-color 0.2s; }
-        .price-table tbody tr:hover { background-color: #f1f5f9; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .price-highlight { color: #d32f2f; font-weight: 700; }
-        
-        .color-dots-container {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .color-dot {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            display: inline-block;
-            border: 1px solid #bbb;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
-            flex-shrink: 0;
-        }
-
-        .filter-container {
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-            border: 1px solid #eef2f5;
-        }
-        .filter-form {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .filter-input, .filter-select {
-            flex: 1;
-            min-width: 220px;
-            padding: 10px 15px;
-            border: 1px solid #dcdcdc;
-            border-radius: 8px;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .filter-input:focus, .filter-select:focus {
-            border-color: #1a1a1a;
-        }
-        .filter-btn {
-            background-color: #1a1a1a;
-            color: #ffffff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: background 0.2s;
-            white-space: nowrap;
-        }
-        .filter-btn:hover {
-            background-color: #333;
-        }
-
-        /* Modal hiển thị ảnh xe & bảng tính giá theo khu vực */
-        .car-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
-        .car-modal-content { background: #fff; padding: 25px; border-radius: 12px; text-align: center; max-width: 520px; width: 90%; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
-        .car-modal-close { position: absolute; top: 10px; right: 15px; font-size: 26px; cursor: pointer; color: #666; font-weight: bold; }
-        .car-modal-close:hover { color: #000; }
-        .car-modal-img { width: 100%; max-height: 260px; object-fit: contain; border-radius: 6px; margin-top: 10px; border: 1px solid #eee; }
-
-        /* Khối chi tiết giá theo phân vùng khu vực */
-        .price-breakdown-box {
-            margin-top: 15px;
-            text-align: left;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-        }
-        .price-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 4px 0;
-            font-size: 14px;
-        }
-        .region-badge {
-            background-color: #d32f2f;
-            color: #ffffff;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .view-detail-hint {
-            color: #0056b3;
-            font-weight: 500;
-            font-size: 13px;
-        }
-
-        @media (max-width: 768px) {
-            .filter-form { flex-direction: column; align-items: stretch; }
-            .filter-input, .filter-select, .filter-btn { width: 100%; margin-bottom: 5px; }
-            .price-table th, .price-table td { padding: 12px 8px; font-size: 13px; }
-            .price-table th { font-size: 12px; }
-            .view-detail-hint { font-size: 11px; }
-        }
-    </style>
+    <!-- Liên kết tới file CSS bên ngoài -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
@@ -215,6 +101,8 @@
                         {{ xe.gia_hien_thi | default(0) }},
                         {{ xe.gia_giay_to_phuong | default(0) }},
                         {{ xe.gia_giay_to_xa | default(0) }},
+                        {{ xe.gia_thap | default(0) }},
+                        {{ xe.gia_trung | default(0) }},
                         "{{ user_vung | default(session.get("vung", "Cà Mau")) }}"
                     )' title="Click để xem hình ảnh và dự toán chi phí lăn bánh">
                         <td><strong>{{ xe.loai_xe }}</strong></td>
@@ -309,6 +197,42 @@
                 <span><strong>Tổng lăn bánh (Xã):</strong></span>
                 <strong id="modalTongXa" style="color: #2e7d32;">0 VNĐ</strong>
             </div>
+
+            <!-- Khối mở rộng giá thấp/trung -->
+            <div class="expand-price-section">
+                <!-- Nút bấm chứa mũi tên -->
+                <div class="expand-toggle" onclick="toggleExtraPrices(this)">
+                    <span class="toggle-text">Xem thêm giá bán thấp và trung</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                
+                <!-- Nội dung bị ẩn mặc định -->
+                <div class="extra-prices-content" style="display: none; padding-top: 5px;">
+                    <div class="price-row">
+                        <span>Giá bán thấp:</span>
+                        <strong id="modalGiaThap" class="text-danger">0 VNĐ</strong>
+                    </div>
+                    <div class="price-row">
+                        <span>Giá bán trung:</span>
+                        <strong id="modalGiaTrung" class="text-danger">0 VNĐ</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KHỐI TỒN KHO 6 CHI NHÁNH THEO MÀU (Nằm ngay bên dưới khối xem thêm giá thấp và trung) -->
+            <div class="inventory-section" style="margin-top: 12px; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
+                <div style="font-weight: bold; color: #1a1a1a; margin-bottom: 8px; font-size: 13px; text-align: left;">
+                    <i class="fas fa-warehouse" style="color: #f57c00;"></i> Tồn kho chi tiết theo màu:
+                </div>
+                <div class="inventory-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 15px; font-size: 13px; text-align: left;">
+                    <div class="price-row" style="margin-bottom: 4px;"><span>Nam Sương 1:</span> <strong id="stockNs1">0</strong></div>
+                    <div class="price-row" style="margin-bottom: 4px;"><span>Nam Sương 2:</span> <strong id="stockNs2">0</strong></div>
+                    <div class="price-row" style="margin-bottom: 4px;"><span>Nam Sương 3:</span> <strong id="stockNs3">0</strong></div>
+                    <div class="price-row" style="margin-bottom: 4px;"><span>Nam Sương 4:</span> <strong id="stockNs4">0</strong></div>
+                    <div class="price-row" style="margin-bottom: 4px;"><span>Nam Sương 5:</span> <strong id="stockNs5">0</strong></div>
+                    <div class="price-row" style="margin-bottom: 4px;"><span>NS Motor 1:</span> <strong id="stockNsm1">0</strong></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -338,10 +262,10 @@
 <script>
     // Hàm định dạng số tiền sang chuẩn VNĐ
     function formatCurrency(amount) {
-        return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
+        return new Intl.NumberFormat('vi-VN').format(amount).replace(/,/g, '.') + ' VNĐ';
     }
 
-    function showCarImage(carName, defaultImg, colorsJson, basePrice, giaPhuong, giaXa, userVung) {
+    function showCarImage(carName, defaultImg, colorsJson, basePrice, giaPhuong, giaXa, giaThap, giaTrung, userVung) {
         const modal = document.getElementById('carImageModal');
         const modalTitle = document.getElementById('modalCarTitle');
         const modalImg = document.getElementById('modalCarImg');
@@ -357,13 +281,41 @@
         const giaGoc = Number(basePrice) || 0;
         const phiPhuong = Number(giaPhuong) || 0;
         const phiXa = Number(giaXa) || 0;
+        
+        const thapGoc = Number(giaThap) || 0;
+        const trungGoc = Number(giaTrung) || 0;
 
-        function updateModalPrice(currentBasePrice) {
+        function updateModalPrice(currentBasePrice, currentThap, currentTrung) {
             document.getElementById('modalBasePrice').innerText = formatCurrency(currentBasePrice);
             document.getElementById('modalGiaPhuong').innerText = formatCurrency(phiPhuong);
             document.getElementById('modalGiaXa').innerText = formatCurrency(phiXa);
             document.getElementById('modalTongPhuong').innerText = formatCurrency(currentBasePrice + phiPhuong);
             document.getElementById('modalTongXa').innerText = formatCurrency(currentBasePrice + phiXa);
+            
+            document.getElementById('modalGiaThap').innerText = formatCurrency(currentThap);
+            document.getElementById('modalGiaTrung').innerText = formatCurrency(currentTrung);
+        }
+
+        // Hàm cập nhật tồn kho 6 cửa hàng theo dữ liệu từng màu
+        function updateStockDisplay(colorItem) {
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                const num = Number(val) || 0;
+                if (num > 0) {
+                    el.innerText = num + " xe";
+                    el.style.color = "#2e7d32"; // Màu xanh nếu còn hàng
+                } else {
+                    el.innerText = "Hết hàng";
+                    el.style.color = "#d32f2f"; // Màu đỏ nếu hết hàng
+                }
+            };
+
+            setVal('stockNs1', colorItem ? colorItem.ns1 : 0);
+            setVal('stockNs2', colorItem ? colorItem.ns2 : 0);
+            setVal('stockNs3', colorItem ? colorItem.ns3 : 0);
+            setVal('stockNs4', colorItem ? colorItem.ns4 : 0);
+            setVal('stockNs5', colorItem ? colorItem.ns5 : 0);
+            setVal('stockNsm1', colorItem ? colorItem.nsm1 : 0);
         }
 
         let colors = [];
@@ -402,7 +354,10 @@
                     modalImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
 
                     const chenhLech = Number(item.chenh_lech_gia) || 0;
-                    updateModalPrice(giaGoc + chenhLech);
+                    updateModalPrice(giaGoc + chenhLech, thapGoc + chenhLech, trungGoc + chenhLech);
+                    
+                    // Cập nhật tồn kho theo màu được chọn
+                    updateStockDisplay(item);
                 };
 
                 colorButtonsContainer.appendChild(btn);
@@ -413,20 +368,28 @@
             noImgText.style.display = 'none';
 
             const chenhLechDau = Number(colors[0].chenh_lech_gia) || 0;
-            updateModalPrice(giaGoc + chenhLechDau);
+            updateModalPrice(giaGoc + chenhLechDau, thapGoc + chenhLechDau, trungGoc + chenhLechDau);
+            updateStockDisplay(colors[0]); // Mặc định hiển thị tồn kho của màu đầu tiên
 
         } else if (defaultImg && defaultImg.trim() !== '') {
             modalImg.src = defaultImg;
             modalImg.style.display = 'block';
             noImgText.style.display = 'none';
-            updateModalPrice(giaGoc);
+            updateModalPrice(giaGoc, thapGoc, trungGoc);
+            updateStockDisplay(null);
         } else {
             modalImg.src = '';
             modalImg.style.display = 'none';
             noImgText.style.display = 'block';
-            updateModalPrice(giaGoc);
+            updateModalPrice(giaGoc, thapGoc, trungGoc);
+            updateStockDisplay(null);
         }
         
+        // Luôn thu gọn phần giá thấp/trung khi mở modal mới lên
+        document.querySelector('.extra-prices-content').style.display = 'none';
+        document.querySelector('.expand-toggle').classList.remove('active');
+        document.querySelector('.toggle-text').innerText = "Xem thêm giá bán thấp và trung";
+
         modal.style.display = 'flex';
     }
 
@@ -438,6 +401,20 @@
         const modal = document.getElementById('carImageModal');
         if (event.target === modal) {
             modal.style.display = 'none';
+        }
+    }
+
+    function toggleExtraPrices(element) {
+        element.classList.toggle('active');
+        var content = element.nextElementSibling;
+        var textSpan = element.querySelector('.toggle-text');
+        
+        if (content.style.display === "none" || content.style.display === "") {
+            content.style.display = "block";
+            textSpan.innerText = "Thu gọn";
+        } else {
+            content.style.display = "none";
+            textSpan.innerText = "Xem thêm giá bán thấp và trung";
         }
     }
 </script>
@@ -456,6 +433,5 @@
         });
     }
 </script>
-
 </body>
 </html>
