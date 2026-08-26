@@ -123,6 +123,14 @@
         border: 1px solid #ced4da !important;
     }
 
+    /* HIỆU ỨNG XOAY MŨI TÊN KHI SỔ RA / THU GỌN */
+    .transition-icon {
+        transition: transform 0.3s ease;
+    }
+    [aria-expanded="true"] .transition-icon {
+        transform: rotate(180deg);
+    }
+
     /* TỐI ƯU HÓA ĐẶC BIỆT CHO ĐIỆN THOẠI (MOBILE OPTIMIZATION) */
     @media (max-width: 768px) {
         .table-responsive {
@@ -306,7 +314,7 @@
                                 <input type="file" name="hinh_anh" form="form_edit_{{ xe.id }}" class="form-control form-control-sm mt-1" accept="image/*">
                             </div>
                             
-                            <!-- HIỂN THỊ TỒN KHO BÊN NGOÀI (CÓ TÊN XE TRỰC QUAN) -->
+                            <!-- HIỂN THỊ TỒN KHO & MÀU SẮC -->
                             {% if xe.mau_xe %}
                             <div class="mb-2 p-2 rounded text-start {% if xe.mau_xe|length > 1 %}stock-box-multi{% else %}stock-box-single{% endif %}" style="font-size: 11px;">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -322,9 +330,21 @@
                                 </div>
 
                                 {% for mau in xe.mau_xe %}
-                                <div class="mb-1 pb-1 {% if not loop.last %}border-bottom border-light-subtle{% endif %}">
-                                    <span class="fw-bold text-danger d-block mb-1" style="font-size: 11px;">{{ mau.ten_mau }}:</span>
-                                    <div>
+                                <div class="mb-2 pb-2 {% if not loop.last %}border-bottom border-light-subtle{% endif %}">
+                                    <!-- TIÊU ĐỀ MÀU: CLICK ĐỂ MỞ RỘNG / THU GỌN KÈM MŨI TÊN XOAY -->
+                                    <div class="d-flex justify-content-between align-items-center bg-light p-1 rounded border" data-bs-toggle="collapse" data-bs-target="#collapseColor_{{ mau.id }}" aria-expanded="false" style="cursor: pointer;">
+                                        <div>
+                                            <span class="fw-bold text-danger" style="font-size: 11px;"><i class="fa-solid fa-palette me-1"></i>{{ mau.ten_mau }}</span>
+                                            <span class="text-muted ms-1" style="font-size: 9px;">(CL: CM={{ mau.chenh_lech_cm|default(0) }}, BL={{ mau.chenh_lech_bl|default(0) }})</span>
+                                        </div>
+                                        <span class="badge bg-white text-dark border px-2 py-1" style="font-size: 9px;">
+                                            <i class="fa-solid fa-pen-to-square text-primary me-1"></i>Sửa 
+                                            <i class="fa-solid fa-chevron-down ms-1 transition-icon"></i>
+                                        </span>
+                                    </div>
+
+                                    <!-- HIỂN THỊ CÁC Ô TỒN KHO -->
+                                    <div class="mt-1">
                                         <span class="tonkho-badge {% if mau.ns1 and mau.ns1 > 0 %}has-stock{% endif %}" title="Kho NS1">NS1: <b>{{ mau.ns1|default(0) }}</b></span>
                                         <span class="tonkho-badge {% if mau.ns2 and mau.ns2 > 0 %}has-stock{% endif %}" title="Kho NS2">NS2: <b>{{ mau.ns2|default(0) }}</b></span>
                                         <span class="tonkho-badge {% if mau.ns3 and mau.ns3 > 0 %}has-stock{% endif %}" title="Kho NS3">NS3: <b>{{ mau.ns3|default(0) }}</b></span>
@@ -332,52 +352,41 @@
                                         <span class="tonkho-badge {% if mau.ns5 and mau.ns5 > 0 %}has-stock{% endif %}" title="Kho NS5">NS5: <b>{{ mau.ns5|default(0) }}</b></span>
                                         <span class="tonkho-badge {% if mau.nsm1 and mau.nsm1 > 0 %}has-stock{% endif %}" title="Kho NSM1">NSM1: <b>{{ mau.nsm1|default(0) }}</b></span>
                                     </div>
+
+                                    <!-- FORM CHỈNH SỬA RIÊNG CHO MÀU NÀY (ẨN/HIỆN KHI CLICK) -->
+                                    <div class="collapse mt-2" id="collapseColor_{{ mau.id }}">
+                                        <div class="color-row-item p-2 bg-white rounded border">
+                                            <div class="d-flex gap-1 align-items-center mb-1">
+                                                <input type="text" name="edit_ten_mau_{{ mau.id }}" value="{{ mau.ten_mau }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm fw-bold highlight-ten-mau" placeholder="Tên màu">
+                                                <a href="/admin/delete-mau/{{ mau.id }}" class="text-danger small fw-bold text-decoration-none ms-auto p-1" onclick="return confirm('Xóa màu này?')" title="Xóa màu này">
+                                                    <i class="fa-solid fa-trash fs-6"></i>
+                                                </a>
+                                            </div>
+                                            
+                                            <div class="row g-1 mb-2">
+                                                <div class="col-6">
+                                                    <div class="p-1 rounded bg-light border">
+                                                        <span class="price-label-tag text-primary">CL Cà Mau:</span>
+                                                        <input type="number" name="edit_chenh_lech_cm_{{ mau.id }}" value="{{ mau.chenh_lech_cm|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <div class="p-1 rounded bg-light border">
+                                                        <span class="price-label-tag text-success">CL Bạc Liêu:</span>
+                                                        <input type="number" name="edit_chenh_lech_bl_{{ mau.id }}" value="{{ mau.chenh_lech_bl|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <span class="small text-muted d-block mb-1">Ảnh màu: <strong class="text-dark">{{ mau.hinh_anh if mau.hinh_anh else 'Chưa có' }}</strong></span>
+                                                <input type="file" name="edit_hinh_anh_mau_{{ mau.id }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm" accept="image/*">
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 {% endfor %}
                             </div>
                             {% endif %}
-
-                            <button class="btn btn-outline-dark btn-sm w-100" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMau_{{ xe.id }}" aria-expanded="false">
-                                <i class="fa-solid fa-palette me-1"></i> Cập nhật Màu & Chênh lệch
-                            </button>
-
-                            <div class="collapse mt-2" id="collapseMau_{{ xe.id }}">
-                                {% if xe.mau_xe %}
-                                    {% for mau in xe.mau_xe %}
-                                    <div class="color-row-item mb-2">
-                                        <div class="d-flex gap-1 align-items-center mb-1">
-                                            <input type="text" name="edit_ten_mau_{{ mau.id }}" value="{{ mau.ten_mau }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm fw-bold highlight-ten-mau" placeholder="Tên màu">
-                                            <a href="/admin/delete-mau/{{ mau.id }}" class="text-danger small fw-bold text-decoration-none ms-auto p-1" onclick="return confirm('Xóa màu này?')" title="Xóa màu này">
-                                                <i class="fa-solid fa-trash fs-6"></i>
-                                            </a>
-                                        </div>
-                                        
-                                        <div class="row g-1 mb-2">
-                                            <div class="col-6">
-                                                <div class="p-1 rounded bg-light border">
-                                                    <span class="price-label-tag text-primary">CL Cà Mau:</span>
-                                                    <input type="number" name="edit_chenh_lech_cm_{{ mau.id }}" value="{{ mau.chenh_lech_cm|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
-                                                </div>
-                                            </div>
-                                            <div class="col-6">
-                                                <div class="p-1 rounded bg-light border">
-                                                    <span class="price-label-tag text-success">CL Bạc Liêu:</span>
-                                                    <input type="number" name="edit_chenh_lech_bl_{{ mau.id }}" value="{{ mau.chenh_lech_bl|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <input type="file" name="edit_hinh_anh_mau_{{ mau.id }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm" accept="image/*">
-                                    </div>
-                                    {% endfor %}
-                                {% else %}
-                                    <div class="text-muted small fst-italic mb-2">Chưa có thiết lập màu sắc.</div>
-                                {% endif %}
-
-                                <div id="addColorContainer_{{ xe.id }}"></div>
-                                <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 mt-2 w-100" style="font-size: 11px;" onclick="addColorRow('addColorContainer_{{ xe.id }}', 'form_edit_{{ xe.id }}')">
-                                    <i class="fa-solid fa-plus me-1"></i> Thêm màu mới
-                                </button>
-                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -386,42 +395,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    function addColorRow(containerId, formId) {
-        const container = document.getElementById(containerId);
-        const div = document.createElement('div');
-        div.className = 'color-row-item mt-2';
-
-        const nameMau = 'new_ten_mau[]';
-        const nameCm = 'new_chenh_lech_cm[]';
-        const nameBl = 'new_chenh_lech_bl[]';
-        const nameAnh = 'new_hinh_anh_mau[]';
-
-        div.innerHTML = `
-            <div class="d-flex gap-1 align-items-center mb-1">
-                <input type="text" name="${nameMau}" form="${formId}" class="form-control form-control-sm fw-bold highlight-ten-mau" placeholder="Tên màu mới...">
-                <button type="button" class="btn btn-sm text-danger p-0 ms-auto" onclick="this.parentElement.parentElement.remove()"><i class="fa-solid fa-circle-xmark fs-5"></i></button>
-            </div>
-            <div class="row g-1 mb-1">
-                <div class="col-6">
-                    <div class="p-1 rounded bg-light border">
-                        <span class="price-label-tag text-primary">CL Cà Mau:</span>
-                        <input type="number" name="${nameCm}" form="${formId}" class="form-control form-control-sm" value="0">
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="p-1 rounded bg-light border">
-                        <span class="price-label-tag text-success">CL Bạc Liêu:</span>
-                        <input type="number" name="${nameBl}" form="${formId}" class="form-control form-control-sm" value="0">
-                    </div>
-                </div>
-            </div>
-            <input type="file" name="${nameAnh}" form="${formId}" class="form-control form-control-sm" accept="image/*">
-        `;
-        container.appendChild(div);
-    }
-</script>
 {% endblock %}

@@ -105,6 +105,9 @@
             </thead>
             <tbody>
                 {% if danh_sach_xe %}
+                    {% set current_vung = user_vung | default(session.get('vung', 'Cà Mau'), true) %}
+                    {% set is_bac_lieu = 'bạc liêu' in current_vung|lower or 'bac lieu' in current_vung|lower %}
+                    
                     {% for xe in danh_sach_xe %}
                     <!-- Sử dụng nháy đơn ' ' cho data-colors để tránh xung đột với nháy kép " " của chuỗi JSON -->
                     <tr class="car-row-item" 
@@ -112,11 +115,11 @@
                         data-img="{{ url_for('static', filename='uploads/' ~ xe.hinh_anh) if xe.hinh_anh else '' }}"
                         data-colors='{{ xe.mau_xe | tojson | safe }}'
                         data-base-price="{{ xe.gia_cao | default(xe.gia_hien_thi, true) | default(0, true) }}"
-                        data-gia-phuong="{{ xe.gia_giay_to_phuong | default(0, true) }}"
-                        data-gia-xa="{{ xe.gia_giay_to_xa | default(0, true) }}"
+                        data-gia-phuong="{{ (xe.gia_giay_to_phuong_bac_lieu if is_bac_lieu else xe.gia_giay_to_phuong_ca_mau) | default(xe.gia_giay_to_phuong, true) | default(0, true) }}"
+                        data-gia-xa="{{ (xe.gia_giay_to_xa_bac_lieu if is_bac_lieu else xe.gia_giay_to_xa_ca_mau) | default(xe.gia_giay_to_xa, true) | default(0, true) }}"
                         data-gia-thap="{{ xe.gia_thap | default(0, true) }}"
                         data-gia-trung="{{ xe.gia_trung | default(0, true) }}"
-                        data-vung="{{ user_vung | default(session.get('vung', 'Cà Mau'), true) }}"
+                        data-vung="{{ current_vung }}"
                         title="Click để xem hình ảnh và dự toán chi phí lăn bánh">
                         
                         <td><strong>{{ xe.loai_xe }}</strong></td>

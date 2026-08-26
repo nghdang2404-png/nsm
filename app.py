@@ -683,9 +683,14 @@ def sync_inventory_api():
 def format_xe_data_home(xe, khu_vuc_user):
     is_bl = 'bạc liêu' in (khu_vuc_user or '').lower()
     
+    # Lấy giá bán theo khu vực
     gia_thap = xe.gia_bl_thap if is_bl else xe.gia_cm_thap
     gia_trung = xe.gia_bl_trung if is_bl else xe.gia_cm_trung
     gia_cao = xe.gia_bl_cao if is_bl else xe.gia_cm_cao
+    
+    # BỔ SUNG: Lấy phí giấy tờ (Phường / Xã) theo khu vực tương ứng
+    gia_giay_to_phuong = xe.gia_gt_phuong_bl if is_bl else xe.gia_gt_phuong_cm
+    gia_giay_to_xa = xe.gia_gt_xa_bl if is_bl else xe.gia_gt_xa_cm
     
     return {
         'id': xe.id,
@@ -695,6 +700,15 @@ def format_xe_data_home(xe, khu_vuc_user):
         'gia_thap': gia_thap,
         'gia_trung': gia_trung,
         'gia_cao': gia_cao,
+        
+        # Truyền thêm các trường phí giấy tờ để HTML hiển thị chính xác
+        'gia_giay_to_phuong': gia_giay_to_phuong,
+        'gia_giay_to_xa': gia_giay_to_xa,
+        'gia_giay_to_phuong_ca_mau': xe.gia_gt_phuong_cm,
+        'gia_giay_to_xa_ca_mau': xe.gia_gt_xa_cm,
+        'gia_giay_to_phuong_bac_lieu': xe.gia_gt_phuong_bl,
+        'gia_giay_to_xa_bac_lieu': xe.gia_gt_xa_bl,
+        
         'hinh_anh': xe.hinh_anh,
         'mau_xe': [mau.to_dict(khu_vuc_user) for mau in xe.mau_xe],
         'ns1': xe.ns1,
