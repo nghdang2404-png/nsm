@@ -356,17 +356,17 @@ def add_xe():
             ten_xe=ten_xe_nhap,
             phien_ban=request.form.get("phien_ban"), 
             
-            gia_cm_thap=float(request.form.get("gia_cm_thap") or 0),
-            gia_cm_trung=float(request.form.get("gia_cm_trung") or 0),
-            gia_cm_cao=float(request.form.get("gia_cm_cao") or 0),
-            gia_bl_thap=float(request.form.get("gia_bl_thap") or 0),
-            gia_bl_trung=float(request.form.get("gia_bl_trung") or 0),
-            gia_bl_cao=float(request.form.get("gia_bl_cao") or 0),
+            gia_cm_thap=safe_float(request.form.get("gia_cm_thap")),
+            gia_cm_trung=safe_float(request.form.get("gia_cm_trung")),
+            gia_cm_cao=safe_float(request.form.get("gia_cm_cao")),
+            gia_bl_thap=safe_float(request.form.get("gia_bl_thap")),
+            gia_bl_trung=safe_float(request.form.get("gia_bl_trung")),
+            gia_bl_cao=safe_float(request.form.get("gia_bl_cao")),
             
-            gia_gt_phuong_cm=float(request.form.get("gia_gt_phuong_cm") or 0),
-            gia_gt_xa_cm=float(request.form.get("gia_gt_xa_cm") or 0),
-            gia_gt_phuong_bl=float(request.form.get("gia_gt_phuong_bl") or 0),
-            gia_gt_xa_bl=float(request.form.get("gia_gt_xa_bl") or 0),
+            gia_gt_phuong_cm=safe_float(request.form.get("gia_gt_phuong_cm")),
+            gia_gt_xa_cm=safe_float(request.form.get("gia_gt_xa_cm")),
+            gia_gt_phuong_bl=safe_float(request.form.get("gia_gt_phuong_bl")),
+            gia_gt_xa_bl=safe_float(request.form.get("gia_gt_xa_bl")),
 
             ns1=int(request.form.get("ns1") or 0), ns2=int(request.form.get("ns2") or 0),
             ns3=int(request.form.get("ns3") or 0), ns4=int(request.form.get("ns4") or 0),
@@ -383,8 +383,8 @@ def add_xe():
         
         for i in range(len(ten_maus)):
             if ten_maus[i].strip():
-                c_cm = float(chenh_lechs_cm[i]) if (i < len(chenh_lechs_cm) and chenh_lechs_cm[i]) else 0
-                c_bl = float(chenh_lechs_bl[i]) if (i < len(chenh_lechs_bl) and chenh_lechs_bl[i]) else 0
+                c_cm = safe_float(chenh_lechs_cm[i]) if (i < len(chenh_lechs_cm) and chenh_lechs_cm[i]) else 0
+                c_bl = safe_float(chenh_lechs_bl[i]) if (i < len(chenh_lechs_bl) and chenh_lechs_bl[i]) else 0
                 db.session.add(XeMau(
                     xe_id=new_xe.id, 
                     ten_mau=ten_maus[i].strip(), 
@@ -419,17 +419,17 @@ def edit_xe(id):
         xe.ten_xe = ten_xe_moi
         xe.phien_ban = request.form.get("phien_ban")
         
-        xe.gia_cm_thap = float(request.form.get("gia_cm_thap") or 0)
-        xe.gia_cm_trung = float(request.form.get("gia_cm_trung") or 0)
-        xe.gia_cm_cao = float(request.form.get("gia_cm_cao") or 0)
-        xe.gia_bl_thap = float(request.form.get("gia_bl_thap") or 0)
-        xe.gia_bl_trung = float(request.form.get("gia_bl_trung") or 0)
-        xe.gia_bl_cao = float(request.form.get("gia_bl_cao") or 0)
+        xe.gia_cm_thap = safe_float(request.form.get("gia_cm_thap"))
+        xe.gia_cm_trung = safe_float(request.form.get("gia_cm_trung"))
+        xe.gia_cm_cao = safe_float(request.form.get("gia_cm_cao"))
+        xe.gia_bl_thap = safe_float(request.form.get("gia_bl_thap"))
+        xe.gia_bl_trung = safe_float(request.form.get("gia_bl_trung"))
+        xe.gia_bl_cao = safe_float(request.form.get("gia_bl_cao"))
 
-        xe.gia_gt_phuong_cm = float(request.form.get("gia_gt_phuong_cm") or 0)
-        xe.gia_gt_xa_cm = float(request.form.get("gia_gt_xa_cm") or 0)
-        xe.gia_gt_phuong_bl = float(request.form.get("gia_gt_phuong_bl") or 0)
-        xe.gia_gt_xa_bl = float(request.form.get("gia_gt_xa_bl") or 0)
+        xe.gia_gt_phuong_cm = safe_float(request.form.get("gia_gt_phuong_cm"))
+        xe.gia_gt_xa_cm = safe_float(request.form.get("gia_gt_xa_cm"))
+        xe.gia_gt_phuong_bl = safe_float(request.form.get("gia_gt_phuong_bl"))
+        xe.gia_gt_xa_bl = safe_float(request.form.get("gia_gt_xa_bl"))
 
         xe.ns1 = int(request.form.get("ns1") or 0); xe.ns2 = int(request.form.get("ns2") or 0)
         xe.ns3 = int(request.form.get("ns3") or 0); xe.ns4 = int(request.form.get("ns4") or 0)
@@ -440,8 +440,8 @@ def edit_xe(id):
         
         for mau in xe.mau_xe:
             mau.ten_mau = request.form.get(f"edit_ten_mau_{mau.id}", mau.ten_mau)
-            mau.chenh_lech_cm = float(request.form.get(f"edit_chenh_lech_cm_{mau.id}") or 0)
-            mau.chenh_lech_bl = float(request.form.get(f"edit_chenh_lech_bl_{mau.id}") or 0)
+            mau.chenh_lech_cm = safe_float(request.form.get(f"edit_chenh_lech_cm_{mau.id}"))
+            mau.chenh_lech_bl = safe_float(request.form.get(f"edit_chenh_lech_bl_{mau.id}"))
             if request.files.get(f"edit_hinh_anh_mau_{mau.id}") and request.files.get(f"edit_hinh_anh_mau_{mau.id}").filename != '': 
                 mau.hinh_anh_mau = save_image(request.files.get(f"edit_hinh_anh_mau_{mau.id}"))
             
@@ -452,8 +452,8 @@ def edit_xe(id):
         
         for i in range(len(new_tens)):
             if new_tens[i].strip():
-                c_cm = float(new_cms[i]) if (i < len(new_cms) and new_cms[i]) else 0
-                c_bl = float(new_bls[i]) if (i < len(new_bls) and new_bls[i]) else 0
+                c_cm = safe_float(new_cms[i]) if (i < len(new_cms) and new_cms[i]) else 0
+                c_bl = safe_float(new_bls[i]) if (i < len(new_bls) and new_bls[i]) else 0
                 db.session.add(XeMau(
                     xe_id=xe.id, 
                     ten_mau=new_tens[i].strip(), 
@@ -722,7 +722,6 @@ def format_xe_data_home(xe, khu_vuc_user):
 if __name__ == "__main__":
     with app.app_context(): 
         db.create_all()
-        # Đã sửa lỗi: Tách truy vấn thành biến độc lập và an toàn tránh NameError
         danh_sach_tat_ca_xe = Xe.query.all()
         for xe in danh_sach_tat_ca_xe:
             xe.loai_xe = tu_dong_phan_loai(xe.ten_xe)

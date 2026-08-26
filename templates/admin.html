@@ -1,6 +1,6 @@
-{% extends "base.html" %}[cite: 7]
+{% extends "base.html" %}
 
-{% block title %}Quản trị - Hệ thống Nam Sương{% endblock %}[cite: 7]
+{% block title %}Quản trị - Hệ thống Nam Sương{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -251,25 +251,25 @@
                                 <div class="row g-1 mb-1">
                                     <div class="col-4">
                                         <span class="price-label-tag text-primary">Giá Cao</span>
-                                        <input type="number" name="gia_cm_cao" value="{{ xe.gia_cm_cao if xe.gia_cm_cao and xe.gia_cm_cao != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary">
+                                        <input type="text" inputmode="numeric" name="gia_cm_cao" value="{{ xe.gia_cm_cao if xe.gia_cm_cao and xe.gia_cm_cao != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary currency-input">
                                     </div>
                                     <div class="col-4">
                                         <span class="price-label-tag text-primary">Giá Trung</span>
-                                        <input type="number" name="gia_cm_trung" value="{{ xe.gia_cm_trung if xe.gia_cm_trung and xe.gia_cm_trung != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary">
+                                        <input type="text" inputmode="numeric" name="gia_cm_trung" value="{{ xe.gia_cm_trung if xe.gia_cm_trung and xe.gia_cm_trung != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary currency-input">
                                     </div>
                                     <div class="col-4">
                                         <span class="price-label-tag text-primary">Giá Thấp</span>
-                                        <input type="number" name="gia_cm_thap" value="{{ xe.gia_cm_thap if xe.gia_cm_thap and xe.gia_cm_thap != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary">
+                                        <input type="text" inputmode="numeric" name="gia_cm_thap" value="{{ xe.gia_cm_thap if xe.gia_cm_thap and xe.gia_cm_thap != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary currency-input">
                                     </div>
                                 </div>
                                 <div class="row g-1">
                                     <div class="col-6">
                                         <span class="price-label-tag text-primary">GT Phường CM</span>
-                                        <input type="number" name="gia_gt_phuong_cm" value="{{ xe.gia_gt_phuong_cm if xe.gia_gt_phuong_cm and xe.gia_gt_phuong_cm != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
+                                        <input type="text" inputmode="numeric" name="gia_gt_phuong_cm" value="{{ xe.gia_gt_phuong_cm if xe.gia_gt_phuong_cm and xe.gia_gt_phuong_cm != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm currency-input">
                                     </div>
                                     <div class="col-6">
                                         <span class="price-label-tag text-primary">GT Xã CM</span>
-                                        <input type="number" name="gia_gt_xa_cm" value="{{ xe.gia_gt_xa_cm if xe.gia_gt_xa_cm and xe.gia_gt_xa_cm != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
+                                        <input type="text" inputmode="numeric" name="gia_gt_xa_cm" value="{{ xe.gia_gt_xa_cm if xe.gia_gt_xa_cm and xe.gia_gt_xa_cm != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm currency-input">
                                     </div>
                                 </div>
                             </div>
@@ -283,25 +283,25 @@
                                 <div class="row g-1 mb-1">
                                     <div class="col-4">
                                         <span class="price-label-tag text-success">Giá Cao</span>
-                                        <input type="number" name="gia_bl_cao" value="{{ xe.gia_bl_cao if xe.gia_bl_cao and xe.gia_bl_cao != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success">
+                                        <input type="text" inputmode="numeric" name="gia_bl_cao" value="{{ xe.gia_bl_cao if xe.gia_bl_cao and xe.gia_bl_cao != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success currency-input">
                                     </div>
                                     <div class="col-4">
                                         <span class="price-label-tag text-success">Giá Trung</span>
-                                        <input type="number" name="gia_bl_trung" value="{{ xe.gia_bl_trung if xe.gia_bl_trung and xe.gia_bl_trung != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success">
+                                        <input type="text" inputmode="numeric" name="gia_bl_trung" value="{{ xe.gia_bl_trung if xe.gia_bl_trung and xe.gia_bl_trung != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success currency-input">
                                     </div>
                                     <div class="col-4">
                                         <span class="price-label-tag text-success">Giá Thấp</span>
-                                        <input type="number" name="gia_bl_thap" value="{{ xe.gia_bl_thap if xe.gia_bl_thap and xe.gia_bl_thap != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success">
+                                        <input type="text" inputmode="numeric" name="gia_bl_thap" value="{{ xe.gia_bl_thap if xe.gia_bl_thap and xe.gia_bl_thap != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success currency-input">
                                     </div>
                                 </div>
                                 <div class="row g-1">
                                     <div class="col-6">
                                         <span class="price-label-tag text-success">GT Phường BL</span>
-                                        <input type="number" name="gia_gt_phuong_bl" value="{{ xe.gia_gt_phuong_bl if xe.gia_gt_phuong_bl and xe.gia_gt_phuong_bl != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
+                                        <input type="text" inputmode="numeric" name="gia_gt_phuong_bl" value="{{ xe.gia_gt_phuong_bl if xe.gia_gt_phuong_bl and xe.gia_gt_phuong_bl != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm currency-input">
                                     </div>
                                     <div class="col-6">
                                         <span class="price-label-tag text-success">GT Xã BL</span>
-                                        <input type="number" name="gia_gt_xa_bl" value="{{ xe.gia_gt_xa_bl if xe.gia_gt_xa_bl and xe.gia_gt_xa_bl != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
+                                        <input type="text" inputmode="numeric" name="gia_gt_xa_bl" value="{{ xe.gia_gt_xa_bl if xe.gia_gt_xa_bl and xe.gia_gt_xa_bl != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm currency-input">
                                     </div>
                                 </div>
                             </div>
@@ -335,7 +335,9 @@
                                     <div class="d-flex justify-content-between align-items-center bg-light p-1 rounded border" data-bs-toggle="collapse" data-bs-target="#collapseColor_{{ mau.id }}" aria-expanded="false" style="cursor: pointer;">
                                         <div>
                                             <span class="fw-bold text-danger" style="font-size: 11px;"><i class="fa-solid fa-palette me-1"></i>{{ mau.ten_mau }}</span>
-                                            <span class="text-muted ms-1" style="font-size: 9px;">(CL: CM={{ mau.chenh_lech_cm|default(0) }}, BL={{ mau.chenh_lech_bl|default(0) }})</span>
+                                            <span class="text-muted ms-1" style="font-size: 9px;">
+    (Chênh lệch: Cà Mau = {{ "{:,.0f}".format(mau.chenh_lech_cm|float|default(0)).replace(',', '.') }}, Bạc Liêu = {{ "{:,.0f}".format(mau.chenh_lech_bl|float|default(0)).replace(',', '.') }})
+</span>
                                         </div>
                                         <span class="badge bg-white text-dark border px-2 py-1" style="font-size: 9px;">
                                             <i class="fa-solid fa-pen-to-square text-primary me-1"></i>Sửa 
@@ -367,13 +369,13 @@
                                                 <div class="col-6">
                                                     <div class="p-1 rounded bg-light border">
                                                         <span class="price-label-tag text-primary">CL Cà Mau:</span>
-                                                        <input type="number" name="edit_chenh_lech_cm_{{ mau.id }}" value="{{ mau.chenh_lech_cm if mau.chenh_lech_cm and mau.chenh_lech_cm != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
+                                                        <input type="text" inputmode="numeric" name="edit_chenh_lech_cm_{{ mau.id }}" value="{{ mau.chenh_lech_cm if mau.chenh_lech_cm and mau.chenh_lech_cm != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm currency-input">
                                                     </div>
                                                 </div>
                                                 <div class="col-6">
                                                     <div class="p-1 rounded bg-light border">
                                                         <span class="price-label-tag text-success">CL Bạc Liêu:</span>
-                                                        <input type="number" name="edit_chenh_lech_bl_{{ mau.id }}" value="{{ mau.chenh_lech_bl if mau.chenh_lech_bl and mau.chenh_lech_bl != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
+                                                        <input type="text" inputmode="numeric" name="edit_chenh_lech_bl_{{ mau.id }}" value="{{ mau.chenh_lech_bl if mau.chenh_lech_bl and mau.chenh_lech_bl != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm currency-input">
                                                     </div>
                                                 </div>
                                             </div>
@@ -395,4 +397,61 @@
         </div>
     </div>
 </div>
+
+<!-- SCRIPT TỰ ĐỘNG ĐỊNH DẠNG SỐ TIỀN CÓ DẤU CHẤM PHÂN CÁCH -->
+<!-- SCRIPT TỰ ĐỘNG ĐỊNH DẠNG SỐ TIỀN & SỬA LỖI DATABASE -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        
+        // 1. XỬ LÝ DỮ LIỆU KHI VỪA TẢI TRANG (Sửa lỗi nhân 10 do đuôi .0)
+        document.querySelectorAll(".currency-input").forEach(function (input) {
+            if (input.value) {
+                // Kiểm tra xem giá trị từ DB có phải là số hợp lệ (ví dụ: 1000000.0)
+                let num = Number(input.value);
+                if (!isNaN(num) && num !== 0) {
+                    // Nếu là số chuẩn từ DB, hàm Number() sẽ tự bỏ đuôi .0
+                    input.value = new Intl.NumberFormat("vi-VN").format(num);
+                } else if (isNaN(num)) {
+                    // Nếu chuỗi bị dính dấu chấm từ trước (VD: 36.500.000), lọc lấy số
+                    let rawVal = input.value.replace(/\D/g, "");
+                    if (rawVal) {
+                        input.value = new Intl.NumberFormat("vi-VN").format(rawVal);
+                    }
+                }
+            }
+        });
+
+        // 2. XỬ LÝ KHI NGƯỜI DÙNG GÕ PHÍM (Định dạng có dấu chấm)
+        document.addEventListener("input", function (e) {
+            if (e.target.classList.contains("currency-input")) {
+                let input = e.target;
+                let startPos = input.selectionStart;
+                let oldLength = input.value.length;
+
+                let rawVal = input.value.replace(/\D/g, "");
+                input.value = rawVal ? new Intl.NumberFormat("vi-VN").format(rawVal) : "";
+
+                let newLength = input.value.length;
+                startPos = startPos + (newLength - oldLength);
+                input.setSelectionRange(startPos, startPos);
+            }
+        });
+
+        // 3. XỬ LÝ KHI BẤM LƯU (Sửa lỗi không tìm thấy input ngoài thẻ form)
+        document.addEventListener("submit", function (e) {
+            let form = e.target;
+            let formId = form.id;
+            
+            // Tìm toàn bộ các ô nhập tiền trên trang
+            document.querySelectorAll(".currency-input").forEach(function (input) {
+                // Kiểm tra nếu ô input thuộc về form đang được bấm Lưu (qua thuộc tính form=...)
+                if (input.form === form || input.getAttribute("form") === formId) {
+                    // Xóa sạch dấu chấm trước khi gửi lên server
+                    input.value = input.value.replace(/\./g, "");
+                }
+            });
+        });
+        
+    });
+</script>
 {% endblock %}
