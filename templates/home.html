@@ -28,7 +28,6 @@
             flex-shrink: 0;
             box-shadow: 0 1px 2px rgba(0,0,0,0.15);
         }
-        /* Hiệu ứng con trỏ chuột khi hover vào dòng xe */
         .car-row-item {
             cursor: pointer;
         }
@@ -84,34 +83,33 @@
 
 <div class="container" style="max-width: 1200px; padding: 0 15px;">
     
-    <!-- KHU VỰC BỘ LỌC TỰ ĐỘNG SỔ XUỐNG 2 TẦNG -->
+    <!-- KHU VỰC BỘ LỌC TỰ ĐỘNG (ĐÃ ẨN NÚT TÌM VÀ CHẶN SUBMIT FORM) -->
     <div class="filter-container">
-        <form method="GET" action="{{ url_for('home') }}" class="filter-form" id="filterForm">
+        <form class="filter-form" id="filterForm" onsubmit="event.preventDefault(); return false;">
             <div class="filter-grid">
                 <!-- 1. Ô TÌM KIẾM TỰ DO -->
-                <input type="text" id="searchInput" name="search" value="{{ search_query }}" class="filter-input" placeholder="🔍 Nhập từ khóa tìm kiếm..." autocomplete="off">
+                <input type="text" id="searchInput" class="filter-input" placeholder="🔍 Nhập từ khóa tìm kiếm..." autocomplete="off">
                 
                 <!-- 2. DROPDOWN TẦNG 1: CHỌN LOẠI XE -->
-                <select id="loaiSelect" name="loai" class="filter-select">
+                <select id="loaiSelect" class="filter-select">
                     <option value="">-- Tất cả loại xe --</option>
                     {% if danh_sach_loai %}
                         {% for l in danh_sach_loai %}
-                            <option value="{{ l }}" {% if loai_filter == l %}selected{% endif %}>{{ l }}</option>
+                            <option value="{{ l }}">{{ l }}</option>
                         {% endfor %}
                     {% endif %}
                 </select>
 
-                <!-- 3. DROPDOWN TẦNG 2: CHỌN DÒNG XE (TỰ ĐỘNG LỌC THEO LOẠI XE) -->
+                <!-- 3. DROPDOWN TẦNG 2: CHỌN DÒNG XE -->
                 <select id="dongXeSelect" class="filter-select">
                     <option value="">-- Tất cả dòng xe --</option>
                 </select>
                 
-                <!-- 4. NÚT ĐẶT LẠI / TÌM KIẾM -->
-                <div style="display: flex; gap: 5px;">
+                <!-- 4. NÚT ĐẶT LẠI -->
+                <div>
                     <button type="button" class="filter-btn" style="background-color: #64748b;" onclick="resetFilters()" title="Đặt lại bộ lọc">
-                        <i class="fas fa-redo"></i>
+                        <i class="fas fa-redo"></i> Đặt lại
                     </button>
-                    <button type="submit" class="filter-btn"><i class="fas fa-search"></i> Tìm</button>
                 </div>
             </div>
         </form>
@@ -153,7 +151,6 @@
                         <td><strong class="car-type-text">{{ xe.loai_xe }}</strong></td>
                         <td class="car-name-text">{{ xe.ten_xe }}</td>
                         
-                        <!-- HIỂN THỊ CHẤM MÀU KÈM TÊN MÀU BÊN NGOÀI -->
                         <td>
                             {% if xe.mau_xe and xe.mau_xe|length > 0 %}
                                 <div style="display: flex; flex-direction: column; gap: 5px;">
@@ -192,14 +189,11 @@
         <span class="car-modal-close" onclick="closeModal()">&times;</span>
         <h3 id="modalCarTitle" style="margin-bottom: 5px; color: #1a1a1a;"></h3>
         
-        <!-- Nút chọn màu -->
         <div id="modalColorButtons" style="margin: 10px 0; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;"></div>
 
-        <!-- Ảnh xe -->
         <img id="modalCarImg" src="" alt="Hình ảnh xe" class="car-modal-img">
         <p id="modalNoImgText" style="color: #888; margin-top: 15px; display: none;">Chưa có hình ảnh cập nhật cho dòng xe này.</p>
         
-        <!-- BẢNG TÍNH GIÁ VÀ GIẤY TỜ THEO KHU VỰC -->
         <div class="price-breakdown-box">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eef2f5; padding-bottom: 8px;">
                 <span style="font-weight: bold; color: #1a1a1a;">
@@ -232,7 +226,6 @@
                 <strong id="modalTongXa" style="color: #2e7d32;">0 VNĐ</strong>
             </div>
 
-            <!-- Khối mở rộng giá thấp/trung -->
             <div class="expand-price-section">
                 <div class="expand-toggle" onclick="toggleExtraPrices(this)">
                     <span class="toggle-text">Xem thêm</span>
@@ -251,7 +244,6 @@
                 </div>
             </div>
 
-            <!-- KHỐI TỒN KHO 6 CHI NHÁNH THEO MÀU -->
             <div class="inventory-section" style="margin-top: 12px; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
                 <div style="font-weight: bold; color: #1a1a1a; margin-bottom: 8px; font-size: 13px; text-align: left;">
                     <i class="fas fa-warehouse" style="color: #f57c00;"></i> Tồn kho chi tiết theo màu:
@@ -291,7 +283,7 @@
     </div>
 </footer>
 
-<!-- SCRIPT XỬ LÝ BỘ LỌC TỰ ĐỘNG SỔ XUỐNG 2 TẦNG -->
+<!-- SCRIPT LỌC THỜI GIAN THỰC HOÀN CHỈNH -->
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const loaiSelect = document.getElementById('loaiSelect');
@@ -300,7 +292,13 @@
         const rows = document.querySelectorAll('.car-row-item');
         const noDataRow = document.getElementById('noDataRow');
 
-        // 1. DỮ LIỆU BẢN ĐỒ LOẠI XE -> DÒNG XE
+        // Hàm rút gọn tên dòng xe (bỏ phần trong ngoặc)
+        function getMainModelName(fullName) {
+            if (!fullName) return '';
+            return fullName.split('(')[0].split(':')[0].trim();
+        }
+
+        // 1. Lưu danh sách dữ liệu dòng xe ban đầu
         let carData = [];
         rows.forEach(row => {
             const loai = (row.getAttribute('data-loai') || '').trim();
@@ -310,35 +308,39 @@
             }
         });
 
-        // 2. HÀM CẬP NHẬT DANH SÁCH DÒNG XE (SỔ XUỐNG 2)
-        function updateDongXeOptions() {
+        // 2. Hàm cập nhật lại danh sách ô Sổ xuống Dòng xe
+        function updateDongXeOptions(resetValue = true) {
             const selectedLoai = loaiSelect.value.trim().toLowerCase();
-            const currentSelectedModel = dongXeSelect.value;
-            
-            // Xóa sạch option cũ
+
+            if (resetValue) {
+                dongXeSelect.value = '';
+            }
+
             dongXeSelect.innerHTML = '<option value="">-- Tất cả dòng xe --</option>';
 
-            // Lấy danh sách tên xe duy nhất tương ứng với Loại xe đang chọn
             let filteredModels = new Set();
             carData.forEach(item => {
-                if (!selectedLoai || item.loai.toLowerCase() === selectedLoai) {
-                    filteredModels.add(item.name);
+                if (!selectedLoai || item.loai.trim().toLowerCase() === selectedLoai) {
+                    const cleanName = getMainModelName(item.name);
+                    if (cleanName) {
+                        filteredModels.add(cleanName);
+                    }
                 }
             });
 
-            // Sắp xếp tên xe A-Z và đưa vào Dropdown 2
             Array.from(filteredModels).sort().forEach(modelName => {
                 const opt = document.createElement('option');
                 opt.value = modelName;
                 opt.textContent = modelName;
-                if (modelName === currentSelectedModel) {
-                    opt.selected = true;
-                }
                 dongXeSelect.appendChild(opt);
             });
+
+            if (resetValue) {
+                dongXeSelect.value = '';
+            }
         }
 
-        // 3. HÀM LỌC BẢNG GIÁ THEO CẢ 3 ĐIỀU KIỆN (TÌM KIẾM, LOẠI XE, DÒNG XE)
+        // 3. Hàm lọc danh sách hiển thị trong bảng
         function filterTable() {
             const selectedLoai = loaiSelect.value.trim().toLowerCase();
             const selectedDongXe = dongXeSelect.value.trim().toLowerCase();
@@ -347,13 +349,14 @@
             let visibleCount = 0;
 
             rows.forEach(row => {
-                const rowLoai = (row.getAttribute('data-loai') || '').toLowerCase();
-                const rowName = (row.getAttribute('data-name') || '').toLowerCase();
+                const rowLoai = (row.getAttribute('data-loai') || '').trim().toLowerCase();
+                const rowName = (row.getAttribute('data-name') || '').trim().toLowerCase();
+                const rowMainName = getMainModelName(rowName).toLowerCase();
 
-                // Kiểm tra 3 điều kiện
+                // Kiểm tra điều kiện lọc
                 const matchLoai = !selectedLoai || rowLoai === selectedLoai;
-                const matchDongXe = !selectedDongXe || rowName === selectedDongXe;
-                const matchKeyword = !keyword || rowName.includes(keyword) || rowLoai.includes(keyword);
+                const matchDongXe = !selectedDongXe || rowMainName === selectedDongXe || rowName.includes(selectedDongXe);
+                const matchKeyword = !keyword || rowName.includes(keyword) || rowLoai.includes(keyword) || rowMainName.includes(keyword);
 
                 if (matchLoai && matchDongXe && matchKeyword) {
                     row.style.display = '';
@@ -363,35 +366,34 @@
                 }
             });
 
-            // Hiển thị thông báo nếu không tìm thấy xe nào
             if (noDataRow) {
                 noDataRow.style.display = visibleCount === 0 ? '' : 'none';
             }
         }
 
-        // 4. BẮT SỰ KIỆN KHI NGƯỜI DÙNG THAY ĐỔI LỰA CHỌN
+        // 4. Lắng nghe sự kiện thay đổi tự động
         loaiSelect.addEventListener('change', function() {
-            updateDongXeOptions(); // Cập nhật lại danh sách Dòng xe
-            filterTable();          // Lọc bảng ngay lập tức
+            updateDongXeOptions(true); // Luôn reset ô Dòng xe về Tất cả khi đổi Loại xe
+            filterTable();
         });
 
         dongXeSelect.addEventListener('change', function() {
-            filterTable();          // Lọc bảng khi chọn Dòng xe
+            filterTable();
         });
 
         searchInput.addEventListener('input', function() {
-            filterTable();          // Lọc bảng khi gõ từ khóa
+            filterTable();
         });
 
-        // 5. KHỞI TẠO BAN ĐẦU
-        updateDongXeOptions();
+        // Khởi tạo ban đầu
+        updateDongXeOptions(false);
         filterTable();
 
-        // 6. HÀM ĐẶT LẠI BỘ LỌC
+        // 5. Hàm Đặt lại bộ lọc
         window.resetFilters = function() {
             loaiSelect.value = '';
             searchInput.value = '';
-            updateDongXeOptions();
+            updateDongXeOptions(true);
             filterTable();
         };
     });
@@ -424,7 +426,6 @@
     }
 
     document.addEventListener("DOMContentLoaded", function() {
-        // Hiển thị chấm màu
         document.querySelectorAll('.color-dot[data-color-name]').forEach(dot => {
             const colorName = dot.getAttribute('data-color-name');
             const cArr = getCssColors(colorName);
@@ -443,7 +444,6 @@
             }
         });
 
-        // Mở modal khi click dòng xe
         document.querySelectorAll('.car-row-item').forEach(row => {
             row.addEventListener('click', function() {
                 const carName = this.getAttribute('data-name');
@@ -617,124 +617,18 @@
     }
 </script>
 
-<!-- SCRIPT XỬ LÝ BỘ LỌC TỰ ĐỘNG SỔ XUỐNG 2 TẦNG (ĐÃ TỐI ƯU TÊN DÒNG XE) -->
-<!-- SCRIPT XỬ LÝ BỘ LỌC TỰ ĐỘNG SỔ XUỐNG 2 TẦNG (ĐÃ SỬA NÚT RESET) -->
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const loaiSelect = document.getElementById('loaiSelect');
-        const dongXeSelect = document.getElementById('dongXeSelect');
-        const searchInput = document.getElementById('searchInput');
-        const rows = document.querySelectorAll('.car-row-item');
-        const noDataRow = document.getElementById('noDataRow');
-
-        // HÀM RÚT GỌN TÊN DÒNG XE
-        function getMainModelName(fullName) {
-            if (!fullName) return '';
-            return fullName.split('(')[0].split(':')[0].trim();
-        }
-
-        // 1. DỮ LIỆU BẢN ĐỒ LOẠI XE -> DÒNG XE
-        let carData = [];
-        rows.forEach(row => {
-            const loai = (row.getAttribute('data-loai') || '').trim();
-            const name = (row.getAttribute('data-name') || '').trim();
-            if (loai && name) {
-                carData.push({ loai: loai, name: name });
-            }
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+                .then(registration => {
+                    console.log('PWA: Đăng ký Service Worker thành công!');
+                })
+                .catch(error => {
+                    console.log('PWA: Lỗi đăng ký Service Worker:', error);
+                });
         });
-
-        // 2. HÀM CẬP NHẬT DANH SÁCH DÒNG XE (Có thêm tham số isReset)
-        function updateDongXeOptions(isReset = false) {
-            const selectedLoai = loaiSelect.value.trim().toLowerCase();
-            // Nếu là Reset thì không lưu lại giá trị dòng xe cũ
-            const currentSelectedModel = isReset ? '' : dongXeSelect.value;
-            
-            dongXeSelect.innerHTML = '<option value="">-- Tất cả dòng xe --</option>';
-
-            let filteredModels = new Set();
-            carData.forEach(item => {
-                if (!selectedLoai || item.loai.toLowerCase() === selectedLoai) {
-                    const cleanName = getMainModelName(item.name);
-                    if (cleanName) {
-                        filteredModels.add(cleanName);
-                    }
-                }
-            });
-
-            Array.from(filteredModels).sort().forEach(modelName => {
-                const opt = document.createElement('option');
-                opt.value = modelName;
-                opt.textContent = modelName;
-                if (!isReset && modelName === currentSelectedModel) {
-                    opt.selected = true;
-                }
-                dongXeSelect.appendChild(opt);
-            });
-
-            if (isReset) {
-                dongXeSelect.value = '';
-            }
-        }
-
-        // 3. HÀM LỌC BẢNG GIÁ
-        function filterTable() {
-            const selectedLoai = loaiSelect.value.trim().toLowerCase();
-            const selectedDongXe = dongXeSelect.value.trim().toLowerCase();
-            const keyword = searchInput.value.trim().toLowerCase();
-
-            let visibleCount = 0;
-
-            rows.forEach(row => {
-                const rowLoai = (row.getAttribute('data-loai') || '').toLowerCase();
-                const rowName = (row.getAttribute('data-name') || '').toLowerCase();
-                const rowMainName = getMainModelName(rowName).toLowerCase();
-
-                const matchLoai = !selectedLoai || rowLoai === selectedLoai;
-                const matchDongXe = !selectedDongXe || rowMainName === selectedDongXe || rowName.includes(selectedDongXe);
-                const matchKeyword = !keyword || rowName.includes(keyword) || rowLoai.includes(keyword);
-
-                if (matchLoai && matchDongXe && matchKeyword) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            if (noDataRow) {
-                noDataRow.style.display = visibleCount === 0 ? '' : 'none';
-            }
-        }
-
-        // 4. BẮT SỰ KIỆN THAY ĐỔI
-        loaiSelect.addEventListener('change', function() {
-            updateDongXeOptions(false); 
-            filterTable();          
-        });
-
-        dongXeSelect.addEventListener('change', function() {
-            filterTable();          
-        });
-
-        searchInput.addEventListener('input', function() {
-            filterTable();          
-        });
-
-        // 5. KHỞI TẠO BAN ĐẦU
-        updateDongXeOptions(false);
-        filterTable();
-
-        // 6. HÀM ĐẶT LẠI BỘ LỌC (ĐÃ SỬA CẬP NHẬT CHÍNH XÁC)
-        window.resetFilters = function() {
-            loaiSelect.value = '';
-            searchInput.value = '';
-            dongXeSelect.value = '';
-            
-            // Cập nhật lại dropdown và ép về mặc định
-            updateDongXeOptions(true);
-            filterTable();
-        };
-    });
+    }
 </script>
 </body>
 </html>
