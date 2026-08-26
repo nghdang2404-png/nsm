@@ -31,7 +31,7 @@
         border-radius: 4px;
         font-weight: 700;
         display: inline-block;
-        margin-bottom: 4px;
+        margin-bottom: 6px;
     }
 
     /* ĐỊNH DẠNG MÀU SẮC KHU VỰC BẠC LIÊU (XANH LÁ) */
@@ -51,7 +51,7 @@
         border-radius: 4px;
         font-weight: 700;
         display: inline-block;
-        margin-bottom: 4px;
+        margin-bottom: 6px;
     }
 
     .table td {
@@ -85,15 +85,15 @@
     
     /* HIỂN THỊ TỒN KHO MẶC ĐỊNH (HẾT HÀNG = 0) */
     .tonkho-badge {
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 500;
-        padding: 3px 6px;
+        padding: 2px 5px;
         background: #f1f3f5;
         border: 1px solid #dee2e6;
         color: #adb5bd;
         border-radius: 4px;
         display: inline-block;
-        margin-right: 3px;
+        margin-right: 2px;
         margin-bottom: 4px;
     }
 
@@ -112,6 +112,36 @@
         border-color: #ffb3b3 !important;
         color: #c53030 !important;
     }
+
+    /* KHUNG TỒN KHO CHO XE CÓ NHIỀU MÀU (NỀN VÀNG KEM NỔI BẬT) */
+    .stock-box-multi {
+        background-color: #fffbeb !important;
+        border: 1.5px solid #f59e0b !important;
+    }
+    .stock-box-single {
+        background-color: #f8f9fa !important;
+        border: 1px solid #ced4da !important;
+    }
+
+    /* TỐI ƯU RIÊNG CHO MÀN HÌNH ĐIỆN THOẠI (MOBILE OPTIMIZATION) */
+    @media (max-width: 768px) {
+        /* Phóng to một chút ô nhập liệu trên mobile để dễ bấm không bị nhầm */
+        .form-control-sm, .form-select-sm {
+            font-size: 14px !important; /* Tránh tình trạng iOS tự động zoom khi focus */
+            padding: 6px 8px !important;
+        }
+        
+        /* Làm cho các nút bấm thao tác (Lưu/Xóa) to và dễ bấm hơn */
+        .table td .btn-sm {
+            padding: 6px 10px !important;
+            font-size: 12px !important;
+        }
+
+        /* Giãn khoảng cách các dòng màu sắc để dễ thao tác chạm */
+        .color-row-item {
+            padding: 10px !important;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -123,7 +153,7 @@
             <div class="col-md-4 col-12">
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                    <input type="text" name="search" value="{{ search_query }}" class="form-control" placeholder="Tìm theo tên xe hoặc phiên bản...">
+                    <input type="text" name="search" value="{{ search_query }}" class="form-control" placeholder="Tìm theo tên xe...">
                 </div>
             </div>
             <div class="col-md-3 col-12">
@@ -166,10 +196,9 @@
                     <tr>
                         <th style="min-width: 90px;">Loại</th>
                         <th style="min-width: 160px;">Tên xe</th> 
-                        <th style="min-width: 130px;">Phiên bản</th>
-                        <th style="min-width: 180px;">Giá xe chung (6 mốc)</th>
+                        <th style="min-width: 200px;">Giá xe chung (6 mốc)</th>
                         <th style="min-width: 160px;" class="bg-dark text-white">Giấy tờ (Cà Mau / Bạc Liêu)</th>
-                        <th style="min-width: 320px;">Hình ảnh, Chênh lệch màu & Tồn kho</th>
+                        <th style="min-width: 330px;">Hình ảnh, Tồn kho & Màu sắc</th>
                         <th style="min-width: 90px;">Hành động</th>
                     </tr>
                 </thead>
@@ -180,67 +209,103 @@
                         <tr class="table-info">
                             <td><input type="text" name="loai_xe" class="form-control form-control-sm" placeholder="Loại..." required></td>
                             <td><textarea name="ten_xe" class="form-control form-control-sm" rows="2" placeholder="Tên xe..." required></textarea></td>
-                            <td><textarea name="phien_ban" class="form-control form-control-sm" rows="2" placeholder="Phiên bản..."></textarea></td>
                             
-                            <td class="text-start">
+                            <!-- CỘT GIÁ XE CHUNG -->
+                            <td class="text-center">
                                 <div class="box-cm">
-                                    <span class="badge-cm">CÀ MAU</span>
-                                    <input type="number" name="gia_cm_thap" class="form-control form-control-sm mb-1" placeholder="CM Thấp...">
-                                    <input type="number" name="gia_cm_trung" class="form-control form-control-sm mb-1" placeholder="CM Trung...">
-                                    <input type="number" name="gia_cm_cao" class="form-control form-control-sm" placeholder="CM Cao...">
-                                </div>
-                                <div class="box-bl">
-                                    <span class="badge-bl">BẠC LIÊU</span>
-                                    <input type="number" name="gia_bl_thap" class="form-control form-control-sm mb-1" placeholder="BL Thấp...">
-                                    <input type="number" name="gia_bl_trung" class="form-control form-control-sm mb-1" placeholder="BL Trung...">
-                                    <input type="number" name="gia_bl_cao" class="form-control form-control-sm" placeholder="BL Cao...">
-                                </div>
-                            </td>
-
-                            <!-- CỘT GỘP: CÀ MAU Ở TRÊN, BẠC LIÊU Ở DƯỚI -->
-                            <td class="text-start">
-                                <div class="box-cm mb-1">
-                                    <span class="badge-cm">CÀ MAU</span>
-                                    <input type="number" name="gia_gt_phuong_cm" class="form-control form-control-sm mb-1" placeholder="Phường CM...">
-                                    <input type="number" name="gia_gt_xa_cm" class="form-control form-control-sm" placeholder="Xã CM...">
-                                </div>
-                                <div class="box-bl mb-0">
-                                    <span class="badge-bl">BẠC LIÊU</span>
-                                    <input type="number" name="gia_gt_phuong_bl" class="form-control form-control-sm mb-1" placeholder="Phường BL...">
-                                    <input type="number" name="gia_gt_xa_bl" class="form-control form-control-sm" placeholder="Xã BL...">
-                                </div>
-                            </td>
-                            
-                            <td class="text-start bg-white">
-                                <div class="mb-1">
-                                    <label class="form-label small fw-bold mb-0 text-muted">Ảnh đại diện:</label>
-                                    <input type="file" name="hinh_anh" class="form-control form-control-sm" accept="image/*">
-                                </div>
-                                <hr class="my-2">
-                                <div id="addColorContainer_new">
-                                    <label class="form-label small fw-bold mb-1 text-primary">Màu xe & Chênh lệch:</label>
-                                    <div class="color-row-item">
-                                        <input type="text" name="ten_mau[]" class="form-control form-control-sm mb-1 highlight-ten-mau" placeholder="Tên màu (VD: Đỏ đen)">
-                                        <div class="row g-1 mb-1">
-                                            <div class="col-6">
-                                                <div class="p-1 rounded" style="background-color: #edf5ff; border: 1px solid #b6d4fe;">
-                                                    <span class="price-label-tag text-primary">CL Cà Mau:</span>
-                                                    <input type="number" name="chenh_lech_cm[]" class="form-control form-control-sm" value="0">
-                                                </div>
-                                            </div>
-                                            <div class="col-6">
-                                                <div class="p-1 rounded" style="background-color: #f0fdf4; border: 1px solid #86efac;">
-                                                    <span class="price-label-tag text-success">CL Bạc Liêu:</span>
-                                                    <input type="number" name="chenh_lech_bl[]" class="form-control form-control-sm" value="0">
-                                                </div>
-                                            </div>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-primary text-white border-primary" style="font-size: 10px; font-weight: bold; width: 65px; justify-content: center;">CM CAO</span>
+                                        <input type="number" name="gia_cm_cao" class="form-control border-primary" placeholder="Nhập...">
+                                    </div>
+                                    <div class="collapse collapse-gia-moi mt-1 text-start">
+                                        <div class="input-group input-group-sm mb-1">
+                                            <span class="input-group-text bg-primary text-white border-primary" style="font-size: 10px; font-weight: bold; width: 65px; justify-content: center;">TRUNG</span>
+                                            <input type="number" name="gia_cm_trung" class="form-control border-primary" placeholder="Nhập...">
                                         </div>
-                                        <input type="file" name="hinh_anh_mau[]" class="form-control form-control-sm" accept="image/*">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-primary text-white border-primary" style="font-size: 10px; font-weight: bold; width: 65px; justify-content: center;">THẤP</span>
+                                            <input type="number" name="gia_cm_thap" class="form-control border-primary" placeholder="Nhập...">
+                                        </div>
                                     </div>
                                 </div>
-                                <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2 mt-1 w-100" style="font-size: 11px;" onclick="addColorRow('addColorContainer_new', 'form_add_xe')">
-                                    <i class="fa-solid fa-plus"></i> Thêm màu
+
+                                <div class="box-bl mb-2">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-success text-white border-success" style="font-size: 10px; font-weight: bold; width: 65px; justify-content: center;">BL CAO</span>
+                                        <input type="number" name="gia_bl_cao" class="form-control border-success" placeholder="Nhập...">
+                                    </div>
+                                    <div class="collapse collapse-gia-moi mt-1 text-start">
+                                        <div class="input-group input-group-sm mb-1">
+                                            <span class="input-group-text bg-success text-white border-success" style="font-size: 10px; font-weight: bold; width: 65px; justify-content: center;">TRUNG</span>
+                                            <input type="number" name="gia_bl_trung" class="form-control border-success" placeholder="Nhập...">
+                                        </div>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-success text-white border-success" style="font-size: 10px; font-weight: bold; width: 65px; justify-content: center;">THẤP</span>
+                                            <input type="number" name="gia_bl_thap" class="form-control border-success" placeholder="Nhập...">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-outline-secondary btn-sm w-100" type="button" data-bs-toggle="collapse" data-bs-target=".collapse-gia-moi" aria-expanded="false" style="font-size: 11px;">
+                                    <i class="fa-solid fa-angle-down"></i> Giá Trung & Thấp
                                 </button>
+                            </td>
+
+                            <!-- CỘT GIẤY TỜ -->
+                            <td class="text-center">
+                                <button class="btn btn-outline-success btn-sm w-100 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGiayToMoi" aria-expanded="false">
+                                    <i class="fa-solid fa-file-invoice"></i> Nhập giấy tờ
+                                </button>
+                                <div class="collapse text-start" id="collapseGiayToMoi">
+                                    <div class="box-cm mb-1">
+                                        <span class="badge-cm">CÀ MAU</span>
+                                        <input type="number" name="gia_gt_phuong_cm" class="form-control form-control-sm mb-1" placeholder="Phường CM...">
+                                        <input type="number" name="gia_gt_xa_cm" class="form-control form-control-sm" placeholder="Xã CM...">
+                                    </div>
+                                    <div class="box-bl mb-0">
+                                        <span class="badge-bl">BẠC LIÊU</span>
+                                        <input type="number" name="gia_gt_phuong_bl" class="form-control form-control-sm mb-1" placeholder="Phường BL...">
+                                        <input type="number" name="gia_gt_xa_bl" class="form-control form-control-sm" placeholder="Xã BL...">
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- CỘT MÀU SẮC & HÌNH ẢNH -->
+                            <td class="text-start bg-white">
+                                <div class="mb-2">
+                                    <label class="form-label small fw-bold mb-0 text-muted">Ảnh đại diện chính:</label>
+                                    <input type="file" name="hinh_anh" class="form-control form-control-sm" accept="image/*">
+                                </div>
+                                
+                                <button class="btn btn-outline-dark btn-sm w-100" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMauMoi" aria-expanded="false">
+                                    <i class="fa-solid fa-palette"></i> Thêm màu & Chênh lệch
+                                </button>
+                                
+                                <div class="collapse mt-2" id="collapseMauMoi">
+                                    <div id="addColorContainer_new">
+                                        <div class="color-row-item">
+                                            <input type="text" name="ten_mau[]" class="form-control form-control-sm mb-1 highlight-ten-mau" placeholder="Tên màu (VD: Đỏ đen)">
+                                            <div class="row g-1 mb-1">
+                                                <div class="col-6">
+                                                    <div class="p-1 rounded" style="background-color: #edf5ff; border: 1px solid #b6d4fe;">
+                                                        <span class="price-label-tag text-primary">CL Cà Mau:</span>
+                                                        <input type="number" name="chenh_lech_cm[]" class="form-control form-control-sm" value="0">
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <div class="p-1 rounded" style="background-color: #f0fdf4; border: 1px solid #86efac;">
+                                                        <span class="price-label-tag text-success">CL Bạc Liêu:</span>
+                                                        <input type="number" name="chenh_lech_bl[]" class="form-control form-control-sm" value="0">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <input type="file" name="hinh_anh_mau[]" class="form-control form-control-sm" accept="image/*">
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2 mt-1 w-100" style="font-size: 11px;" onclick="addColorRow('addColorContainer_new', 'form_add_xe')">
+                                        <i class="fa-solid fa-plus"></i> Thêm màu
+                                    </button>
+                                </div>
                             </td>
                             <td><button type="submit" class="btn btn-success btn-sm w-100 fw-semibold shadow-sm"><i class="fa-solid fa-plus me-1"></i> Thêm xe</button></td>
                         </tr>
@@ -252,74 +317,91 @@
                         <tr>
                             <td><input type="text" name="loai_xe" value="{{ xe.loai_xe }}" class="form-control form-control-sm"></td>
                             <td><textarea name="ten_xe" class="form-control form-control-sm fw-semibold" rows="2">{{ xe.ten_xe }}</textarea></td>
-                            <td><textarea name="phien_ban" class="form-control form-control-sm" rows="2">{{ xe.phien_ban }}</textarea></td>
                             
-                            <td class="text-start">
+                            <!-- CỘT GIÁ XE CHUNG -->
+                            <td class="text-center">
                                 <div class="box-cm">
-                                    <span class="badge-cm">CÀ MAU</span>
-                                    <input type="number" name="gia_cm_thap" value="{{ xe.gia_cm_thap|default(0) }}" class="form-control form-control-sm mb-1">
-                                    <input type="number" name="gia_cm_trung" value="{{ xe.gia_cm_trung|default(0) }}" class="form-control form-control-sm mb-1">
-                                    <input type="number" name="gia_cm_cao" value="{{ xe.gia_cm_cao|default(0) }}" class="form-control form-control-sm">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-primary text-white border-primary" style="font-size: 10px; font-weight: bold; width: 65px; justify-content: center;">CM CAO</span>
+                                        <input type="number" name="gia_cm_cao" value="{{ xe.gia_cm_cao|default(0) }}" class="form-control border-primary" placeholder="Nhập...">
+                                    </div>
+                                    <div class="collapse collapse-gia-{{ xe.id }} mt-1 text-start">
+                                        <div class="input-group input-group-sm mb-1">
+                                            <span class="input-group-text bg-primary text-white border-primary" style="font-size: 10px; font-weight: bold; width: 65px; justify-content: center;">TRUNG</span>
+                                            <input type="number" name="gia_cm_trung" value="{{ xe.gia_cm_trung|default(0) }}" class="form-control border-primary" placeholder="Nhập...">
+                                        </div>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-primary text-white border-primary" style="font-size: 10px; font-weight: bold; width: 65px; justify-content: center;">THẤP</span>
+                                            <input type="number" name="gia_cm_thap" value="{{ xe.gia_cm_thap|default(0) }}" class="form-control border-primary" placeholder="Nhập...">
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="box-bl">
-                                    <span class="badge-bl">BẠC LIÊU</span>
-                                    <input type="number" name="gia_bl_thap" value="{{ xe.gia_bl_thap|default(0) }}" class="form-control form-control-sm mb-1">
-                                    <input type="number" name="gia_bl_trung" value="{{ xe.gia_bl_trung|default(0) }}" class="form-control form-control-sm mb-1">
-                                    <input type="number" name="gia_bl_cao" value="{{ xe.gia_bl_cao|default(0) }}" class="form-control form-control-sm">
+
+                                <div class="box-bl mb-2">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-success text-white border-success" style="font-size: 10px; font-weight: bold; width: 65px; justify-content: center;">BL CAO</span>
+                                        <input type="number" name="gia_bl_cao" value="{{ xe.gia_bl_cao|default(0) }}" class="form-control border-success" placeholder="Nhập...">
+                                    </div>
+                                    <div class="collapse collapse-gia-{{ xe.id }} mt-1 text-start">
+                                        <div class="input-group input-group-sm mb-1">
+                                            <span class="input-group-text bg-success text-white border-success" style="font-size: 10px; font-weight: bold; width: 65px; justify-content: center;">TRUNG</span>
+                                            <input type="number" name="gia_bl_trung" value="{{ xe.gia_bl_trung|default(0) }}" class="form-control border-success" placeholder="Nhập...">
+                                        </div>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-success text-white border-success" style="font-size: 10px; font-weight: bold; width: 65px; justify-content: center;">THẤP</span>
+                                            <input type="number" name="gia_bl_thap" value="{{ xe.gia_bl_thap|default(0) }}" class="form-control border-success" placeholder="Nhập...">
+                                        </div>
+                                    </div>
                                 </div>
+                                
+                                <button class="btn btn-outline-secondary btn-sm w-100" type="button" data-bs-toggle="collapse" data-bs-target=".collapse-gia-{{ xe.id }}" aria-expanded="false" style="font-size: 11px;">
+                                    <i class="fa-solid fa-angle-down"></i> Giá Trung & Thấp
+                                </button>
                             </td>
 
-                            <!-- CỘT GỘP: CÀ MAU Ở TRÊN, BẠC LIÊU Ở DƯỚI -->
-                            <td class="text-start">
-                                <div class="box-cm mb-1">
-                                    <span class="badge-cm">CÀ MAU</span>
-                                    <input type="number" name="gia_gt_phuong_cm" value="{{ xe.gia_gt_phuong_cm|default(0) }}" class="form-control form-control-sm mb-1" placeholder="Phường CM...">
-                                    <input type="number" name="gia_gt_xa_cm" value="{{ xe.gia_gt_xa_cm|default(0) }}" class="form-control form-control-sm" placeholder="Xã CM...">
-                                </div>
-                                <div class="box-bl mb-0">
-                                    <span class="badge-bl">BẠC LIÊU</span>
-                                    <input type="number" name="gia_gt_phuong_bl" value="{{ xe.gia_gt_phuong_bl|default(0) }}" class="form-control form-control-sm mb-1" placeholder="Phường BL...">
-                                    <input type="number" name="gia_gt_xa_bl" value="{{ xe.gia_gt_xa_bl|default(0) }}" class="form-control form-control-sm" placeholder="Xã BL...">
+                            <!-- CỘT GIẤY TỜ -->
+                            <td class="text-center">
+                                <button class="btn btn-outline-success btn-sm w-100 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGiayTo_{{ xe.id }}" aria-expanded="false">
+                                    <i class="fa-solid fa-pen-to-square"></i> Cập nhật Giấy tờ
+                                </button>
+                                <div class="collapse text-start" id="collapseGiayTo_{{ xe.id }}">
+                                    <div class="box-cm mb-1">
+                                        <span class="badge-cm">CÀ MAU</span>
+                                        <input type="number" name="gia_gt_phuong_cm" value="{{ xe.gia_gt_phuong_cm|default(0) }}" class="form-control form-control-sm mb-1" placeholder="Phường CM...">
+                                        <input type="number" name="gia_gt_xa_cm" value="{{ xe.gia_gt_xa_cm|default(0) }}" class="form-control form-control-sm" placeholder="Xã CM...">
+                                    </div>
+                                    <div class="box-bl mb-0">
+                                        <span class="badge-bl">BẠC LIÊU</span>
+                                        <input type="number" name="gia_gt_phuong_bl" value="{{ xe.gia_gt_phuong_bl|default(0) }}" class="form-control form-control-sm mb-1" placeholder="Phường BL...">
+                                        <input type="number" name="gia_gt_xa_bl" value="{{ xe.gia_gt_xa_bl|default(0) }}" class="form-control form-control-sm" placeholder="Xã BL...">
+                                    </div>
                                 </div>
                             </td>
                             
+                            <!-- CỘT TỒN KHO & MÀU SẮC -->
                             <td class="text-start bg-white">
-                                <div class="mb-1">
+                                <div class="mb-2">
                                     <span class="small text-muted">Ảnh chính: <strong class="text-dark">{{ xe.hinh_anh if xe.hinh_anh else 'Chưa có' }}</strong></span>
                                     <input type="file" name="hinh_anh" class="form-control form-control-sm mt-1" accept="image/*">
                                 </div>
-                                <hr class="my-2">
-                                <div class="small fw-bold text-secondary mb-2">Màu sắc, Chênh lệch & Tồn kho (DB):</div>
+                                
+                                <!-- HIỂN THỊ TỒN KHO BÊN NGOÀI (CÓ HIGHLIGHT KHI CÓ NHIỀU MÀU) -->
                                 {% if xe.mau_xe %}
-                                    {% for mau in xe.mau_xe %}
-                                    <div class="color-row-item mb-2">
-                                        <div class="d-flex gap-1 align-items-center mb-1">
-                                            <!-- Highlight ô tên màu -->
-                                            <input type="text" name="edit_ten_mau_{{ mau.id }}" value="{{ mau.ten_mau }}" class="form-control form-control-sm fw-bold highlight-ten-mau" placeholder="Tên màu">
-                                            <a href="/admin/delete-mau/{{ mau.id }}" class="text-danger small fw-bold text-decoration-none ms-auto p-1" onclick="return confirm('Xóa màu này?')" title="Xóa màu này">
-                                                <i class="fa-solid fa-trash fs-6"></i>
-                                            </a>
+                                <div class="mb-2 p-2 rounded text-start {% if xe.mau_xe|length > 1 %}stock-box-multi{% else %}stock-box-single{% endif %}" style="font-size: 11px;">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <div class="text-dark fw-bold" style="font-size: 10px;">
+                                            <i class="fa-solid fa-boxes-stacked me-1"></i>TỒN KHO CÁC MÀU:
                                         </div>
-                                        
-                                        <!-- Ô nhập chênh lệch giá theo màu -->
-                                        <div class="row g-1 mb-2">
-                                            <div class="col-6">
-                                                <div class="p-1 rounded" style="background-color: #edf5ff; border: 1px solid #b6d4fe;">
-                                                    <span class="price-label-tag text-primary">CL Cà Mau:</span>
-                                                    <input type="number" name="edit_chenh_lech_cm_{{ mau.id }}" value="{{ mau.chenh_lech_cm|default(0) }}" class="form-control form-control-sm">
-                                                </div>
-                                            </div>
-                                            <div class="col-6">
-                                                <div class="p-1 rounded" style="background-color: #f0fdf4; border: 1px solid #86efac;">
-                                                    <span class="price-label-tag text-success">CL Bạc Liêu:</span>
-                                                    <input type="number" name="edit_chenh_lech_bl_{{ mau.id }}" value="{{ mau.chenh_lech_bl|default(0) }}" class="form-control form-control-sm">
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <!-- Huy hiệu hiển thị tổng số màu -->
+                                        <span class="badge {% if xe.mau_xe|length > 1 %}bg-warning text-dark fw-bold{% else %}bg-secondary{% endif %}" style="font-size: 9px;">
+                                            {{ xe.mau_xe|length }} Màu
+                                        </span>
+                                    </div>
 
-                                        <!-- Hiển thị tồn kho lấy từ Database có Highlight tự động -->
-                                        <div class="mb-2 p-1 bg-light border rounded">
-                                            <span class="text-muted" style="font-size: 9px; display: block; font-weight: bold; margin-bottom: 2px;">TỒN KHO CỬA HÀNG:</span>
+                                    {% for mau in xe.mau_xe %}
+                                    <div class="mb-1 pb-1 {% if not loop.last %}border-bottom border-light-subtle{% endif %}">
+                                        <span class="fw-bold text-danger d-block mb-1" style="font-size: 11px;">{{ mau.ten_mau }}:</span>
+                                        <div>
                                             <span class="tonkho-badge {% if mau.ns1 and mau.ns1 > 0 %}has-stock{% endif %}" title="Kho NS1">NS1: <b>{{ mau.ns1|default(0) }}</b></span>
                                             <span class="tonkho-badge {% if mau.ns2 and mau.ns2 > 0 %}has-stock{% endif %}" title="Kho NS2">NS2: <b>{{ mau.ns2|default(0) }}</b></span>
                                             <span class="tonkho-badge {% if mau.ns3 and mau.ns3 > 0 %}has-stock{% endif %}" title="Kho NS3">NS3: <b>{{ mau.ns3|default(0) }}</b></span>
@@ -327,18 +409,52 @@
                                             <span class="tonkho-badge {% if mau.ns5 and mau.ns5 > 0 %}has-stock{% endif %}" title="Kho NS5">NS5: <b>{{ mau.ns5|default(0) }}</b></span>
                                             <span class="tonkho-badge {% if mau.nsm1 and mau.nsm1 > 0 %}has-stock{% endif %}" title="Kho NSM1">NSM1: <b>{{ mau.nsm1|default(0) }}</b></span>
                                         </div>
-
-                                        <input type="file" name="edit_hinh_anh_mau_{{ mau.id }}" class="form-control form-control-sm" accept="image/*">
                                     </div>
                                     {% endfor %}
-                                {% else %}
-                                    <div class="text-muted small fst-italic mb-2">Chưa thiết lập màu sắc riêng.</div>
+                                </div>
                                 {% endif %}
 
-                                <div id="addColorContainer_{{ xe.id }}"></div>
-                                <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 mt-2 w-100" style="font-size: 11px;" onclick="addColorRow('addColorContainer_{{ xe.id }}', 'form_edit_{{ xe.id }}')">
-                                    <i class="fa-solid fa-plus"></i> Thêm màu mới
+                                <button class="btn btn-outline-dark btn-sm w-100" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMau_{{ xe.id }}" aria-expanded="false">
+                                    <i class="fa-solid fa-palette"></i> Cập nhật Màu & Chênh lệch
                                 </button>
+
+                                <div class="collapse mt-2" id="collapseMau_{{ xe.id }}">
+                                    {% if xe.mau_xe %}
+                                        {% for mau in xe.mau_xe %}
+                                        <div class="color-row-item mb-2">
+                                            <div class="d-flex gap-1 align-items-center mb-1">
+                                                <input type="text" name="edit_ten_mau_{{ mau.id }}" value="{{ mau.ten_mau }}" class="form-control form-control-sm fw-bold highlight-ten-mau" placeholder="Tên màu">
+                                                <a href="/admin/delete-mau/{{ mau.id }}" class="text-danger small fw-bold text-decoration-none ms-auto p-1" onclick="return confirm('Xóa màu này?')" title="Xóa màu này">
+                                                    <i class="fa-solid fa-trash fs-6"></i>
+                                                </a>
+                                            </div>
+                                            
+                                            <div class="row g-1 mb-2">
+                                                <div class="col-6">
+                                                    <div class="p-1 rounded" style="background-color: #edf5ff; border: 1px solid #b6d4fe;">
+                                                        <span class="price-label-tag text-primary">CL Cà Mau:</span>
+                                                        <input type="number" name="edit_chenh_lech_cm_{{ mau.id }}" value="{{ mau.chenh_lech_cm|default(0) }}" class="form-control form-control-sm">
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <div class="p-1 rounded" style="background-color: #f0fdf4; border: 1px solid #86efac;">
+                                                        <span class="price-label-tag text-success">CL Bạc Liêu:</span>
+                                                        <input type="number" name="edit_chenh_lech_bl_{{ mau.id }}" value="{{ mau.chenh_lech_bl|default(0) }}" class="form-control form-control-sm">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <input type="file" name="edit_hinh_anh_mau_{{ mau.id }}" class="form-control form-control-sm" accept="image/*">
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-muted small fst-italic mb-2">Chưa có thiết lập màu sắc.</div>
+                                    {% endif %}
+
+                                    <div id="addColorContainer_{{ xe.id }}"></div>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2 mt-2 w-100" style="font-size: 11px;" onclick="addColorRow('addColorContainer_{{ xe.id }}', 'form_edit_{{ xe.id }}')">
+                                        <i class="fa-solid fa-plus"></i> Thêm màu mới
+                                    </button>
+                                </div>
                             </td>
 
                             <td>
