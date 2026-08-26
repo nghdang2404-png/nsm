@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "base.html" %}[cite: 7]
 
-{% block title %}Quản trị - Hệ thống Nam Sương{% endblock %}
+{% block title %}Quản trị - Hệ thống Nam Sương{% endblock %}[cite: 7]
 
 {% block extra_css %}
 <style>
@@ -251,25 +251,25 @@
                                 <div class="row g-1 mb-1">
                                     <div class="col-4">
                                         <span class="price-label-tag text-primary">Giá Cao</span>
-                                        <input type="number" name="gia_cm_cao" value="{{ xe.gia_cm_cao|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary">
+                                        <input type="number" name="gia_cm_cao" value="{{ xe.gia_cm_cao if xe.gia_cm_cao and xe.gia_cm_cao != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary">
                                     </div>
                                     <div class="col-4">
                                         <span class="price-label-tag text-primary">Giá Trung</span>
-                                        <input type="number" name="gia_cm_trung" value="{{ xe.gia_cm_trung|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary">
+                                        <input type="number" name="gia_cm_trung" value="{{ xe.gia_cm_trung if xe.gia_cm_trung and xe.gia_cm_trung != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary">
                                     </div>
                                     <div class="col-4">
                                         <span class="price-label-tag text-primary">Giá Thấp</span>
-                                        <input type="number" name="gia_cm_thap" value="{{ xe.gia_cm_thap|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary">
+                                        <input type="number" name="gia_cm_thap" value="{{ xe.gia_cm_thap if xe.gia_cm_thap and xe.gia_cm_thap != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary">
                                     </div>
                                 </div>
                                 <div class="row g-1">
                                     <div class="col-6">
                                         <span class="price-label-tag text-primary">GT Phường CM</span>
-                                        <input type="number" name="gia_gt_phuong_cm" value="{{ xe.gia_gt_phuong_cm|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm" placeholder="Phường CM...">
+                                        <input type="number" name="gia_gt_phuong_cm" value="{{ xe.gia_gt_phuong_cm if xe.gia_gt_phuong_cm and xe.gia_gt_phuong_cm != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
                                     </div>
                                     <div class="col-6">
                                         <span class="price-label-tag text-primary">GT Xã CM</span>
-                                        <input type="number" name="gia_gt_xa_cm" value="{{ xe.gia_gt_xa_cm|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm" placeholder="Xã CM...">
+                                        <input type="number" name="gia_gt_xa_cm" value="{{ xe.gia_gt_xa_cm if xe.gia_gt_xa_cm and xe.gia_gt_xa_cm != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
                                     </div>
                                 </div>
                             </div>
@@ -283,25 +283,25 @@
                                 <div class="row g-1 mb-1">
                                     <div class="col-4">
                                         <span class="price-label-tag text-success">Giá Cao</span>
-                                        <input type="number" name="gia_bl_cao" value="{{ xe.gia_bl_cao|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success">
+                                        <input type="number" name="gia_bl_cao" value="{{ xe.gia_bl_cao if xe.gia_bl_cao and xe.gia_bl_cao != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success">
                                     </div>
                                     <div class="col-4">
                                         <span class="price-label-tag text-success">Giá Trung</span>
-                                        <input type="number" name="gia_bl_trung" value="{{ xe.gia_bl_trung|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success">
+                                        <input type="number" name="gia_bl_trung" value="{{ xe.gia_bl_trung if xe.gia_bl_trung and xe.gia_bl_trung != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success">
                                     </div>
                                     <div class="col-4">
                                         <span class="price-label-tag text-success">Giá Thấp</span>
-                                        <input type="number" name="gia_bl_thap" value="{{ xe.gia_bl_thap|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success">
+                                        <input type="number" name="gia_bl_thap" value="{{ xe.gia_bl_thap if xe.gia_bl_thap and xe.gia_bl_thap != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success">
                                     </div>
                                 </div>
                                 <div class="row g-1">
                                     <div class="col-6">
                                         <span class="price-label-tag text-success">GT Phường BL</span>
-                                        <input type="number" name="gia_gt_phuong_bl" value="{{ xe.gia_gt_phuong_bl|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm" placeholder="Phường BL...">
+                                        <input type="number" name="gia_gt_phuong_bl" value="{{ xe.gia_gt_phuong_bl if xe.gia_gt_phuong_bl and xe.gia_gt_phuong_bl != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
                                     </div>
                                     <div class="col-6">
                                         <span class="price-label-tag text-success">GT Xã BL</span>
-                                        <input type="number" name="gia_gt_xa_bl" value="{{ xe.gia_gt_xa_bl|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm" placeholder="Xã BL...">
+                                        <input type="number" name="gia_gt_xa_bl" value="{{ xe.gia_gt_xa_bl if xe.gia_gt_xa_bl and xe.gia_gt_xa_bl != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
                                     </div>
                                 </div>
                             </div>
@@ -367,13 +367,13 @@
                                                 <div class="col-6">
                                                     <div class="p-1 rounded bg-light border">
                                                         <span class="price-label-tag text-primary">CL Cà Mau:</span>
-                                                        <input type="number" name="edit_chenh_lech_cm_{{ mau.id }}" value="{{ mau.chenh_lech_cm|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
+                                                        <input type="number" name="edit_chenh_lech_cm_{{ mau.id }}" value="{{ mau.chenh_lech_cm if mau.chenh_lech_cm and mau.chenh_lech_cm != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
                                                     </div>
                                                 </div>
                                                 <div class="col-6">
                                                     <div class="p-1 rounded bg-light border">
                                                         <span class="price-label-tag text-success">CL Bạc Liêu:</span>
-                                                        <input type="number" name="edit_chenh_lech_bl_{{ mau.id }}" value="{{ mau.chenh_lech_bl|default(0) }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
+                                                        <input type="number" name="edit_chenh_lech_bl_{{ mau.id }}" value="{{ mau.chenh_lech_bl if mau.chenh_lech_bl and mau.chenh_lech_bl != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm">
                                                     </div>
                                                 </div>
                                             </div>
