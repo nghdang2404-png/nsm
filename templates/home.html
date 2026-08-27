@@ -136,6 +136,7 @@
                     
                     {% for xe in danh_sach_xe %}
                     <tr class="car-row-item" 
+                        id="xe-row-{{ xe.id }}"
                         data-name="{{ xe.ten_xe }}"
                         data-loai="{{ xe.loai_xe }}"
                         data-img="{{ url_for('static', filename='uploads/' ~ xe.hinh_anh) if xe.hinh_anh else '' }}"
@@ -167,7 +168,7 @@
                         </td>
 
                         <td class="text-center">
-                            <span class="view-detail-hint">
+                            <span class="view-detail-hint col-gia">
                                 <i class="fas fa-eye"></i> Xem giá
                             </span>
                         </td>
@@ -183,10 +184,8 @@
 
 </div>
 
-<!-- =============== ĐÂY LÀ ĐIỂM THAY ĐỔI ================ -->
 <!-- GỌI COMPONENT MODAL TÍNH GIÁ NHÁP TỪ FILE BÊN NGOÀI -->
 {% include 'tinh_gia_nhap.html' %}
-<!-- =================================================== -->
 
 <footer class="footer">
     <div class="container footer-content">
@@ -393,17 +392,12 @@
         const noImgText = document.getElementById('modalNoImgText');
         const colorButtonsContainer = document.getElementById('modalColorButtons');
 
-        // SỬA TỪ userVuc THÀNH userVung Ở ĐÂY:
         const khuVuc = userVung || 'Cà Mau'; 
-        //document.getElementById('modalRegionBadge').innerText = khuVuc;
         
-        // Tự động cập nhật đúng khu vực vào nút bấm trong modal
         const regionTextEl = document.getElementById('modalRegionText');
         if (regionTextEl) {
             regionTextEl.innerText = khuVuc;
         }
-        
-        // ... các đoạn code phía dưới giữ nguyên ...
 
         modalTitle.innerText = carName;
         colorButtonsContainer.innerHTML = '';
@@ -415,7 +409,6 @@
         const thapGoc = Number(giaThap) || 0;
         const trungGoc = Number(giaTrung) || 0;
 
-        // Reset dữ liệu ô nhập giá nháp bên trong Modal (nếu có)
         const draftInput = document.getElementById('draftPriceInput');
         if (draftInput) {
             draftInput.setAttribute('data-phi-phuong', phiPhuong);
@@ -553,9 +546,7 @@
             textSpan.innerText = "Xem thêm giá bán thấp và trung";
         }
     }
-</script>
 
-<script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
@@ -567,6 +558,38 @@
                 });
         });
     }
+</script>
+
+<!-- SCRIPT AJAX POLLING ĐỂ TỰ ĐỘNG CẬP NHẬT GIAO DIỆN NGẦM -->
+<script>
+    function fetchAndUpdateHomeData() {
+        fetch('/api/get-home-data')
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(res => {
+                if (res.success && res.data) {
+                    res.data.forEach(item => {
+                        let row = document.getElementById(`xe-row-${item.id}`);
+                        if (row) {
+                            // Cập nhật lại các thuộc tính dữ liệu trên thẻ tr để khi click vào xem giá modal lấy số liệu mới nhất
+                            row.setAttribute('data-base-price', item.gia_cao || 0);
+                            row.setAttribute('data-gia-thap', item.gia_thap || 0);
+                            row.setAttribute('data-gia-trung', item.gia_trung || 0);
+                            row.setAttribute('data-colors', JSON.stringify(item.mau_xe || []));
+                        }
+                    });
+                    console.log("Đã cập nhật dữ liệu ngầm thành công lúc:", new Date().toLocaleTimeString());
+                }
+            })
+            .catch(error => {
+                console.error("Lỗi khi đồng bộ dữ liệu ngầm:", error);
+            });
+    }
+
+    // Tự động gọi API cập nhật ngầm cứ sau 30 giây (30000 ms)
+    setInterval(fetchAndUpdateHomeData, 3000);
 </script>
 </body>
 </html>

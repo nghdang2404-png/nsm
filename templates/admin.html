@@ -497,4 +497,64 @@
         
     });
 </script>
+<script>
+    // --- 4. TỰ ĐỘNG CẬP NHẬT DỮ LIỆU NGẦM (REAL-TIME POLLING KHÔNG REFRESH TRANG) ---
+    document.addEventListener("DOMContentLoaded", function () {
+        
+        function fetchLatestData() {
+            // Không chạy cập nhật ngầm nếu người dùng đang bận gõ phím hoặc mở form chỉnh sửa màu
+            if (document.activeElement && document.activeElement.tagName === "INPUT") {
+                return; 
+            }
+
+            fetch('/admin/api/data')
+                .then(response => response.json())
+                .then(res => {
+                    if (!res.success) return;
+                    
+                    let dsXe = res.data;
+                    dsXe.forEach(xe => {
+                        xe.mau_xe.forEach(mau => {
+                            // Tìm đến các badge tồn kho của màu này dựa theo ID cấu trúc HTML của bạn
+                            let container = document.getElementById(`collapseColor_${mau.id}`);
+                            if (container) {
+                                // Tìm thẻ cha chứa các badge tồn kho nằm ngay trước phần collapse
+                                let parentRow = container.closest('.mb-2');
+                                if (parentRow) {
+                                    let badges = parentRow.querySelectorAll('.tonkho-badge');
+                                    if (badges.length >= 6) {
+                                        // Cập nhật giá trị và class 'has-stock' nếu > 0 mà không làm reset DOM toàn trang
+                                        updateBadge(badges[0], 'NS1: ', mau.ns1);
+                                        updateBadge(badges[1], 'NS2: ', mau.ns2);
+                                        updateBadge(badges[2], 'NS3: ', mau.ns3);
+                                        updateBadge(badges[3], 'NS4: ', mau.ns4);
+                                        updateBadge(badges[4], 'NS5: ', mau.ns5);
+                                        updateBadge(badges[5], 'NSM1: ', mau.nsm1);
+                                    }
+                                }
+                            }
+                        });
+                    });
+                })
+                .catch(err => console.error("Lỗi đồng bộ ngầm dữ liệu:", err));
+        }
+
+        function updateBadge(badgeElement, label, value) {
+            let valNum = Number(value) || 0;
+            // Chỉ cập nhật DOM nội dung text khi có sự thay đổi để tiết kiệm hiệu năng trình duyệt
+            let currentValText = badgeElement.querySelector('b') ? badgeElement.querySelector('b').innerText : "";
+            if (currentValText != valNum.toString()) {
+                badgeElement.innerHTML = `${label}<b>${valNum}</b>`;
+                if (valNum > 0) {
+                    badgeElement.classList.add('has-stock');
+                } else {
+                    badgeElement.classList.remove('has-stock');
+                }
+            }
+        }
+
+        // Thiết lập quét tự động ngầm mỗi 5 giây (5000 milliseconds)
+        setInterval(fetchLatestData, 5000);
+    });
+</script>
 {% endblock %}

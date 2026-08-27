@@ -39,15 +39,10 @@ def tu_dong_phan_loai(ten_xe):
     
     t = unicodedata.normalize('NFC', str(ten_xe)).lower()
     
-    # 1. Ưu tiên nhận diện Xe ga trước (để chứa các từ khóa như 'airblade', 'vision',...)
     if any(kw in t for kw in ['airblade', 'air blade', 'vision', 'lead', 'sh mode', 'sh', 'vario', 'scoopy', 'pcx']):
         return "Xe ga"
-    
-    # 2. Sau đó mới nhận diện Xe số (chứa 'blade' đứng độc lập, 'wave',...)
     elif any(kw in t for kw in ['wave', 'blade', 'future', 'super cub', 'dream']):
         return "Xe số"
-        
-    # 3. Nhận diện Xe côn tay / Thể thao
     elif any(kw in t for kw in ['winner', 'cb', 'cbr', 'rebel', 'sonic', 'côn tay']):
         return "Xe côn tay & Thể thao"
         
@@ -158,7 +153,6 @@ def lay_danh_sach_ma_mau(ten_mau):
     }
     
     danh_sach_kq = []
-    
     for tu_khoa, ma in sorted(bang_mau.items(), key=lambda x: len(x[0]), reverse=True):
         if tu_khoa in text:
             if ma not in danh_sach_kq: 
@@ -270,7 +264,6 @@ def admin_panel():
     danh_sach_xe = query.order_by(get_order_priority(), Xe.ten_xe.asc()).all()
     danh_sach_loai = [l[0] for l in db.session.query(Xe.loai_xe).distinct().all() if l[0]]
     
-    # Lấy cấu hình link CSV từ DB
     setting = Setting.query.filter_by(key='csv_url').first()
     csv_url = setting.value if setting else ''
 
@@ -302,7 +295,6 @@ import threading
 import time
 import traceback
 
-# --- 1. HÀM XỬ LÝ ĐỒNG BỘ DỮ LIỆU CHÍNH ---
 def run_sync_process():
     setting = Setting.query.filter_by(key='csv_url').first()
     csv_url = setting.value if setting else None
@@ -317,15 +309,11 @@ def run_sync_process():
                 separator = '&' if '?' in csv_url else '?'
                 csv_url += f'{separator}output=csv'
 
-        print(f"--- ĐANG ĐỌC LINK CSV: {csv_url} ---")
-
-        # Danh sách từ khóa xe máy chuẩn xác bắt buộc phải có
         valid_vehicle_keywords = [
             'wave', 'blade', 'future', 'vision', 'air blade', 'sh', 'winner', 
             'lead', 'vario', 'cub', 'rebel', 'cb', 'cbr', 'afb', 'afs', 'supream'
         ]
 
-        # 0. Dọn dẹp các dữ liệu rác đã trót lưu trong CSDL trước đó (Cửa hàng, nhân viên, v.v.)
         all_xe_in_db = Xe.query.all()
         for x in all_xe_in_db:
             name_lower = x.ten_xe.lower()
@@ -334,9 +322,7 @@ def run_sync_process():
                 db.session.delete(x)
         db.session.commit()
 
-        # 1. Đọc file thô để tìm chính xác dòng tiêu đề chứa 'DÒNG XE' (hoặc 'TÊN XE') và 'MÀU'
         df_raw = pd.read_csv(csv_url, header=None, on_bad_lines='skip')
-        
         header_row_idx = None
         for i, row in df_raw.iterrows():
             row_str = " ".join([str(val).upper() for val in row.values])
@@ -350,13 +336,10 @@ def run_sync_process():
             df = pd.read_csv(csv_url, header=1, on_bad_lines='skip')
             
         df = df.dropna(how='all')
-        
-        # 2. XÁC ĐỊNH VỊ TRÍ CỘT DỰA TRÊN TÊN TIÊU ĐỀ THỰC TẾ
         cols = [str(c).strip().upper() for c in df.columns]
         
         col_xe_idx = 0
         col_mau_idx = 1
-        
         for idx, col_name in enumerate(cols):
             clean_name = col_name.split('.')[0].strip()
             if 'DÒNG XE' in clean_name or 'TÊN XE' in clean_name:
@@ -364,7 +347,6 @@ def run_sync_process():
             elif clean_name == 'MÀU':
                 col_mau_idx = idx
 
-        # Các kho nằm ngay sau cột MÀU theo đúng thứ tự tiêu chuẩn: NS1, NS2, NS3, NS4, NS5, NSM1
         col_ns1_idx = col_mau_idx + 1
         col_ns2_idx = col_mau_idx + 2
         col_ns3_idx = col_mau_idx + 3
@@ -372,9 +354,6 @@ def run_sync_process():
         col_ns5_idx = col_mau_idx + 5
         col_nsm1_idx = col_mau_idx + 6
 
-        print(f"-> Vị trí cột tự động: Xe({col_xe_idx}), Màu({col_mau_idx}), Kho NS1->NSM1 ({col_ns1_idx} đến {col_nsm1_idx})")
-
-        # Tự động điền tên xe xuống các dòng màu bên dưới (xử lý gộp ô)
         if col_xe_idx < df.shape[1]:
             df.iloc[:, col_xe_idx] = df.iloc[:, col_xe_idx].ffill()
         
@@ -382,7 +361,6 @@ def run_sync_process():
         so_luong_cap_nhat = 0
         xe_inventory_map = {}
 
-        # Hàm chuyển đổi số nguyên an toàn
         def parse_stock(val):
             if pd.isna(val):
                 return 0
@@ -403,13 +381,11 @@ def run_sync_process():
                 continue
                 
             ten_xe_excel = str(df.iloc[idx, col_xe_idx]).strip()
-            
             if not ten_xe_excel or ten_xe_excel.lower() in ['nan', 'none', 'tổng', 'total', 'unnamed', '0']: 
                 continue
             if len(ten_xe_excel) > 150 or 'split' in ten_xe_excel or 'constructor' in ten_xe_excel:
                 continue
             
-            # KIỂM TRA CHẶT CHẼ: Bắt buộc phải có từ khóa xe máy hợp lệ mới tiếp tục xử lý
             lower_xe = ten_xe_excel.lower()
             if not any(kw in lower_xe for kw in valid_vehicle_keywords):
                 continue
@@ -422,7 +398,6 @@ def run_sync_process():
             
             loai_xe_excel = tu_dong_phan_loai(ten_xe_excel)
             
-            # Lấy tồn kho chuẩn xác
             ns1 = parse_stock(df.iloc[idx, col_ns1_idx]) if col_ns1_idx < df.shape[1] else 0
             ns2 = parse_stock(df.iloc[idx, col_ns2_idx]) if col_ns2_idx < df.shape[1] else 0
             ns3 = parse_stock(df.iloc[idx, col_ns3_idx]) if col_ns3_idx < df.shape[1] else 0
@@ -430,14 +405,9 @@ def run_sync_process():
             ns5 = parse_stock(df.iloc[idx, col_ns5_idx]) if col_ns5_idx < df.shape[1] else 0
             nsm1 = parse_stock(df.iloc[idx, col_nsm1_idx]) if col_nsm1_idx < df.shape[1] else 0
 
-            # 1. Thêm hoặc cập nhật Xe vào CSDL
             xe = Xe.query.filter_by(ten_xe=ten_xe_excel).first()
             if not xe:
-                xe = Xe(
-                    loai_xe=loai_xe_excel,
-                    ten_xe=ten_xe_excel,
-                    phien_ban=''
-                )
+                xe = Xe(loai_xe=loai_xe_excel, ten_xe=ten_xe_excel, phien_ban='')
                 db.session.add(xe)
                 db.session.flush()
                 so_luong_them += 1
@@ -446,28 +416,13 @@ def run_sync_process():
                     xe.loai_xe = loai_xe_excel
                 so_luong_cap_nhat += 1
 
-            # 2. Cập nhật chi tiết tồn kho cho từng màu xe (XeMau)
             mau_existing = XeMau.query.filter_by(xe_id=xe.id, ten_mau=ten_mau_excel).first()
             if mau_existing:
-                mau_existing.ns1 = ns1
-                mau_existing.ns2 = ns2
-                mau_existing.ns3 = ns3
-                mau_existing.ns4 = ns4
-                mau_existing.ns5 = ns5
-                mau_existing.nsm1 = nsm1
+                mau_existing.ns1 = ns1; mau_existing.ns2 = ns2; mau_existing.ns3 = ns3
+                mau_existing.ns4 = ns4; mau_existing.ns5 = ns5; mau_existing.nsm1 = nsm1
             else:
-                db.session.add(XeMau(
-                    xe_id=xe.id,
-                    ten_mau=ten_mau_excel,
-                    ns1=ns1,
-                    ns2=ns2,
-                    ns3=ns3,
-                    ns4=ns4,
-                    ns5=ns5,
-                    nsm1=nsm1
-                ))
+                db.session.add(XeMau(xe_id=xe.id, ten_mau=ten_mau_excel, ns1=ns1, ns2=ns2, ns3=ns3, ns4=ns4, ns5=ns5, nsm1=nsm1))
             
-            # Gom tổng tồn kho theo xe
             if xe.id not in xe_inventory_map:
                 xe_inventory_map[xe.id] = {'ns1': 0, 'ns2': 0, 'ns3': 0, 'ns4': 0, 'ns5': 0, 'nsm1': 0}
             
@@ -478,19 +433,13 @@ def run_sync_process():
             xe_inventory_map[xe.id]['ns5'] += ns5
             xe_inventory_map[xe.id]['nsm1'] += nsm1
 
-        # Cập nhật tổng tồn kho vào bảng chính Xe
         for xe_id, inv in xe_inventory_map.items():
             xe_obj = Xe.query.get(xe_id)
             if xe_obj:
-                xe_obj.ns1 = inv['ns1']
-                xe_obj.ns2 = inv['ns2']
-                xe_obj.ns3 = inv['ns3']
-                xe_obj.ns4 = inv['ns4']
-                xe_obj.ns5 = inv['ns5']
-                xe_obj.nsm1 = inv['nsm1']
+                xe_obj.ns1 = inv['ns1']; xe_obj.ns2 = inv['ns2']; xe_obj.ns3 = inv['ns3']
+                xe_obj.ns4 = inv['ns4']; xe_obj.ns5 = inv['ns5']; xe_obj.nsm1 = inv['nsm1']
 
         db.session.commit()
-        print(f"-> ĐỒNG BỘ THÀNH CÔNG: Thêm mới {so_luong_them} xe, Cập nhật {so_luong_cap_nhat} xe.")
         return True, f"Thêm mới {so_luong_them} xe, Cập nhật {so_luong_cap_nhat} xe."
         
     except Exception as e:
@@ -498,8 +447,6 @@ def run_sync_process():
         traceback.print_exc()
         return False, str(e)
 
-
-# --- 2. ROUTE BẤM NÚT THỦ CÔNG TRÊN GIAO DIỆN ADMIN ---
 @app.route("/admin/sync-sheet", methods=["POST"])
 @admin_required
 def sync_sheet():
@@ -510,16 +457,12 @@ def sync_sheet():
         flash(f"Lỗi khi đồng bộ từ Google Sheets: {message}", "danger")
     return redirect(url_for('admin_panel'))
 
-
-# --- 3. TIẾN TRÌNH CHẠY NGẦM TỰ ĐỘNG CẬP NHẬT ---
 def start_background_sync():
     def run_loop():
-        time.sleep(10) # Chờ ứng dụng khởi động ổn định trong 10 giây đầu tiên
+        time.sleep(15) 
         while True:
             try:
-                # Tự động đồng bộ lại sau mỗi 300 giây (5 phút). 
-                # Bạn có thể thay đổi số giây tuỳ ý (VD: 180 = 3 phút, 600 = 10 phút)
-                time.sleep(5) 
+                time.sleep(180) # Tăng thời gian chờ lên 3 phút để không nghẽn database
                 with app.app_context():
                     print("--- [BACKGROUND] ĐANG TỰ ĐỘNG CẬP NHẬT DỮ LIỆU TỪ GOOGLE SHEETS ---")
                     success, msg = run_sync_process()
@@ -530,8 +473,42 @@ def start_background_sync():
     thread = threading.Thread(target=run_loop, daemon=True)
     thread.start()
 
-# Kích hoạt tiến trình chạy ngầm ngay khi khởi động ứng dụng Flask
 start_background_sync()
+
+@app.route("/api/get-home-data")
+def get_home_data():
+    if 'username' not in session:
+        return jsonify({"success": False}), 401
+    current_user = User.query.filter_by(username=session['username']).first()
+    khu_vuc_user = (current_user.khu_vuc or session.get('vung', 'Cà Mau')).strip()
+    
+    danh_sach_xe = Xe.query.order_by(get_order_priority(), Xe.ten_xe.asc()).all()
+    data = [format_xe_data_home(xe, khu_vuc_user) for xe in danh_sach_xe]
+    return jsonify({"success": True, "data": data})
+
+@app.route("/admin/api/data", methods=["GET"])
+@admin_required
+def get_admin_data():
+    try:
+        danh_sach_xe = Xe.query.all()
+        data = []
+        for xe in danh_sach_xe:
+            mau_list = []
+            for mau in xe.mau_xe:
+                mau_list.append({
+                    "id": mau.id,
+                    "ten_mau": mau.ten_mau,
+                    "ns1": mau.ns1 or 0, "ns2": mau.ns2 or 0, "ns3": mau.ns3 or 0,
+                    "ns4": mau.ns4 or 0, "ns5": mau.ns5 or 0, "nsm1": mau.nsm1 or 0,
+                    "chenh_lech_cm": mau.chenh_lech_cm or 0,
+                    "chenh_lech_bl": mau.chenh_lech_bl or 0,
+                })
+            data.append({
+                "id": xe.id, "ten_xe": xe.ten_xe, "loai_xe": xe.loai_xe, "mau_xe": mau_list
+            })
+        return jsonify({"success": True, "data": data})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 @app.route("/admin/users")
 @admin_required
@@ -605,7 +582,6 @@ def delete_user(id):
     flash("Đã xóa tài khoản thành công!", "success")
     return redirect(url_for('manage_users'))
 
-# --- QUẢN LÝ XE & MÀU ---
 @app.route("/admin/add", methods=["POST"])
 @admin_required
 def add_xe():
@@ -623,19 +599,16 @@ def add_xe():
             loai_xe=loai_xe_nhap, 
             ten_xe=ten_xe_nhap,
             phien_ban=request.form.get("phien_ban"), 
-            
             gia_cm_thap=safe_float(request.form.get("gia_cm_thap")),
             gia_cm_trung=safe_float(request.form.get("gia_cm_trung")),
             gia_cm_cao=safe_float(request.form.get("gia_cm_cao")),
             gia_bl_thap=safe_float(request.form.get("gia_bl_thap")),
             gia_bl_trung=safe_float(request.form.get("gia_bl_trung")),
             gia_bl_cao=safe_float(request.form.get("gia_bl_cao")),
-            
             gia_gt_phuong_cm=safe_float(request.form.get("gia_gt_phuong_cm")),
             gia_gt_xa_cm=safe_float(request.form.get("gia_gt_xa_cm")),
             gia_gt_phuong_bl=safe_float(request.form.get("gia_gt_phuong_bl")),
             gia_gt_xa_bl=safe_float(request.form.get("gia_gt_xa_bl")),
-
             ns1=int(request.form.get("ns1") or 0), ns2=int(request.form.get("ns2") or 0),
             ns3=int(request.form.get("ns3") or 0), ns4=int(request.form.get("ns4") or 0),
             ns5=int(request.form.get("ns5") or 0), nsm1=int(request.form.get("nsm1") or 0),
@@ -654,10 +627,8 @@ def add_xe():
                 c_cm = safe_float(chenh_lechs_cm[i]) if (i < len(chenh_lechs_cm) and chenh_lechs_cm[i]) else 0
                 c_bl = safe_float(chenh_lechs_bl[i]) if (i < len(chenh_lechs_bl) and chenh_lechs_bl[i]) else 0
                 db.session.add(XeMau(
-                    xe_id=new_xe.id, 
-                    ten_mau=ten_maus[i].strip(), 
-                    chenh_lech_cm=c_cm,
-                    chenh_lech_bl=c_bl,
+                    xe_id=new_xe.id, ten_mau=ten_maus[i].strip(), 
+                    chenh_lech_cm=c_cm, chenh_lech_bl=c_bl,
                     hinh_anh_mau=save_image(anh_maus[i] if i < len(anh_maus) else None)
                 ))
                 
@@ -686,19 +657,16 @@ def edit_xe(id):
         xe.loai_xe = loai_xe_nhap
         xe.ten_xe = ten_xe_moi
         xe.phien_ban = request.form.get("phien_ban")
-        
         xe.gia_cm_thap = safe_float(request.form.get("gia_cm_thap"))
         xe.gia_cm_trung = safe_float(request.form.get("gia_cm_trung"))
         xe.gia_cm_cao = safe_float(request.form.get("gia_cm_cao"))
         xe.gia_bl_thap = safe_float(request.form.get("gia_bl_thap"))
         xe.gia_bl_trung = safe_float(request.form.get("gia_bl_trung"))
         xe.gia_bl_cao = safe_float(request.form.get("gia_bl_cao"))
-
         xe.gia_gt_phuong_cm = safe_float(request.form.get("gia_gt_phuong_cm"))
         xe.gia_gt_xa_cm = safe_float(request.form.get("gia_gt_xa_cm"))
         xe.gia_gt_phuong_bl = safe_float(request.form.get("gia_gt_phuong_bl"))
         xe.gia_gt_xa_bl = safe_float(request.form.get("gia_gt_xa_bl"))
-
         xe.ns1 = int(request.form.get("ns1") or 0); xe.ns2 = int(request.form.get("ns2") or 0)
         xe.ns3 = int(request.form.get("ns3") or 0); xe.ns4 = int(request.form.get("ns4") or 0)
         xe.ns5 = int(request.form.get("ns5") or 0); xe.nsm1 = int(request.form.get("nsm1") or 0)
@@ -723,10 +691,8 @@ def edit_xe(id):
                 c_cm = safe_float(new_cms[i]) if (i < len(new_cms) and new_cms[i]) else 0
                 c_bl = safe_float(new_bls[i]) if (i < len(new_bls) and new_bls[i]) else 0
                 db.session.add(XeMau(
-                    xe_id=xe.id, 
-                    ten_mau=new_tens[i].strip(), 
-                    chenh_lech_cm=c_cm,
-                    chenh_lech_bl=c_bl,
+                    xe_id=xe.id, ten_mau=new_tens[i].strip(), 
+                    chenh_lech_cm=c_cm, chenh_lech_bl=c_bl,
                     hinh_anh_mau=save_image(new_anhs[i] if i < len(new_anhs) else None)
                 ))
 
@@ -762,7 +728,6 @@ def delete_mau(id):
         flash(f"Không thể xóa màu: {str(e)}", "danger")
     return redirect(url_for('admin_panel'))
 
-# --- IMPORT EXCEL ---
 @app.route("/admin/import", methods=["POST"])
 @admin_required
 def import_excel():
@@ -784,7 +749,6 @@ def import_excel():
                 continue
             
             xe = Xe.query.filter_by(ten_xe=ten_xe_excel).first()
-            
             loai_xe_excel = str(row.get('loai_xe', '')).strip()
             if not loai_xe_excel or loai_xe_excel == '0' or loai_xe_excel == 'Chưa phân loại':
                 loai_xe_excel = tu_dong_phan_loai(ten_xe_excel)
@@ -792,47 +756,34 @@ def import_excel():
             if xe:
                 if loai_xe_excel: xe.loai_xe = loai_xe_excel
                 if row.get('phien_ban'): xe.phien_ban = str(row.get('phien_ban')).strip()
-                
                 xe.gia_cm_thap = safe_float(row.get('gia_cm_thap'), xe.gia_cm_thap)
                 xe.gia_cm_trung = safe_float(row.get('gia_cm_trung'), xe.gia_cm_trung)
                 xe.gia_cm_cao = safe_float(row.get('gia_cm_cao'), xe.gia_cm_cao)
-                
                 xe.gia_bl_thap = safe_float(row.get('gia_bl_thap'), xe.gia_bl_thap)
                 xe.gia_bl_trung = safe_float(row.get('gia_bl_trung'), xe.gia_bl_trung)
                 xe.gia_bl_cao = safe_float(row.get('gia_bl_cao'), xe.gia_bl_cao)
-                
                 xe.gia_gt_phuong_cm = safe_float(row.get('gia_gt_phuong_cm'), xe.gia_gt_phuong_cm)
                 xe.gia_gt_xa_cm = safe_float(row.get('gia_gt_xa_cm'), xe.gia_gt_xa_cm)
                 xe.gia_gt_phuong_bl = safe_float(row.get('gia_gt_phuong_bl'), xe.gia_gt_phuong_bl)
                 xe.gia_gt_xa_bl = safe_float(row.get('gia_gt_xa_bl'), xe.gia_gt_xa_bl)
-
-                xe.ns1 = safe_int(row.get('ns1'), xe.ns1)
-                xe.ns2 = safe_int(row.get('ns2'), xe.ns2)
-                xe.ns3 = safe_int(row.get('ns3'), xe.ns3)
-                xe.ns4 = safe_int(row.get('ns4'), xe.ns4)
-                xe.ns5 = safe_int(row.get('ns5'), xe.ns5)
-                xe.nsm1 = safe_int(row.get('nsm1'), xe.nsm1)
-                
+                xe.ns1 = safe_int(row.get('ns1'), xe.ns1); xe.ns2 = safe_int(row.get('ns2'), xe.ns2)
+                xe.ns3 = safe_int(row.get('ns3'), xe.ns3); xe.ns4 = safe_int(row.get('ns4'), xe.ns4)
+                xe.ns5 = safe_int(row.get('ns5'), xe.ns5); xe.nsm1 = safe_int(row.get('nsm1'), xe.nsm1)
                 so_luong_cap_nhat += 1
             else:
                 xe = Xe(
-                    loai_xe=loai_xe_excel,
-                    ten_xe=ten_xe_excel,
+                    loai_xe=loai_xe_excel, ten_xe=ten_xe_excel,
                     phien_ban=str(row.get('phien_ban', '')).strip(),
-                    
                     gia_cm_thap=safe_float(row.get('gia_cm_thap')),
                     gia_cm_trung=safe_float(row.get('gia_cm_trung')),
                     gia_cm_cao=safe_float(row.get('gia_cm_cao')),
-                    
                     gia_bl_thap=safe_float(row.get('gia_bl_thap')),
                     gia_bl_trung=safe_float(row.get('gia_bl_trung')),
                     gia_bl_cao=safe_float(row.get('gia_bl_cao')),
-                    
                     gia_gt_phuong_cm=safe_float(row.get('gia_gt_phuong_cm')),
                     gia_gt_xa_cm=safe_float(row.get('gia_gt_xa_cm')),
                     gia_gt_phuong_bl=safe_float(row.get('gia_gt_phuong_bl')),
                     gia_gt_xa_bl=safe_float(row.get('gia_gt_xa_bl')),
-
                     ns1=safe_int(row.get('ns1')), ns2=safe_int(row.get('ns2')),
                     ns3=safe_int(row.get('ns3')), ns4=safe_int(row.get('ns4')),
                     ns5=safe_int(row.get('ns5')), nsm1=safe_int(row.get('nsm1'))
@@ -846,7 +797,6 @@ def import_excel():
                 mau_existing = XeMau.query.filter_by(xe_id=xe.id, ten_mau=ten_mau_excel).first()
                 cl_cm = safe_float(row.get('chenh_lech_cm'))
                 cl_bl = safe_float(row.get('chenh_lech_bl'))
-                
                 m_ns1 = safe_int(row.get('mau_ns1', row.get('ns1', 0)))
                 m_ns2 = safe_int(row.get('mau_ns2', row.get('ns2', 0)))
                 m_ns3 = safe_int(row.get('mau_ns3', row.get('ns3', 0)))
@@ -855,31 +805,18 @@ def import_excel():
                 m_nsm1 = safe_int(row.get('mau_nsm1', row.get('nsm1', 0)))
 
                 if mau_existing:
-                    mau_existing.chenh_lech_cm = cl_cm
-                    mau_existing.chenh_lech_bl = cl_bl
-                    mau_existing.ns1 = m_ns1
-                    mau_existing.ns2 = m_ns2
-                    mau_existing.ns3 = m_ns3
-                    mau_existing.ns4 = m_ns4
-                    mau_existing.ns5 = m_ns5
-                    mau_existing.nsm1 = m_nsm1
+                    mau_existing.chenh_lech_cm = cl_cm; mau_existing.chenh_lech_bl = cl_bl
+                    mau_existing.ns1 = m_ns1; mau_existing.ns2 = m_ns2; mau_existing.ns3 = m_ns3
+                    mau_existing.ns4 = m_ns4; mau_existing.ns5 = m_ns5; mau_existing.nsm1 = m_nsm1
                 else:
                     db.session.add(XeMau(
-                        xe_id=xe.id,
-                        ten_mau=ten_mau_excel,
-                        chenh_lech_cm=cl_cm,
-                        chenh_lech_bl=cl_bl,
-                        ns1=m_ns1,
-                        ns2=m_ns2,
-                        ns3=m_ns3,
-                        ns4=m_ns4,
-                        ns5=m_ns5,
-                        nsm1=m_nsm1
+                        xe_id=xe.id, ten_mau=ten_mau_excel,
+                        chenh_lech_cm=cl_cm, chenh_lech_bl=cl_bl,
+                        ns1=m_ns1, ns2=m_ns2, ns3=m_ns3, ns4=m_ns4, ns5=m_ns5, nsm1=m_nsm1
                     ))
 
         db.session.commit()
         flash(f"Thao tác thành công! Thêm mới: {so_luong_them} xe, Cập nhật: {so_luong_cap_nhat} xe.", "success")
-        
     except Exception as e:
         db.session.rollback()
         flash(f"Lỗi khi xử lý file Excel: {str(e)}", "danger")
@@ -904,8 +841,7 @@ def sync_inventory_api():
             ten_mau = item.get('ten_mau')
             ton_cuoi = item.get('ton_cuoi', 0)
             
-            if not ten_xe:
-                continue
+            if not ten_xe: continue
             
             if ten_xe not in all_xe:
                 loai_xe_auto = tu_dong_phan_loai(ten_xe)
@@ -927,36 +863,24 @@ def sync_inventory_api():
             else:
                 mau_obj = all_mau[key_mau]
 
-            if store_code == "NS1":
-                mau_obj.ns1 = ton_cuoi
-            elif store_code == "NS2":
-                mau_obj.ns2 = ton_cuoi
-            elif store_code == "NS3":
-                mau_obj.ns3 = ton_cuoi
-            elif store_code == "NS4":
-                mau_obj.ns4 = ton_cuoi
-            elif store_code == "NS5":
-                mau_obj.ns5 = ton_cuoi
-            elif store_code == "NSM1":
-                mau_obj.nsm1 = ton_cuoi
+            if store_code == "NS1": mau_obj.ns1 = ton_cuoi
+            elif store_code == "NS2": mau_obj.ns2 = ton_cuoi
+            elif store_code == "NS3": mau_obj.ns3 = ton_cuoi
+            elif store_code == "NS4": mau_obj.ns4 = ton_cuoi
+            elif store_code == "NS5": mau_obj.ns5 = ton_cuoi
+            elif store_code == "NSM1": mau_obj.nsm1 = ton_cuoi
                 
         db.session.commit()
         return jsonify({"status": "success", "message": f"Đồng bộ thành công kho {store_code}"})
-        
     except Exception as e:
         db.session.rollback()
-        print("LỖI:", str(e))
         return jsonify({"status": "error", "message": str(e)}), 500
 
 def format_xe_data_home(xe, khu_vuc_user):
     is_bl = 'bạc liêu' in (khu_vuc_user or '').lower()
-    
-    # Lấy giá bán theo khu vực
     gia_thap = xe.gia_bl_thap if is_bl else xe.gia_cm_thap
     gia_trung = xe.gia_bl_trung if is_bl else xe.gia_cm_trung
     gia_cao = xe.gia_bl_cao if is_bl else xe.gia_cm_cao
-    
-    # BỔ SUNG: Lấy phí giấy tờ (Phường / Xã) theo khu vực tương ứng
     gia_giay_to_phuong = xe.gia_gt_phuong_bl if is_bl else xe.gia_gt_phuong_cm
     gia_giay_to_xa = xe.gia_gt_xa_bl if is_bl else xe.gia_gt_xa_cm
     
@@ -968,23 +892,16 @@ def format_xe_data_home(xe, khu_vuc_user):
         'gia_thap': gia_thap,
         'gia_trung': gia_trung,
         'gia_cao': gia_cao,
-        
-        # Truyền thêm các trường phí giấy tờ để HTML hiển thị chính xác
         'gia_giay_to_phuong': gia_giay_to_phuong,
         'gia_giay_to_xa': gia_giay_to_xa,
         'gia_giay_to_phuong_ca_mau': xe.gia_gt_phuong_cm,
         'gia_giay_to_xa_ca_mau': xe.gia_gt_xa_cm,
         'gia_giay_to_phuong_bac_lieu': xe.gia_gt_phuong_bl,
         'gia_giay_to_xa_bac_lieu': xe.gia_gt_xa_bl,
-        
         'hinh_anh': xe.hinh_anh,
         'mau_xe': [mau.to_dict(khu_vuc_user) for mau in xe.mau_xe],
-        'ns1': xe.ns1,
-        'ns2': xe.ns2,
-        'ns3': xe.ns3,
-        'ns4': xe.ns4,
-        'ns5': xe.ns5,
-        'nsm1': xe.nsm1
+        'ns1': xe.ns1, 'ns2': xe.ns2, 'ns3': xe.ns3,
+        'ns4': xe.ns4, 'ns5': xe.ns5, 'nsm1': xe.nsm1
     }
 
 @app.route('/cong-cu-tinh-gia')
