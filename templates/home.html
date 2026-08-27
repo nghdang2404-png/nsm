@@ -562,6 +562,10 @@
 
 <!-- SCRIPT AJAX POLLING ĐỂ TỰ ĐỘNG CẬP NHẬT GIAO DIỆN NGẦM -->
 <script>
+    // Biến toàn cục để lưu trạng thái màu đang được chọn trên Modal
+    window.activeColorName = null;
+    window.currentCarModalData = null;
+
     function fetchAndUpdateHomeData() {
         fetch('/api/get-home-data')
             .then(response => {
@@ -570,17 +574,152 @@
             })
             .then(res => {
                 if (res.success && res.data) {
+                    // 1. Cập nhật dữ liệu cho các dòng tr ngoài bảng chính
                     res.data.forEach(item => {
                         let row = document.getElementById(`xe-row-${item.id}`);
                         if (row) {
-                            // Cập nhật lại các thuộc tính dữ liệu trên thẻ tr để khi click vào xem giá modal lấy số liệu mới nhất
                             row.setAttribute('data-base-price', item.gia_cao || 0);
                             row.setAttribute('data-gia-thap', item.gia_thap || 0);
                             row.setAttribute('data-gia-trung', item.gia_trung || 0);
+                            row.setAttribute('data-gia-phuong', item.gia_giay_to_phuong || 0);
+                            row.setAttribute('data-gia-xa', item.gia_giay_to_xa || 0);
                             row.setAttribute('data-colors', JSON.stringify(item.mau_xe || []));
                         }
                     });
-                    console.log("Đã cập nhật dữ liệu ngầm thành công lúc:", new Date().toLocaleTimeString());
+
+                    // 2. Nếu Modal đang mở, tự động cập nhật lại giao diện Modal ngay lập tức
+                    const modal = document.getElementById('carImageModal');
+                    if (modal && modal.style.display === 'flex') {
+                        const modalTitle = document.getElementById('modalCarTitle');
+                        const currentCarName = modalTitle ? modalTitle.innerText : '';
+                        const matchedItem = res.data.find(i => i.ten_xe === currentCarName);
+                        
+                        if (matchedItem) {
+                            window.currentCarModalData = matchedItem;
+                            const basePrice = Number(matchedItem.gia_cao) || 0;
+                            const giaPhuong = Number(matchedItem.gia_giay_to_phuong) || 0;
+                            const giaXa = Number(matchedItem.gia_giay_to_xa) || 0;
+                            const thapGoc = Number(matchedItem.gia_thap) || 0;
+                            const trungGoc = Number(matchedItem.gia_trung) || 0;
+
+                            const draftInput = document.getElementById('draftPriceInput');
+                            if (draftInput) {
+                                draftInput.setAttribute('data-phi-phuong', giaPhuong);
+                                draftInput.setAttribute('data-phi-xa', giaXa);
+                            }
+
+                            let colors = matchedItem.mau_xe || [];
+                            
+                            // Xác định màu đang chọn hiện tại (nếu chưa có thì lấy màu đầu tiên)
+                            let selectedColorItem = colors.find(c => c.ten_mau === window.activeColorName) || colors[0];
+                            if (selectedColorItem && !window.activeColorName) {
+                                window.activeColorName = selectedColorItem.ten_mau;
+                            }
+
+                            const chenhLech = selectedColorItem ? (Number(selectedColorItem.chenh_lech_gia) || 0) : 0;
+
+                            // Cập nhật hiển thị giá tiền
+                            document.getElementById('modalBasePrice').innerText = formatCurrency(basePrice + chenhLech);
+                            document.getElementById('modalGiaPhuong').innerText = formatCurrency(giaPhuong);
+                            document.getElementById('modalGiaXa').innerText = formatCurrency(giaXa);
+                            document.getElementById('modalTongPhuong').innerText = formatCurrency(basePrice + chenhLech + giaPhuong);
+                            document.getElementById('modalTongXa').innerText = formatCurrency(basePrice + chenhLech + giaXa);
+                            document.getElementById('modalGiaThap').innerText = formatCurrency(thapGoc + chenhLech);
+                            document.getElementById('modalGiaTrung').innerText = formatCurrency(trungGoc + chenhLech);
+
+                            // Cập nhật lại số lượng tồn kho theo màu đang chọn
+                            const setVal = (id, val) => {
+                                const el = document.getElementById(id);
+                                if (!el) return;
+                                const num = Number(val) || 0;
+                                if (num > 0) {
+                                    el.innerText = num + " xe";
+                                    el.style.color = "#2e7d32";
+                                } else {
+                                    el.innerText = "Hết hàng";
+                                    el.style.color = "#d32f2f";
+                                }
+                            };
+
+                            if (selectedColorItem) {
+                                setVal('stockNs1', selectedColorItem.ns1);
+                                setVal('stockNs2', selectedColorItem.ns2);
+                                setVal('stockNs3', selectedColorItem.ns3);
+                                setVal('stockNs4', selectedColorItem.ns4);
+                                setVal('stockNs5', selectedColorItem.ns5);
+                                setVal('stockNsm1', selectedColorItem.nsm1);
+                            } else {
+                                setVal('stockNs1', 0); setVal('stockNs2', 0); setVal('stockNs3', 0);
+                                setVal('stockNs4', 0); setVal('stockNs5', 0); setVal('stockNsm1', 0);
+                            }
+
+                            // Cập nhật lại các nút chọn màu sắc để phản ánh đúng trạng thái mới nhất
+                            const colorButtonsContainer = document.getElementById('modalColorButtons');
+                            if (colorButtonsContainer && colors.length > 0) {
+                                // Lưu vị trí cuộn hoặc trạng thái nếu cần, ở đây ta render lại danh sách nút màu
+                                colorButtonsContainer.innerHTML = '';
+                                colors.forEach((item) => {
+                                    const btn = document.createElement('button');
+                                    btn.type = 'button';
+                                    
+                                    const cArr = getCssColors(item.ten_mau);
+                                    let bgStyle = cArr.length === 1 ? cArr[0] : `linear-gradient(135deg, ${cArr[0]} 50%, ${cArr[1]} 50%)`;
+                                    
+                                    btn.innerHTML = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:${bgStyle}; margin-right:6px; border:1px solid rgba(0,0,0,0.2); vertical-align:middle;"></span> ${item.ten_mau}`;
+                                    
+                                    const isActive = (item.ten_mau === window.activeColorName);
+
+                                    btn.className = 'btn btn-sm ' + (isActive ? 'btn-dark' : 'btn-outline-dark');
+                                    btn.style.cssText = `
+                                        border-radius: 20px; 
+                                        padding: 6px 14px; 
+                                        border: 1px solid #1a1a1a; 
+                                        cursor: pointer; 
+                                        font-size: 13px; 
+                                        font-weight: 500;
+                                        background-color: ${isActive ? '#1a1a1a' : '#ffffff'};
+                                        color: ${isActive ? '#ffffff' : '#1a1a1a'};
+                                        display: inline-flex;
+                                        align-items: center;
+                                        transition: all 0.2s;
+                                    `;
+                                    
+                                    btn.onclick = function() {
+                                        window.activeColorName = item.ten_mau;
+                                        Array.from(colorButtonsContainer.children).forEach(b => {
+                                            b.style.backgroundColor = '#ffffff';
+                                            b.style.color = '#1a1a1a';
+                                        });
+                                        btn.style.backgroundColor = '#1a1a1a';
+                                        btn.style.color = '#ffffff';
+
+                                        const modalImg = document.getElementById('modalCarImg');
+                                        if (item.hinh_anh_mau) {
+                                            modalImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
+                                        }
+
+                                        const cl = Number(item.chenh_lech_gia) || 0;
+                                        document.getElementById('modalBasePrice').innerText = formatCurrency(basePrice + cl);
+                                        document.getElementById('modalTongPhuong').innerText = formatCurrency(basePrice + cl + giaPhuong);
+                                        document.getElementById('modalTongXa').innerText = formatCurrency(basePrice + cl + giaXa);
+                                        document.getElementById('modalGiaThap').innerText = formatCurrency(thapGoc + cl);
+                                        document.getElementById('modalGiaTrung').innerText = formatCurrency(trungGoc + cl);
+
+                                        setVal('stockNs1', item.ns1);
+                                        setVal('stockNs2', item.ns2);
+                                        setVal('stockNs3', item.ns3);
+                                        setVal('stockNs4', item.ns4);
+                                        setVal('stockNs5', item.ns5);
+                                        setVal('stockNsm1', item.nsm1);
+                                    };
+
+                                    colorButtonsContainer.appendChild(btn);
+                                });
+                            }
+                        }
+                    }
+
+                    console.log("Đã đồng bộ dữ liệu ngầm và cập nhật giao diện real-time lúc:", new Date().toLocaleTimeString());
                 }
             })
             .catch(error => {
@@ -588,7 +727,7 @@
             });
     }
 
-    // Tự động gọi API cập nhật ngầm cứ sau 30 giây (30000 ms)
+    // Tự động gọi API cập nhật ngầm cứ sau 3 giây
     setInterval(fetchAndUpdateHomeData, 3000);
 </script>
 </body>

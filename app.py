@@ -305,24 +305,38 @@ def run_sync_process():
     try:
         if 'pubhtml' in csv_url:
             csv_url = csv_url.replace('/pubhtml', '/pub')
-            if 'output=csv' not in csv_url:
-                separator = '&' if '?' in csv_url else '?'
-                csv_url += f'{separator}output=csv'
+        if 'output=csv' not in csv_url:
+            separator = '&' if '?' in csv_url else '?'
+            csv_url += f'{separator}output=csv'
+
+        try:
+            df_raw = pd.read_csv(csv_url, header=None, on_bad_lines='skip')
+        except Exception as e:
+            return False, f"Không thể tải dữ liệu từ URL: {str(e)}"
 
         valid_vehicle_keywords = [
             'wave', 'blade', 'future', 'vision', 'air blade', 'sh', 'winner', 
             'lead', 'vario', 'cub', 'rebel', 'cb', 'cbr', 'afb', 'afs', 'supream'
         ]
 
-        all_xe_in_db = Xe.query.all()
-        for x in all_xe_in_db:
-            name_lower = x.ten_xe.lower()
-            if not any(kw in name_lower for kw in valid_vehicle_keywords):
-                XeMau.query.filter_by(xe_id=x.id).delete()
-                db.session.delete(x)
-        db.session.commit()
+        # --- 1. TỐI ƯU XÓA XE RÁC BẰNG BATCH DELETE (1 CÂU LỆNH DUY NHẤT) ---
+        all_xe_db = Xe.query.all()
+        all_xe_dict = {xe.ten_xe: xe for xe in all_xe_db}
+        
+        garbage_xe_ids = [
+            xe.id for xe in all_xe_db 
+            if not any(kw in xe.ten_xe.lower() for kw in valid_vehicle_keywords)
+        ]
+        if garbage_xe_ids:
+            XeMau.query.filter(XeMau.xe_id.in_(garbage_xe_ids)).delete(synchronize_session=False)
+            Xe.query.filter(Xe.id.in_(garbage_xe_ids)).delete(synchronize_session=False)
+            db.session.commit()
+            # Làm mới lại dictionary sau khi xóa
+            all_xe_dict = {xe.ten_xe: xe for xe in Xe.query.all()}
 
-        df_raw = pd.read_csv(csv_url, header=None, on_bad_lines='skip')
+        all_mau_dict = {(m.xe_id, m.ten_mau): m for m in XeMau.query.all()}
+
+        # Tìm dòng tiêu đề
         header_row_idx = None
         for i, row in df_raw.iterrows():
             row_str = " ".join([str(val).upper() for val in row.values])
@@ -330,16 +344,11 @@ def run_sync_process():
                 header_row_idx = i
                 break
         
-        if header_row_idx is not None:
-            df = pd.read_csv(csv_url, header=header_row_idx, on_bad_lines='skip')
-        else:
-            df = pd.read_csv(csv_url, header=1, on_bad_lines='skip')
-            
+        df = pd.read_csv(csv_url, header=header_row_idx if header_row_idx is not None else 1, on_bad_lines='skip')
         df = df.dropna(how='all')
         cols = [str(c).strip().upper() for c in df.columns]
         
-        col_xe_idx = 0
-        col_mau_idx = 1
+        col_xe_idx, col_mau_idx = 0, 1
         for idx, col_name in enumerate(cols):
             clean_name = col_name.split('.')[0].strip()
             if 'DÒNG XE' in clean_name or 'TÊN XE' in clean_name:
@@ -356,26 +365,19 @@ def run_sync_process():
 
         if col_xe_idx < df.shape[1]:
             df.iloc[:, col_xe_idx] = df.iloc[:, col_xe_idx].ffill()
-        
-        so_luong_them = 0
-        so_luong_cap_nhat = 0
-        xe_inventory_map = {}
 
         def parse_stock(val):
-            if pd.isna(val):
-                return 0
+            if pd.isna(val): return 0
             try:
                 s = str(val).strip()
-                if not s or s.lower() in ['nan', 'none', '']:
-                    return 0
-                s = s.replace(',', '').replace('.0', '')
-                num = int(float(s))
-                if num > 99 or num < 0:
-                    return 0
-                return num
+                if not s or s.lower() in ['nan', 'none', '']: return 0
+                num = int(float(s.replace(',', '').replace('.0', '')))
+                return num if 0 <= num <= 99 else 0
             except:
                 return 0
 
+        # --- 2. GOM NHÓM DỮ LIỆU BẰNG PANDAS (GIẢM SỐ LƯỢNG VÒNG LẶP XUỐNG MỨC TỐI THIỂU) ---
+        processed_data = []
         for idx in range(len(df)):
             if col_xe_idx >= df.shape[1] or col_mau_idx >= df.shape[1]:
                 continue
@@ -383,20 +385,12 @@ def run_sync_process():
             ten_xe_excel = str(df.iloc[idx, col_xe_idx]).strip()
             if not ten_xe_excel or ten_xe_excel.lower() in ['nan', 'none', 'tổng', 'total', 'unnamed', '0']: 
                 continue
-            if len(ten_xe_excel) > 150 or 'split' in ten_xe_excel or 'constructor' in ten_xe_excel:
-                continue
-            
-            lower_xe = ten_xe_excel.lower()
-            if not any(kw in lower_xe for kw in valid_vehicle_keywords):
+            if len(ten_xe_excel) > 150 or not any(kw in ten_xe_excel.lower() for kw in valid_vehicle_keywords):
                 continue
 
             ten_mau_excel = str(df.iloc[idx, col_mau_idx]).strip()
             if not ten_mau_excel or ten_mau_excel.lower() in ['nan', 'none', 'unnamed', '0']:
                 continue
-            if len(ten_mau_excel) > 100 or 'window' in ten_mau_excel or 'ppConfig' in ten_mau_excel:
-                continue
-            
-            loai_xe_excel = tu_dong_phan_loai(ten_xe_excel)
             
             ns1 = parse_stock(df.iloc[idx, col_ns1_idx]) if col_ns1_idx < df.shape[1] else 0
             ns2 = parse_stock(df.iloc[idx, col_ns2_idx]) if col_ns2_idx < df.shape[1] else 0
@@ -405,23 +399,67 @@ def run_sync_process():
             ns5 = parse_stock(df.iloc[idx, col_ns5_idx]) if col_ns5_idx < df.shape[1] else 0
             nsm1 = parse_stock(df.iloc[idx, col_nsm1_idx]) if col_nsm1_idx < df.shape[1] else 0
 
-            xe = Xe.query.filter_by(ten_xe=ten_xe_excel).first()
-            if not xe:
+            processed_data.append({
+                'ten_xe': ten_xe_excel,
+                'ten_mau': ten_mau_excel,
+                'ns1': ns1, 'ns2': ns2, 'ns3': ns3, 'ns4': ns4, 'ns5': ns5, 'nsm1': nsm1
+            })
+
+        if not processed_data:
+            return False, "Không tìm thấy dữ liệu hợp lệ trong Google Sheets."
+
+        df_clean = pd.DataFrame(processed_data)
+        # Gom nhóm theo Tên xe và Màu để cộng dồn tồn kho nếu có dòng bị trùng
+        df_grouped = df_clean.groupby(['ten_xe', 'ten_mau'], as_index=False).sum()
+
+        so_luong_them = 0
+        so_luong_cap_nhat = 0
+        xe_inventory_map = {}
+        new_xe_objects = []
+
+        # --- 3. XỬ LÝ HÀNG LOẠT TRONG BỘ NHỚ (KHÔNG GỌI FLUSH/SQL TRONG VÒNG LẶP) ---
+        for _, row in df_grouped.iterrows():
+            ten_xe_excel = row['ten_xe']
+            ten_mau_excel = row['ten_mau']
+            loai_xe_excel = tu_dong_phan_loai(ten_xe_excel)
+            
+            ns1, ns2, ns3 = int(row['ns1']), int(row['ns2']), int(row['ns3'])
+            ns4, ns5, nsm1 = int(row['ns4']), int(row['ns5']), int(row['nsm1'])
+
+            if ten_xe_excel not in all_xe_dict:
                 xe = Xe(loai_xe=loai_xe_excel, ten_xe=ten_xe_excel, phien_ban='')
+                new_xe_objects.append(xe)
                 db.session.add(xe)
-                db.session.flush()
+                all_xe_dict[ten_xe_excel] = xe
                 so_luong_them += 1
             else:
+                xe = all_xe_dict[ten_xe_excel]
                 if loai_xe_excel and xe.loai_xe == "Chưa phân loại":
                     xe.loai_xe = loai_xe_excel
                 so_luong_cap_nhat += 1
 
-            mau_existing = XeMau.query.filter_by(xe_id=xe.id, ten_mau=ten_mau_excel).first()
-            if mau_existing:
-                mau_existing.ns1 = ns1; mau_existing.ns2 = ns2; mau_existing.ns3 = ns3
-                mau_existing.ns4 = ns4; mau_existing.ns5 = ns5; mau_existing.nsm1 = nsm1
+        # Flush đúng 1 lần duy nhất cho toàn bộ xe mới để lấy ID cho các bản ghi màu
+        if new_xe_objects:
+            db.session.flush()
+
+        # Cập nhật lại từ điển màu sau khi đã có ID đầy đủ
+        all_mau_dict = {(m.xe_id, m.ten_mau): m for m in XeMau.query.all()}
+
+        for _, row in df_grouped.iterrows():
+            xe = all_xe_dict[row['ten_xe']]
+            ten_mau_excel = row['ten_mau']
+            ns1, ns2, ns3 = int(row['ns1']), int(row['ns2']), int(row['ns3'])
+            ns4, ns5, nsm1 = int(row['ns4']), int(row['ns5']), int(row['nsm1'])
+
+            key_mau = (xe.id, ten_mau_excel)
+            if key_mau not in all_mau_dict:
+                mau_existing = XeMau(xe_id=xe.id, ten_mau=ten_mau_excel, ns1=ns1, ns2=ns2, ns3=ns3, ns4=ns4, ns5=ns5, nsm1=nsm1)
+                db.session.add(mau_existing)
+                all_mau_dict[key_mau] = mau_existing
             else:
-                db.session.add(XeMau(xe_id=xe.id, ten_mau=ten_mau_excel, ns1=ns1, ns2=ns2, ns3=ns3, ns4=ns4, ns5=ns5, nsm1=nsm1))
+                mau_existing = all_mau_dict[key_mau]
+                mau_existing.ns1, mau_existing.ns2, mau_existing.ns3 = ns1, ns2, ns3
+                mau_existing.ns4, mau_existing.ns5, mau_existing.nsm1 = ns4, ns5, nsm1
             
             if xe.id not in xe_inventory_map:
                 xe_inventory_map[xe.id] = {'ns1': 0, 'ns2': 0, 'ns3': 0, 'ns4': 0, 'ns5': 0, 'nsm1': 0}
@@ -433,12 +471,14 @@ def run_sync_process():
             xe_inventory_map[xe.id]['ns5'] += ns5
             xe_inventory_map[xe.id]['nsm1'] += nsm1
 
+        # Cập nhật tổng tồn kho vào bảng chính Xe
         for xe_id, inv in xe_inventory_map.items():
             xe_obj = Xe.query.get(xe_id)
             if xe_obj:
-                xe_obj.ns1 = inv['ns1']; xe_obj.ns2 = inv['ns2']; xe_obj.ns3 = inv['ns3']
-                xe_obj.ns4 = inv['ns4']; xe_obj.ns5 = inv['ns5']; xe_obj.nsm1 = inv['nsm1']
+                xe_obj.ns1, xe_obj.ns2, xe_obj.ns3 = inv['ns1'], inv['ns2'], inv['ns3']
+                xe_obj.ns4, xe_obj.ns5, xe_obj.nsm1 = inv['ns4'], inv['ns5'], inv['nsm1']
 
+        # Commit toàn bộ giao dịch 1 lần duy nhất xuống CSDL
         db.session.commit()
         return True, f"Thêm mới {so_luong_them} xe, Cập nhật {so_luong_cap_nhat} xe."
         
@@ -446,6 +486,21 @@ def run_sync_process():
         db.session.rollback()
         traceback.print_exc()
         return False, str(e)
+
+def start_background_sync():
+    def run_loop():
+        time.sleep(10) 
+        while True:
+            try:
+                time.sleep(15) # Rút ngắn thời gian đồng bộ nền xuống 1 phút vì tốc độ đã cực nhanh
+                with app.app_context():
+                    success, msg = run_sync_process()
+                    print(f"--- [BACKGROUND SYNC] {msg} ---")
+            except Exception as e:
+                print(f"[BACKGROUND] Lỗi tự động đồng bộ nền: {e}")
+
+    thread = threading.Thread(target=run_loop, daemon=True)
+    thread.start()
 
 @app.route("/admin/sync-sheet", methods=["POST"])
 @admin_required
@@ -457,23 +512,7 @@ def sync_sheet():
         flash(f"Lỗi khi đồng bộ từ Google Sheets: {message}", "danger")
     return redirect(url_for('admin_panel'))
 
-def start_background_sync():
-    def run_loop():
-        time.sleep(15) 
-        while True:
-            try:
-                time.sleep(180) # Tăng thời gian chờ lên 3 phút để không nghẽn database
-                with app.app_context():
-                    print("--- [BACKGROUND] ĐANG TỰ ĐỘNG CẬP NHẬT DỮ LIỆU TỪ GOOGLE SHEETS ---")
-                    success, msg = run_sync_process()
-                    print(f"--- [BACKGROUND] KẾT QUẢ: {msg} ---")
-            except Exception as e:
-                print(f"[BACKGROUND] Lỗi tự động đồng bộ nền: {e}")
 
-    thread = threading.Thread(target=run_loop, daemon=True)
-    thread.start()
-
-start_background_sync()
 
 @app.route("/api/get-home-data")
 def get_home_data():
