@@ -246,18 +246,18 @@
                     <!-- DANH SÁCH XE HIỆN CÓ -->
                     {% for xe in danh_sach_xe %}
                     <form action="/admin/edit/{{ xe.id }}" method="POST" enctype="multipart/form-data" id="form_edit_{{ xe.id }}"></form>
-                    <input type="hidden" name="loai_xe" value="{{ xe.loai_xe }}" form="form_edit_{{ xe.id }}">
-                    <input type="hidden" name="ten_xe" value="{{ xe.ten_xe }}" form="form_edit_{{ xe.id }}">
+                    <input type="hidden" name="loai_xe" id="loai_xe_input_{{ xe.id }}" value="{{ xe.loai_xe }}" form="form_edit_{{ xe.id }}">
+                    <input type="hidden" name="ten_xe" id="ten_xe_input_{{ xe.id }}" value="{{ xe.ten_xe }}" form="form_edit_{{ xe.id }}">
 
-                    <!-- Hàng 1 của xe hiện có (Hiển thị Tên & Loại không chỉnh sửa) -->
+                    <!-- Hàng 1 của xe hiện có (Hiển thị Tên & Loại, tích hợp ID để đồng bộ thời gian thực) -->
                     <tr class="align-middle">
                         <td rowspan="2" class="align-middle bg-light">
-                            <span class="fw-bold text-primary" style="font-size: 12px;">{{ xe.loai_xe }}</span>
+                            <span class="fw-bold text-primary" id="loai_xe_{{ xe.id }}" style="font-size: 12px;">{{ xe.loai_xe }}</span>
                         </td>
                         <td colspan="2" class="bg-white text-start">
                             <div class="p-1">
                                 <div class="fw-bold text-dark p-2 bg-light rounded border" style="font-size: 13px;">
-                                    <i class="fa-solid fa-car me-1 text-primary"></i>{{ xe.ten_xe }}
+                                    <i class="fa-solid fa-car me-1 text-primary"></i><span id="ten_xe_text_{{ xe.id }}">{{ xe.ten_xe }}</span>
                                 </div>
                             </div>
                         </td>
@@ -365,8 +365,8 @@
                                         <div>
                                             <span class="fw-bold text-danger" style="font-size: 11px;"><i class="fa-solid fa-palette me-1"></i>{{ mau.ten_mau }}</span>
                                             <span class="text-muted ms-1" style="font-size: 9px;">
-    (Chênh lệch: Cà Mau = {{ "{:,.0f}".format(mau.chenh_lech_cm|float|default(0)).replace(',', '.') }}, Bạc Liêu = {{ "{:,.0f}".format(mau.chenh_lech_bl|float|default(0)).replace(',', '.') }})
-</span>
+                                                (Chênh lệch: Cà Mau = {{ "{:,.0f}".format(mau.chenh_lech_cm|float|default(0)).replace(',', '.') }}, Bạc Liêu = {{ "{:,.0f}".format(mau.chenh_lech_bl|float|default(0)).replace(',', '.') }})
+                                            </span>
                                         </div>
                                         <span class="badge bg-white text-dark border px-2 py-1" style="font-size: 9px;">
                                             <i class="fa-solid fa-pen-to-square text-primary me-1"></i>Sửa 
@@ -427,9 +427,7 @@
     </div>
 </div>
 
-<!-- SCRIPT TỰ ĐỘNG ĐỊNH DẠNG SỐ TIỀN CÓ DẤU CHẤM PHÂN CÁCH -->
-<!-- SCRIPT TỰ ĐỘNG ĐỊNH DẠNG SỐ TIỀN & SỬA LỖI DATABASE -->
-<!-- SCRIPT TỰ ĐỘNG ĐỊNH DẠNG SỐ TIỀN & SỬA LỖI DATABASE -->
+<!-- SCRIPT XỬ LÝ ĐỊNH DẠNG SỐ TIỀN & ĐỒNG BỘ NGẦM THỜI GIAN THỰC -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         
@@ -440,7 +438,6 @@
                 if (!isNaN(num) && num !== 0) {
                     input.value = new Intl.NumberFormat("vi-VN").format(num);
                 } else if (isNaN(num)) {
-                    // Kiểm tra và giữ lại dấu âm nếu có
                     let isNegative = input.value.trim().startsWith("-");
                     let rawVal = input.value.replace(/\D/g, "");
                     if (rawVal) {
@@ -451,45 +448,37 @@
             }
         });
 
-        // 2. XỬ LÝ KHI NGƯỜI DÙNG GÕ PHÍM (Cho phép gõ dấu trừ)
+        // 2. XỬ LÝ KHI NGƯỜI DÙNG GÕ PHÍM
         document.addEventListener("input", function (e) {
             if (e.target.classList.contains("currency-input")) {
                 let input = e.target;
                 let startPos = input.selectionStart;
                 let oldLength = input.value.length;
 
-                // Kiểm tra xem người dùng có đang gõ dấu trừ ở đầu không
                 let isNegative = input.value.startsWith("-");
-                
-                // Lọc lấy phần số
                 let rawVal = input.value.replace(/\D/g, "");
                 
-                // Ghép lại thành chuỗi hoàn chỉnh
                 if (rawVal) {
                     let formatted = new Intl.NumberFormat("vi-VN").format(rawVal);
                     input.value = isNegative ? "-" + formatted : formatted;
                 } else {
-                    // Nếu chỉ mới gõ dấu trừ, cho phép hiển thị dấu trừ
                     input.value = isNegative ? "-" : "";
                 }
 
                 let newLength = input.value.length;
                 startPos = startPos + (newLength - oldLength);
-                
-                // Xử lý vị trí con trỏ chuột khi xóa dấu trừ
                 if (startPos < 0) startPos = 0;
                 input.setSelectionRange(startPos, startPos);
             }
         });
 
-        // 3. XỬ LÝ KHI BẤM LƯU (Bỏ dấu chấm, giữ dấu trừ khi gửi server)
+        // 3. XỬ LÝ KHI BẤM LƯU
         document.addEventListener("submit", function (e) {
             let form = e.target;
             let formId = form.id;
             
             document.querySelectorAll(".currency-input").forEach(function (input) {
                 if (input.form === form || input.getAttribute("form") === formId) {
-                    // Xóa dấu chấm, giữ nguyên dấu trừ (nếu có)
                     input.value = input.value.replace(/\./g, "");
                 }
             });
@@ -497,12 +486,13 @@
         
     });
 </script>
+
 <script>
-    // --- 4. TỰ ĐỘNG CẬP NHẬT DỮ LIỆU NGẦM (REAL-TIME POLLING KHÔNG REFRESH TRANG) ---
+    // --- 4. TỰ ĐỘNG CẬP NHẬT DỮ LIỆU NGẦM (REAL-TIME POLLING TÊN XE, LOẠI XE VÀ TỒN KHO) ---
     document.addEventListener("DOMContentLoaded", function () {
         
         function fetchLatestData() {
-            // Không chạy cập nhật ngầm nếu người dùng đang bận gõ phím hoặc mở form chỉnh sửa màu
+            // Không chạy cập nhật ngầm nếu người dùng đang bận nhập liệu ở các ô input để tránh xung đột
             if (document.activeElement && document.activeElement.tagName === "INPUT") {
                 return; 
             }
@@ -514,16 +504,30 @@
                     
                     let dsXe = res.data;
                     dsXe.forEach(xe => {
+                        // Cập nhật Tên xe tự động
+                        let tenXeSpan = document.getElementById(`ten_xe_text_${xe.id}`);
+                        let tenXeInput = document.getElementById(`ten_xe_input_${xe.id}`);
+                        if (tenXeSpan && tenXeSpan.innerText !== xe.ten_xe) {
+                            tenXeSpan.innerText = xe.ten_xe;
+                            if (tenXeInput) tenXeInput.value = xe.ten_xe;
+                        }
+
+                        // Cập nhật Loại xe tự động
+                        let loaiXeSpan = document.getElementById(`loai_xe_${xe.id}`);
+                        let loaiXeInput = document.getElementById(`loai_xe_input_${xe.id}`);
+                        if (loaiXeSpan && loaiXeSpan.innerText !== xe.loai_xe) {
+                            loaiXeSpan.innerText = xe.loai_xe;
+                            if (loaiXeInput) loaiXeInput.value = xe.loai_xe;
+                        }
+
+                        // Cập nhật Tồn kho các màu của xe
                         xe.mau_xe.forEach(mau => {
-                            // Tìm đến các badge tồn kho của màu này dựa theo ID cấu trúc HTML của bạn
                             let container = document.getElementById(`collapseColor_${mau.id}`);
                             if (container) {
-                                // Tìm thẻ cha chứa các badge tồn kho nằm ngay trước phần collapse
                                 let parentRow = container.closest('.mb-2');
                                 if (parentRow) {
                                     let badges = parentRow.querySelectorAll('.tonkho-badge');
                                     if (badges.length >= 6) {
-                                        // Cập nhật giá trị và class 'has-stock' nếu > 0 mà không làm reset DOM toàn trang
                                         updateBadge(badges[0], 'NS1: ', mau.ns1);
                                         updateBadge(badges[1], 'NS2: ', mau.ns2);
                                         updateBadge(badges[2], 'NS3: ', mau.ns3);
@@ -541,7 +545,6 @@
 
         function updateBadge(badgeElement, label, value) {
             let valNum = Number(value) || 0;
-            // Chỉ cập nhật DOM nội dung text khi có sự thay đổi để tiết kiệm hiệu năng trình duyệt
             let currentValText = badgeElement.querySelector('b') ? badgeElement.querySelector('b').innerText : "";
             if (currentValText != valNum.toString()) {
                 badgeElement.innerHTML = `${label}<b>${valNum}</b>`;
@@ -553,7 +556,7 @@
             }
         }
 
-        // Thiết lập quét tự động ngầm mỗi 5 giây (5000 milliseconds)
+        // Tự động quét và đồng bộ ngầm mỗi 5 giây
         setInterval(fetchLatestData, 5000);
     });
 </script>
