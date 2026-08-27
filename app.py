@@ -489,10 +489,10 @@ def run_sync_process():
 
 def start_background_sync():
     def run_loop():
-        time.sleep(10) 
+        time.sleep(120) 
         while True:
             try:
-                time.sleep(15) # Rút ngắn thời gian đồng bộ nền xuống 1 phút vì tốc độ đã cực nhanh
+                time.sleep(120) # Rút ngắn thời gian đồng bộ nền xuống 1 phút vì tốc độ đã cực nhanh
                 with app.app_context():
                     success, msg = run_sync_process()
                     print(f"--- [BACKGROUND SYNC] {msg} ---")
