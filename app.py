@@ -718,7 +718,9 @@ def format_xe_data_home(xe, khu_vuc_user):
         'ns5': xe.ns5,
         'nsm1': xe.nsm1
     }
-
+@app.route('/cong-cu-tinh-gia')
+def cong_cu_tinh_gia():
+    return render_template('tinh_gia_nhap.html')
 if __name__ == "__main__":
     with app.app_context(): 
         db.create_all()

@@ -1,0 +1,119 @@
+<!-- Bắt đầu file: tinh_gia_nhap.html -->
+<div id="carImageModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="modal-content" style="background: #fff; width: 92%; max-width: 500px; border-radius: 12px; padding: 20px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+            <h3 id="modalCarTitle" style="margin: 0; font-size: 1.25rem; color: #333;">Tên Xe</h3>
+            <span class="close-btn" onclick="closeModal()" style="cursor: pointer; font-size: 1.5rem; color: #888;">&times;</span>
+        </div>
+        
+        <!-- Nút màu sắc -->
+        <div id="modalColorButtons" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 15px;">
+            <!-- Render từ JS -->
+        </div>
+
+        <!-- Hình ảnh -->
+        <div style="text-align: center; margin-bottom: 15px; min-height: 150px; display: flex; align-items: center; justify-content: center;">
+            <img id="modalCarImg" src="" alt="Hình xe" style="max-width: 100%; height: auto; border-radius: 8px; display: none;">
+            <p id="modalNoImgText" style="display: none; color: #999; font-style: italic;">Chưa cập nhật hình ảnh</p>
+        </div>
+
+        <!-- KHỐI PHÂN VÙNG ÁP DỤNG (ĐÃ SẠCH SẼ, KHÔNG LỒNG NHAU) -->
+        <div style="background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-weight: 600; color: #1e293b; font-size: 14px; display: flex; align-items: center;">
+                <i class="fa-solid fa-location-dot" style="color: #dc2626; margin-right: 6px;"></i> Phân vùng áp dụng:
+            </div>
+            <div>
+                <button type="button" id="modalRegionButton" class="btn btn-sm" style="background-color: #dc2626; color: #fff; font-weight: 600; font-size: 13px; padding: 4px 14px; border-radius: 6px; border: none;">
+                    <span id="modalRegionText">{{ user_vung | default(session.get('vung', 'Cà Mau'), true) }}</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bảng giá cố định -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 14px;">
+            <tr><td style="padding: 5px 0; color: #555;">Giá tham khảo:</td><td id="modalBasePrice" style="text-align: right; font-weight: bold;">0 VNĐ</td></tr>
+            <tr><td style="padding: 5px 0; color: #555;">Phí ra biển (Phường):</td><td id="modalGiaPhuong" style="text-align: right;">0 VNĐ</td></tr>
+            <tr><td style="padding: 5px 0; color: #555;">Phí ra biển (Xã):</td><td id="modalGiaXa" style="text-align: right;">0 VNĐ</td></tr>
+            <tr style="background: #fafafa; border-top: 1px solid #eee;">
+                <td style="padding: 8px 0;"><strong>Tổng lăn bánh (Phường):</strong></td>
+                <td id="modalTongPhuong" style="text-align: right; font-weight: bold; color: #d32f2f;">0 VNĐ</td>
+            </tr>
+            <tr style="background: #fafafa; border-bottom: 1px solid #eee;">
+                <td style="padding: 8px 0;"><strong>Tổng lăn bánh (Xã):</strong></td>
+                <td id="modalTongXa" style="text-align: right; font-weight: bold; color: #d32f2f;">0 VNĐ</td>
+            </tr>
+        </table>
+
+        <!-- Khối tính giá nháp động -->
+        <div style="background: #f1f8e9; border-radius: 8px; margin-bottom: 15px; border: 1px solid #c5e1a5; overflow: hidden;">
+            <div onclick="toggleDraftPrice(this)" style="padding: 12px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #e8f5e9;">
+                <span style="font-weight: 600; color: #2e7d32; font-size: 14px;">
+                    <i class="fas fa-calculator"></i> Máy tính
+                </span>
+                <i class="fas fa-chevron-down" style="color: #2e7d32; transition: transform 0.3s ease;"></i>
+            </div>
+            
+            <div id="draftPriceContent" style="display: none; padding: 15px; border-top: 1px solid #c5e1a5;">
+                <input type="number" id="draftPriceInput" placeholder="Nhập giá xe thực tế (VNĐ)..." style="width: 100%; padding: 10px; border: 1px solid #bdbdbd; border-radius: 6px; font-size: 14px; box-sizing: border-box;"
+                    oninput="
+                        const val = Number(this.value) || 0;
+                        const p = Number(this.getAttribute('data-phi-phuong')) || 0;
+                        const x = Number(this.getAttribute('data-phi-xa')) || 0;
+                        document.getElementById('draftTotalPhuong').innerText = formatCurrency(val + p);
+                        document.getElementById('draftTotalXa').innerText = formatCurrency(val + x);
+                    ">
+                <div style="margin-top: 12px; font-size: 14px; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #e0e0e0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="color: #555;">Dự toán Phường:</span> 
+                        <strong id="draftTotalPhuong" style="color: #d32f2f;">0 VNĐ</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #555;">Dự toán Xã:</span> 
+                        <strong id="draftTotalXa" style="color: #d32f2f;">0 VNĐ</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function toggleDraftPrice(element) {
+                var content = document.getElementById('draftPriceContent');
+                var icon = element.querySelector('.fa-chevron-down');
+                
+                if (content.style.display === 'none' || content.style.display === '') {
+                    content.style.display = 'block';
+                    icon.style.transform = 'rotate(180deg)';
+                } else {
+                    content.style.display = 'none';
+                    icon.style.transform = 'rotate(0deg)';
+                }
+            }
+        </script>
+
+        <!-- Mở rộng giá -->
+        <div class="expand-toggle" onclick="toggleExtraPrices(this)" style="cursor: pointer; color: #1976d2; font-weight: 500; text-align: center; margin-bottom: 15px; font-size: 14px;">
+            <i class="fas fa-chevron-down"></i> <span class="toggle-text">Xem thêm giá bán thấp và trung</span>
+        </div>
+        <div class="extra-prices-content" style="display: none; background: #fff8e1; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffe082; font-size: 14px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span style="color: #555;">Giá thấp:</span> <strong id="modalGiaThap">0 VNĐ</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: #555;">Giá trung:</span> <strong id="modalGiaTrung">0 VNĐ</strong></div>
+        </div>
+
+        <!-- Khối Tồn kho -->
+        <div>
+            <h4 style="margin: 0 0 10px 0; font-size: 15px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px;">Tồn kho chi nhánh</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; background: #fafafa; padding: 10px; border-radius: 6px;">
+                <div style="display: flex; justify-content: space-between;"><span>NS1:</span> <strong id="stockNs1">0 xe</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span>NS2:</span> <strong id="stockNs2">0 xe</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span>NS3:</span> <strong id="stockNs3">0 xe</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span>NS4:</span> <strong id="stockNs4">0 xe</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span>NS5:</span> <strong id="stockNs5">0 xe</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span>NSM1:</span> <strong id="stockNsm1">0 xe</strong></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+<!-- Kết thúc file: tinh_gia_nhap.html -->

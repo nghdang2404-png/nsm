@@ -400,53 +400,67 @@
 
 <!-- SCRIPT TỰ ĐỘNG ĐỊNH DẠNG SỐ TIỀN CÓ DẤU CHẤM PHÂN CÁCH -->
 <!-- SCRIPT TỰ ĐỘNG ĐỊNH DẠNG SỐ TIỀN & SỬA LỖI DATABASE -->
+<!-- SCRIPT TỰ ĐỘNG ĐỊNH DẠNG SỐ TIỀN & SỬA LỖI DATABASE -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         
-        // 1. XỬ LÝ DỮ LIỆU KHI VỪA TẢI TRANG (Sửa lỗi nhân 10 do đuôi .0)
+        // 1. XỬ LÝ DỮ LIỆU KHI VỪA TẢI TRANG (Hỗ trợ số âm)
         document.querySelectorAll(".currency-input").forEach(function (input) {
             if (input.value) {
-                // Kiểm tra xem giá trị từ DB có phải là số hợp lệ (ví dụ: 1000000.0)
                 let num = Number(input.value);
                 if (!isNaN(num) && num !== 0) {
-                    // Nếu là số chuẩn từ DB, hàm Number() sẽ tự bỏ đuôi .0
                     input.value = new Intl.NumberFormat("vi-VN").format(num);
                 } else if (isNaN(num)) {
-                    // Nếu chuỗi bị dính dấu chấm từ trước (VD: 36.500.000), lọc lấy số
+                    // Kiểm tra và giữ lại dấu âm nếu có
+                    let isNegative = input.value.trim().startsWith("-");
                     let rawVal = input.value.replace(/\D/g, "");
                     if (rawVal) {
-                        input.value = new Intl.NumberFormat("vi-VN").format(rawVal);
+                        let formatted = new Intl.NumberFormat("vi-VN").format(rawVal);
+                        input.value = isNegative ? "-" + formatted : formatted;
                     }
                 }
             }
         });
 
-        // 2. XỬ LÝ KHI NGƯỜI DÙNG GÕ PHÍM (Định dạng có dấu chấm)
+        // 2. XỬ LÝ KHI NGƯỜI DÙNG GÕ PHÍM (Cho phép gõ dấu trừ)
         document.addEventListener("input", function (e) {
             if (e.target.classList.contains("currency-input")) {
                 let input = e.target;
                 let startPos = input.selectionStart;
                 let oldLength = input.value.length;
 
+                // Kiểm tra xem người dùng có đang gõ dấu trừ ở đầu không
+                let isNegative = input.value.startsWith("-");
+                
+                // Lọc lấy phần số
                 let rawVal = input.value.replace(/\D/g, "");
-                input.value = rawVal ? new Intl.NumberFormat("vi-VN").format(rawVal) : "";
+                
+                // Ghép lại thành chuỗi hoàn chỉnh
+                if (rawVal) {
+                    let formatted = new Intl.NumberFormat("vi-VN").format(rawVal);
+                    input.value = isNegative ? "-" + formatted : formatted;
+                } else {
+                    // Nếu chỉ mới gõ dấu trừ, cho phép hiển thị dấu trừ
+                    input.value = isNegative ? "-" : "";
+                }
 
                 let newLength = input.value.length;
                 startPos = startPos + (newLength - oldLength);
+                
+                // Xử lý vị trí con trỏ chuột khi xóa dấu trừ
+                if (startPos < 0) startPos = 0;
                 input.setSelectionRange(startPos, startPos);
             }
         });
 
-        // 3. XỬ LÝ KHI BẤM LƯU (Sửa lỗi không tìm thấy input ngoài thẻ form)
+        // 3. XỬ LÝ KHI BẤM LƯU (Bỏ dấu chấm, giữ dấu trừ khi gửi server)
         document.addEventListener("submit", function (e) {
             let form = e.target;
             let formId = form.id;
             
-            // Tìm toàn bộ các ô nhập tiền trên trang
             document.querySelectorAll(".currency-input").forEach(function (input) {
-                // Kiểm tra nếu ô input thuộc về form đang được bấm Lưu (qua thuộc tính form=...)
                 if (input.form === form || input.getAttribute("form") === formId) {
-                    // Xóa sạch dấu chấm trước khi gửi lên server
+                    // Xóa dấu chấm, giữ nguyên dấu trừ (nếu có)
                     input.value = input.value.replace(/\./g, "");
                 }
             });

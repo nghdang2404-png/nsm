@@ -83,7 +83,7 @@
 
 <div class="container" style="max-width: 1200px; padding: 0 15px;">
     
-    <!-- KHU VỰC BỘ LỌC TỰ ĐỘNG (ĐÃ ẨN NÚT TÌM VÀ CHẶN SUBMIT FORM) -->
+    <!-- KHU VỰC BỘ LỌC TỰ ĐỘNG -->
     <div class="filter-container">
         <form class="filter-form" id="filterForm" onsubmit="event.preventDefault(); return false;">
             <div class="filter-grid">
@@ -183,83 +183,10 @@
 
 </div>
 
-<!-- MODAL HIỂN THỊ ẢNH & BẢNG GIÁ LĂN BÁNH THEO KHU VỰC -->
-<div id="carImageModal" class="car-modal">
-    <div class="car-modal-content">
-        <span class="car-modal-close" onclick="closeModal()">&times;</span>
-        <h3 id="modalCarTitle" style="margin-bottom: 5px; color: #1a1a1a;"></h3>
-        
-        <div id="modalColorButtons" style="margin: 10px 0; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;"></div>
-
-        <img id="modalCarImg" src="" alt="Hình ảnh xe" class="car-modal-img">
-        <p id="modalNoImgText" style="color: #888; margin-top: 15px; display: none;">Chưa có hình ảnh cập nhật cho dòng xe này.</p>
-        
-        <div class="price-breakdown-box">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eef2f5; padding-bottom: 8px;">
-                <span style="font-weight: bold; color: #1a1a1a;">
-                    <i class="fas fa-map-marker-alt" style="color: #d32f2f;"></i> Phân vùng áp dụng:
-                </span>
-                <span id="modalRegionBadge" class="region-badge">Cà Mau</span>
-            </div>
-            
-            <div class="price-row">
-                <span>Giá xe niêm yết:</span>
-                <strong id="modalBasePrice" class="price-highlight">0 VNĐ</strong>
-            </div>
-            <div class="price-row">
-                <span>Phí giấy tờ Phường:</span>
-                <strong id="modalGiaPhuong">0 VNĐ</strong>
-            </div>
-            <div class="price-row">
-                <span>Phí giấy tờ Xã:</span>
-                <strong id="modalGiaXa">0 VNĐ</strong>
-            </div>
-            
-            <hr style="margin: 10px 0; border: none; border-top: 1px dashed #cbd5e1;">
-            
-            <div class="price-row" style="font-size: 15px;">
-                <span><strong>Tổng lăn bánh (Phường):</strong></span>
-                <strong id="modalTongPhuong" style="color: #2e7d32;">0 VNĐ</strong>
-            </div>
-            <div class="price-row" style="font-size: 15px;">
-                <span><strong>Tổng lăn bánh (Xã):</strong></span>
-                <strong id="modalTongXa" style="color: #2e7d32;">0 VNĐ</strong>
-            </div>
-
-            <div class="expand-price-section">
-                <div class="expand-toggle" onclick="toggleExtraPrices(this)">
-                    <span class="toggle-text">Xem thêm</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                
-                <div class="extra-prices-content" style="display: none; padding-top: 5px;">
-                    <div class="price-row">
-                        <span>Giá bán thấp:</span>
-                        <strong id="modalGiaThap" class="text-danger">0 VNĐ</strong>
-                    </div>
-                    <div class="price-row">
-                        <span>Giá bán trung:</span>
-                        <strong id="modalGiaTrung" class="text-danger">0 VNĐ</strong>
-                    </div>
-                </div>
-            </div>
-
-            <div class="inventory-section" style="margin-top: 12px; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
-                <div style="font-weight: bold; color: #1a1a1a; margin-bottom: 8px; font-size: 13px; text-align: left;">
-                    <i class="fas fa-warehouse" style="color: #f57c00;"></i> Tồn kho chi tiết theo màu:
-                </div>
-                <div class="inventory-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 15px; font-size: 13px; text-align: left;">
-                    <div class="price-row" style="margin-bottom: 4px;"><span>Nam Sương 1:</span> <strong id="stockNs1">0</strong></div>
-                    <div class="price-row" style="margin-bottom: 4px;"><span>Nam Sương 2:</span> <strong id="stockNs2">0</strong></div>
-                    <div class="price-row" style="margin-bottom: 4px;"><span>Nam Sương 3:</span> <strong id="stockNs3">0</strong></div>
-                    <div class="price-row" style="margin-bottom: 4px;"><span>Nam Sương 4:</span> <strong id="stockNs4">0</strong></div>
-                    <div class="price-row" style="margin-bottom: 4px;"><span>Nam Sương 5:</span> <strong id="stockNs5">0</strong></div>
-                    <div class="price-row" style="margin-bottom: 4px;"><span>NS Motor 1:</span> <strong id="stockNsm1">0</strong></div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- =============== ĐÂY LÀ ĐIỂM THAY ĐỔI ================ -->
+<!-- GỌI COMPONENT MODAL TÍNH GIÁ NHÁP TỪ FILE BÊN NGOÀI -->
+{% include 'tinh_gia_nhap.html' %}
+<!-- =================================================== -->
 
 <footer class="footer">
     <div class="container footer-content">
@@ -283,7 +210,7 @@
     </div>
 </footer>
 
-<!-- SCRIPT LỌC THỜI GIAN THỰC HOÀN CHỈNH -->
+<!-- SCRIPT LỌC THỜI GIAN THỰC VÀ XỬ LÝ SỰ KIỆN CƠ BẢN -->
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const loaiSelect = document.getElementById('loaiSelect');
@@ -292,13 +219,11 @@
         const rows = document.querySelectorAll('.car-row-item');
         const noDataRow = document.getElementById('noDataRow');
 
-        // Hàm rút gọn tên dòng xe (bỏ phần trong ngoặc)
         function getMainModelName(fullName) {
             if (!fullName) return '';
             return fullName.split('(')[0].split(':')[0].trim();
         }
 
-        // 1. Lưu danh sách dữ liệu dòng xe ban đầu
         let carData = [];
         rows.forEach(row => {
             const loai = (row.getAttribute('data-loai') || '').trim();
@@ -308,7 +233,6 @@
             }
         });
 
-        // 2. Hàm cập nhật lại danh sách ô Sổ xuống Dòng xe
         function updateDongXeOptions(resetValue = true) {
             const selectedLoai = loaiSelect.value.trim().toLowerCase();
 
@@ -340,7 +264,6 @@
             }
         }
 
-        // 3. Hàm lọc danh sách hiển thị trong bảng
         function filterTable() {
             const selectedLoai = loaiSelect.value.trim().toLowerCase();
             const selectedDongXe = dongXeSelect.value.trim().toLowerCase();
@@ -353,7 +276,6 @@
                 const rowName = (row.getAttribute('data-name') || '').trim().toLowerCase();
                 const rowMainName = getMainModelName(rowName).toLowerCase();
 
-                // Kiểm tra điều kiện lọc
                 const matchLoai = !selectedLoai || rowLoai === selectedLoai;
                 const matchDongXe = !selectedDongXe || rowMainName === selectedDongXe || rowName.includes(selectedDongXe);
                 const matchKeyword = !keyword || rowName.includes(keyword) || rowLoai.includes(keyword) || rowMainName.includes(keyword);
@@ -371,9 +293,8 @@
             }
         }
 
-        // 4. Lắng nghe sự kiện thay đổi tự động
         loaiSelect.addEventListener('change', function() {
-            updateDongXeOptions(true); // Luôn reset ô Dòng xe về Tất cả khi đổi Loại xe
+            updateDongXeOptions(true);
             filterTable();
         });
 
@@ -385,11 +306,9 @@
             filterTable();
         });
 
-        // Khởi tạo ban đầu
         updateDongXeOptions(false);
         filterTable();
 
-        // 5. Hàm Đặt lại bộ lọc
         window.resetFilters = function() {
             loaiSelect.value = '';
             searchInput.value = '';
@@ -474,8 +393,17 @@
         const noImgText = document.getElementById('modalNoImgText');
         const colorButtonsContainer = document.getElementById('modalColorButtons');
 
-        const khuVuc = userVung || 'Cà Mau';
-        document.getElementById('modalRegionBadge').innerText = khuVuc;
+        // SỬA TỪ userVuc THÀNH userVung Ở ĐÂY:
+        const khuVuc = userVung || 'Cà Mau'; 
+        //document.getElementById('modalRegionBadge').innerText = khuVuc;
+        
+        // Tự động cập nhật đúng khu vực vào nút bấm trong modal
+        const regionTextEl = document.getElementById('modalRegionText');
+        if (regionTextEl) {
+            regionTextEl.innerText = khuVuc;
+        }
+        
+        // ... các đoạn code phía dưới giữ nguyên ...
 
         modalTitle.innerText = carName;
         colorButtonsContainer.innerHTML = '';
@@ -486,6 +414,16 @@
         
         const thapGoc = Number(giaThap) || 0;
         const trungGoc = Number(giaTrung) || 0;
+
+        // Reset dữ liệu ô nhập giá nháp bên trong Modal (nếu có)
+        const draftInput = document.getElementById('draftPriceInput');
+        if (draftInput) {
+            draftInput.setAttribute('data-phi-phuong', phiPhuong);
+            draftInput.setAttribute('data-phi-xa', phiXa);
+            draftInput.value = '';
+            document.getElementById('draftTotalPhuong').innerText = '0 VNĐ';
+            document.getElementById('draftTotalXa').innerText = '0 VNĐ';
+        }
 
         function updateModalPrice(currentBasePrice, currentThap, currentTrung) {
             document.getElementById('modalBasePrice').innerText = formatCurrency(currentBasePrice);
