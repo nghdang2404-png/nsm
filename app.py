@@ -1,6 +1,8 @@
 import os
 import re
 import unicodedata
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 from datetime import timedelta
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
@@ -52,6 +54,11 @@ def tu_dong_phan_loai(ten_xe):
     return "Chưa phân loại"
 
 # --- MODELS ---
+class Setting(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(50), unique=True, nullable=False)
+    value = db.Column(db.Text, nullable=True)
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -263,7 +270,268 @@ def admin_panel():
     danh_sach_xe = query.order_by(get_order_priority(), Xe.ten_xe.asc()).all()
     danh_sach_loai = [l[0] for l in db.session.query(Xe.loai_xe).distinct().all() if l[0]]
     
-    return render_template("admin.html", danh_sach_xe=danh_sach_xe, search_query=search_query, loai_filter=loai_filter, danh_sach_loai=danh_sach_loai, username=session.get('username'))
+    # Lấy cấu hình link CSV từ DB
+    setting = Setting.query.filter_by(key='csv_url').first()
+    csv_url = setting.value if setting else ''
+
+    return render_template(
+        "admin.html", 
+        danh_sach_xe=danh_sach_xe, 
+        search_query=search_query, 
+        loai_filter=loai_filter, 
+        danh_sach_loai=danh_sach_loai, 
+        username=session.get('username'),
+        csv_url=csv_url
+    )
+
+@app.route("/admin/settings", methods=["POST"])
+@admin_required
+def save_settings():
+    csv_url = request.form.get("csv_url", "").strip()
+    setting = Setting.query.filter_by(key='csv_url').first()
+    if not setting:
+        setting = Setting(key='csv_url', value=csv_url)
+        db.session.add(setting)
+    else:
+        setting.value = csv_url
+    db.session.commit()
+    flash("Lưu link Google Sheets thành công!", "success")
+    return redirect(url_for('admin_panel'))
+
+import threading
+import time
+import traceback
+
+# --- 1. HÀM XỬ LÝ ĐỒNG BỘ DỮ LIỆU CHÍNH ---
+def run_sync_process():
+    setting = Setting.query.filter_by(key='csv_url').first()
+    csv_url = setting.value if setting else None
+    
+    if not csv_url:
+        return False, "Chưa cấu hình đường dẫn Google Sheets CSV!"
+        
+    try:
+        if 'pubhtml' in csv_url:
+            csv_url = csv_url.replace('/pubhtml', '/pub')
+            if 'output=csv' not in csv_url:
+                separator = '&' if '?' in csv_url else '?'
+                csv_url += f'{separator}output=csv'
+
+        print(f"--- ĐANG ĐỌC LINK CSV: {csv_url} ---")
+
+        # Danh sách từ khóa xe máy chuẩn xác bắt buộc phải có
+        valid_vehicle_keywords = [
+            'wave', 'blade', 'future', 'vision', 'air blade', 'sh', 'winner', 
+            'lead', 'vario', 'cub', 'rebel', 'cb', 'cbr', 'afb', 'afs', 'supream'
+        ]
+
+        # 0. Dọn dẹp các dữ liệu rác đã trót lưu trong CSDL trước đó (Cửa hàng, nhân viên, v.v.)
+        all_xe_in_db = Xe.query.all()
+        for x in all_xe_in_db:
+            name_lower = x.ten_xe.lower()
+            if not any(kw in name_lower for kw in valid_vehicle_keywords):
+                XeMau.query.filter_by(xe_id=x.id).delete()
+                db.session.delete(x)
+        db.session.commit()
+
+        # 1. Đọc file thô để tìm chính xác dòng tiêu đề chứa 'DÒNG XE' (hoặc 'TÊN XE') và 'MÀU'
+        df_raw = pd.read_csv(csv_url, header=None, on_bad_lines='skip')
+        
+        header_row_idx = None
+        for i, row in df_raw.iterrows():
+            row_str = " ".join([str(val).upper() for val in row.values])
+            if ('DÒNG XE' in row_str or 'TÊN XE' in row_str) and 'MÀU' in row_str:
+                header_row_idx = i
+                break
+        
+        if header_row_idx is not None:
+            df = pd.read_csv(csv_url, header=header_row_idx, on_bad_lines='skip')
+        else:
+            df = pd.read_csv(csv_url, header=1, on_bad_lines='skip')
+            
+        df = df.dropna(how='all')
+        
+        # 2. XÁC ĐỊNH VỊ TRÍ CỘT DỰA TRÊN TÊN TIÊU ĐỀ THỰC TẾ
+        cols = [str(c).strip().upper() for c in df.columns]
+        
+        col_xe_idx = 0
+        col_mau_idx = 1
+        
+        for idx, col_name in enumerate(cols):
+            clean_name = col_name.split('.')[0].strip()
+            if 'DÒNG XE' in clean_name or 'TÊN XE' in clean_name:
+                col_xe_idx = idx
+            elif clean_name == 'MÀU':
+                col_mau_idx = idx
+
+        # Các kho nằm ngay sau cột MÀU theo đúng thứ tự tiêu chuẩn: NS1, NS2, NS3, NS4, NS5, NSM1
+        col_ns1_idx = col_mau_idx + 1
+        col_ns2_idx = col_mau_idx + 2
+        col_ns3_idx = col_mau_idx + 3
+        col_ns4_idx = col_mau_idx + 4
+        col_ns5_idx = col_mau_idx + 5
+        col_nsm1_idx = col_mau_idx + 6
+
+        print(f"-> Vị trí cột tự động: Xe({col_xe_idx}), Màu({col_mau_idx}), Kho NS1->NSM1 ({col_ns1_idx} đến {col_nsm1_idx})")
+
+        # Tự động điền tên xe xuống các dòng màu bên dưới (xử lý gộp ô)
+        if col_xe_idx < df.shape[1]:
+            df.iloc[:, col_xe_idx] = df.iloc[:, col_xe_idx].ffill()
+        
+        so_luong_them = 0
+        so_luong_cap_nhat = 0
+        xe_inventory_map = {}
+
+        # Hàm chuyển đổi số nguyên an toàn
+        def parse_stock(val):
+            if pd.isna(val):
+                return 0
+            try:
+                s = str(val).strip()
+                if not s or s.lower() in ['nan', 'none', '']:
+                    return 0
+                s = s.replace(',', '').replace('.0', '')
+                num = int(float(s))
+                if num > 99 or num < 0:
+                    return 0
+                return num
+            except:
+                return 0
+
+        for idx in range(len(df)):
+            if col_xe_idx >= df.shape[1] or col_mau_idx >= df.shape[1]:
+                continue
+                
+            ten_xe_excel = str(df.iloc[idx, col_xe_idx]).strip()
+            
+            if not ten_xe_excel or ten_xe_excel.lower() in ['nan', 'none', 'tổng', 'total', 'unnamed', '0']: 
+                continue
+            if len(ten_xe_excel) > 150 or 'split' in ten_xe_excel or 'constructor' in ten_xe_excel:
+                continue
+            
+            # KIỂM TRA CHẶT CHẼ: Bắt buộc phải có từ khóa xe máy hợp lệ mới tiếp tục xử lý
+            lower_xe = ten_xe_excel.lower()
+            if not any(kw in lower_xe for kw in valid_vehicle_keywords):
+                continue
+
+            ten_mau_excel = str(df.iloc[idx, col_mau_idx]).strip()
+            if not ten_mau_excel or ten_mau_excel.lower() in ['nan', 'none', 'unnamed', '0']:
+                continue
+            if len(ten_mau_excel) > 100 or 'window' in ten_mau_excel or 'ppConfig' in ten_mau_excel:
+                continue
+            
+            loai_xe_excel = tu_dong_phan_loai(ten_xe_excel)
+            
+            # Lấy tồn kho chuẩn xác
+            ns1 = parse_stock(df.iloc[idx, col_ns1_idx]) if col_ns1_idx < df.shape[1] else 0
+            ns2 = parse_stock(df.iloc[idx, col_ns2_idx]) if col_ns2_idx < df.shape[1] else 0
+            ns3 = parse_stock(df.iloc[idx, col_ns3_idx]) if col_ns3_idx < df.shape[1] else 0
+            ns4 = parse_stock(df.iloc[idx, col_ns4_idx]) if col_ns4_idx < df.shape[1] else 0
+            ns5 = parse_stock(df.iloc[idx, col_ns5_idx]) if col_ns5_idx < df.shape[1] else 0
+            nsm1 = parse_stock(df.iloc[idx, col_nsm1_idx]) if col_nsm1_idx < df.shape[1] else 0
+
+            # 1. Thêm hoặc cập nhật Xe vào CSDL
+            xe = Xe.query.filter_by(ten_xe=ten_xe_excel).first()
+            if not xe:
+                xe = Xe(
+                    loai_xe=loai_xe_excel,
+                    ten_xe=ten_xe_excel,
+                    phien_ban=''
+                )
+                db.session.add(xe)
+                db.session.flush()
+                so_luong_them += 1
+            else:
+                if loai_xe_excel and xe.loai_xe == "Chưa phân loại":
+                    xe.loai_xe = loai_xe_excel
+                so_luong_cap_nhat += 1
+
+            # 2. Cập nhật chi tiết tồn kho cho từng màu xe (XeMau)
+            mau_existing = XeMau.query.filter_by(xe_id=xe.id, ten_mau=ten_mau_excel).first()
+            if mau_existing:
+                mau_existing.ns1 = ns1
+                mau_existing.ns2 = ns2
+                mau_existing.ns3 = ns3
+                mau_existing.ns4 = ns4
+                mau_existing.ns5 = ns5
+                mau_existing.nsm1 = nsm1
+            else:
+                db.session.add(XeMau(
+                    xe_id=xe.id,
+                    ten_mau=ten_mau_excel,
+                    ns1=ns1,
+                    ns2=ns2,
+                    ns3=ns3,
+                    ns4=ns4,
+                    ns5=ns5,
+                    nsm1=nsm1
+                ))
+            
+            # Gom tổng tồn kho theo xe
+            if xe.id not in xe_inventory_map:
+                xe_inventory_map[xe.id] = {'ns1': 0, 'ns2': 0, 'ns3': 0, 'ns4': 0, 'ns5': 0, 'nsm1': 0}
+            
+            xe_inventory_map[xe.id]['ns1'] += ns1
+            xe_inventory_map[xe.id]['ns2'] += ns2
+            xe_inventory_map[xe.id]['ns3'] += ns3
+            xe_inventory_map[xe.id]['ns4'] += ns4
+            xe_inventory_map[xe.id]['ns5'] += ns5
+            xe_inventory_map[xe.id]['nsm1'] += nsm1
+
+        # Cập nhật tổng tồn kho vào bảng chính Xe
+        for xe_id, inv in xe_inventory_map.items():
+            xe_obj = Xe.query.get(xe_id)
+            if xe_obj:
+                xe_obj.ns1 = inv['ns1']
+                xe_obj.ns2 = inv['ns2']
+                xe_obj.ns3 = inv['ns3']
+                xe_obj.ns4 = inv['ns4']
+                xe_obj.ns5 = inv['ns5']
+                xe_obj.nsm1 = inv['nsm1']
+
+        db.session.commit()
+        print(f"-> ĐỒNG BỘ THÀNH CÔNG: Thêm mới {so_luong_them} xe, Cập nhật {so_luong_cap_nhat} xe.")
+        return True, f"Thêm mới {so_luong_them} xe, Cập nhật {so_luong_cap_nhat} xe."
+        
+    except Exception as e:
+        db.session.rollback()
+        traceback.print_exc()
+        return False, str(e)
+
+
+# --- 2. ROUTE BẤM NÚT THỦ CÔNG TRÊN GIAO DIỆN ADMIN ---
+@app.route("/admin/sync-sheet", methods=["POST"])
+@admin_required
+def sync_sheet():
+    success, message = run_sync_process()
+    if success:
+        flash(f"Đồng bộ Google Sheets thành công! {message}", "success")
+    else:
+        flash(f"Lỗi khi đồng bộ từ Google Sheets: {message}", "danger")
+    return redirect(url_for('admin_panel'))
+
+
+# --- 3. TIẾN TRÌNH CHẠY NGẦM TỰ ĐỘNG CẬP NHẬT ---
+def start_background_sync():
+    def run_loop():
+        time.sleep(10) # Chờ ứng dụng khởi động ổn định trong 10 giây đầu tiên
+        while True:
+            try:
+                # Tự động đồng bộ lại sau mỗi 300 giây (5 phút). 
+                # Bạn có thể thay đổi số giây tuỳ ý (VD: 180 = 3 phút, 600 = 10 phút)
+                time.sleep(5) 
+                with app.app_context():
+                    print("--- [BACKGROUND] ĐANG TỰ ĐỘNG CẬP NHẬT DỮ LIỆU TỪ GOOGLE SHEETS ---")
+                    success, msg = run_sync_process()
+                    print(f"--- [BACKGROUND] KẾT QUẢ: {msg} ---")
+            except Exception as e:
+                print(f"[BACKGROUND] Lỗi tự động đồng bộ nền: {e}")
+
+    thread = threading.Thread(target=run_loop, daemon=True)
+    thread.start()
+
+# Kích hoạt tiến trình chạy ngầm ngay khi khởi động ứng dụng Flask
+start_background_sync()
 
 @app.route("/admin/users")
 @admin_required
@@ -718,9 +986,11 @@ def format_xe_data_home(xe, khu_vuc_user):
         'ns5': xe.ns5,
         'nsm1': xe.nsm1
     }
+
 @app.route('/cong-cu-tinh-gia')
 def cong_cu_tinh_gia():
     return render_template('tinh_gia_nhap.html')
+
 if __name__ == "__main__":
     with app.app_context(): 
         db.create_all()

@@ -199,6 +199,35 @@
     </div>
 </div>
 
+<!-- Form Cấu hình Link Google Sheets (Đổi link khi qua tháng mới) -->
+<div class="card mb-4 shadow-sm border-primary">
+    <div class="card-body py-3">
+        <h6 class="text-primary mb-2 fw-bold"><i class="fa-solid fa-link me-1"></i> Đồng bộ Google Sheets (Cập nhật link khi qua tháng)</h6>
+        
+        <div class="row g-2 align-items-center">
+            <!-- Form lưu link -->
+            <div class="col-md-9 col-12">
+                <form action="/admin/settings" method="POST" class="d-flex gap-2">
+                    <input type="url" name="csv_url" value="{{ csv_url }}" class="form-control form-control-sm" placeholder="Dán link Publish to web (CSV) của tháng này vào đây..." required>
+                    <button type="submit" class="btn btn-outline-primary btn-sm fw-semibold text-nowrap"><i class="fa-solid fa-save me-1"></i> Lưu link</button>
+                </form>
+            </div>
+            
+            <!-- Nút Đồng bộ -->
+            <div class="col-md-3 col-12">
+                <form action="/admin/sync-sheet" method="POST">
+                    <button type="submit" class="btn btn-success btn-sm w-100 fw-semibold" {% if not csv_url %}disabled{% endif %} title="Vui lòng lưu link trước khi đồng bộ">
+                        <i class="fa-solid fa-rotate me-1"></i> Kéo dữ liệu ngay
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="form-text mt-1 text-muted" style="font-size: 11px;">
+            * Cấu hình lại link này mỗi khi qua tháng mới. Bạn cần "Lưu link" trước thì nút "Kéo dữ liệu ngay" mới sáng lên để sử dụng.
+        </div>
+    </div>
+</div>
+
 <!-- Bảng dữ liệu -->
 <div class="card shadow-sm mb-5">
     <div class="card-body p-0">
