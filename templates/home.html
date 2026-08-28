@@ -386,178 +386,187 @@
     });
 
     function showCarImage(carName, defaultImg, colors, basePrice, giaPhuong, giaXa, giaThap, giaTrung, userVung) {
-        const modal = document.getElementById('carImageModal');
-        const modalTitle = document.getElementById('modalCarTitle');
-        const modalImg = document.getElementById('modalCarImg');
-        const noImgText = document.getElementById('modalNoImgText');
-        const colorButtonsContainer = document.getElementById('modalColorButtons');
+    const modal = document.getElementById('carImageModal');
+    const modalTitle = document.getElementById('modalCarTitle');
+    const modalImg = document.getElementById('modalCarImg');
+    const noImgText = document.getElementById('modalNoImgText');
+    const colorButtonsContainer = document.getElementById('modalColorButtons');
 
-        const khuVuc = userVung || 'Cà Mau'; 
+    const khuVuc = userVung || 'Cà Mau'; 
+    
+    const regionTextEl = document.getElementById('modalRegionText');
+    if (regionTextEl) {
+        regionTextEl.innerText = khuVuc;
+    }
+
+    modalTitle.innerText = carName;
+    colorButtonsContainer.innerHTML = '';
+    
+    const giaGoc = Number(basePrice) || 0;
+    const phiPhuong = Number(giaPhuong) || 0;
+    const phiXa = Number(giaXa) || 0;
+    
+    const thapGoc = Number(giaThap) || 0;
+    const trungGoc = Number(giaTrung) || 0;
+
+    const draftInput = document.getElementById('draftPriceInput');
+    if (draftInput) {
+        draftInput.setAttribute('data-phi-phuong', phiPhuong);
+        draftInput.setAttribute('data-phi-xa', phiXa);
+        draftInput.value = '';
+        document.getElementById('draftTotalPhuong').innerText = '0 VNĐ';
+        document.getElementById('draftTotalXa').innerText = '0 VNĐ';
+    }
+
+    function updateModalPrice(currentBasePrice, currentThap, currentTrung) {
+        document.getElementById('modalBasePrice').innerText = formatCurrency(currentBasePrice);
+        document.getElementById('modalGiaPhuong').innerText = formatCurrency(phiPhuong);
+        document.getElementById('modalGiaXa').innerText = formatCurrency(phiXa);
+        document.getElementById('modalTongPhuong').innerText = formatCurrency(currentBasePrice + phiPhuong);
+        document.getElementById('modalTongXa').innerText = formatCurrency(currentBasePrice + phiXa);
         
-        const regionTextEl = document.getElementById('modalRegionText');
-        if (regionTextEl) {
-            regionTextEl.innerText = khuVuc;
-        }
+        document.getElementById('modalGiaThap').innerText = formatCurrency(currentThap);
+        document.getElementById('modalGiaTrung').innerText = formatCurrency(currentTrung);
+    }
 
-        modalTitle.innerText = carName;
-        colorButtonsContainer.innerHTML = '';
+    function updateStockDisplay(colorItem) {
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            const num = Number(val) || 0;
+            if (num > 0) {
+                el.innerText = num + " xe";
+                el.style.color = "#2e7d32";
+            } else {
+                el.innerText = "Hết hàng";
+                el.style.color = "#d32f2f";
+            }
+        };
+
+        setVal('stockNs1', colorItem ? colorItem.ns1 : 0);
+        setVal('stockNs2', colorItem ? colorItem.ns2 : 0);
+        setVal('stockNs3', colorItem ? colorItem.ns3 : 0);
+        setVal('stockNs4', colorItem ? colorItem.ns4 : 0);
+        setVal('stockNs5', colorItem ? colorItem.ns5 : 0);
+        setVal('stockNsm1', colorItem ? colorItem.nsm1 : 0);
+    }
+
+    if (colors && colors.length > 0) {
         
-        const giaGoc = Number(basePrice) || 0;
-        const phiPhuong = Number(giaPhuong) || 0;
-        const phiXa = Number(giaXa) || 0;
-        
-        const thapGoc = Number(giaThap) || 0;
-        const trungGoc = Number(giaTrung) || 0;
+        // [BẮT ĐẦU THÊM] - Khởi tạo màu mặc định là màu đầu tiên khi vừa mở Modal
+        window.activeColorName = colors[0].ten_mau; 
+        // [KẾT THÚC THÊM]
 
-        const draftInput = document.getElementById('draftPriceInput');
-        if (draftInput) {
-            draftInput.setAttribute('data-phi-phuong', phiPhuong);
-            draftInput.setAttribute('data-phi-xa', phiXa);
-            draftInput.value = '';
-            document.getElementById('draftTotalPhuong').innerText = '0 VNĐ';
-            document.getElementById('draftTotalXa').innerText = '0 VNĐ';
-        }
-
-        function updateModalPrice(currentBasePrice, currentThap, currentTrung) {
-            document.getElementById('modalBasePrice').innerText = formatCurrency(currentBasePrice);
-            document.getElementById('modalGiaPhuong').innerText = formatCurrency(phiPhuong);
-            document.getElementById('modalGiaXa').innerText = formatCurrency(phiXa);
-            document.getElementById('modalTongPhuong').innerText = formatCurrency(currentBasePrice + phiPhuong);
-            document.getElementById('modalTongXa').innerText = formatCurrency(currentBasePrice + phiXa);
+        colors.forEach((item, index) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
             
-            document.getElementById('modalGiaThap').innerText = formatCurrency(currentThap);
-            document.getElementById('modalGiaTrung').innerText = formatCurrency(currentTrung);
-        }
+            const cArr = getCssColors(item.ten_mau);
+            let bgStyle = cArr.length === 1 ? cArr[0] : `linear-gradient(135deg, ${cArr[0]} 50%, ${cArr[1]} 50%)`;
+            
+            btn.innerHTML = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:${bgStyle}; margin-right:6px; border:1px solid rgba(0,0,0,0.2); vertical-align:middle;"></span> ${item.ten_mau}`;
+            
+            btn.className = 'btn btn-sm ' + (index === 0 ? 'btn-dark' : 'btn-outline-dark');
+            btn.style.cssText = `
+                border-radius: 20px; 
+                padding: 6px 14px; 
+                border: 1px solid #1a1a1a; 
+                cursor: pointer; 
+                font-size: 13px; 
+                font-weight: 500;
+                background-color: ${index === 0 ? '#1a1a1a' : '#ffffff'};
+                color: ${index === 0 ? '#ffffff' : '#1a1a1a'};
+                display: inline-flex;
+                align-items: center;
+                transition: all 0.2s;
+            `;
+            
+            btn.onclick = function() {
+                // [BẮT ĐẦU THÊM] - Lưu lại màu người dùng vừa chọn vào biến toàn cục
+                window.activeColorName = item.ten_mau; 
+                // [KẾT THÚC THÊM]
 
-        function updateStockDisplay(colorItem) {
-            const setVal = (id, val) => {
-                const el = document.getElementById(id);
-                const num = Number(val) || 0;
-                if (num > 0) {
-                    el.innerText = num + " xe";
-                    el.style.color = "#2e7d32";
-                } else {
-                    el.innerText = "Hết hàng";
-                    el.style.color = "#d32f2f";
-                }
+                Array.from(colorButtonsContainer.children).forEach(b => {
+                    b.style.backgroundColor = '#ffffff';
+                    b.style.color = '#1a1a1a';
+                });
+                btn.style.backgroundColor = '#1a1a1a';
+                btn.style.color = '#ffffff';
+
+                modalImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
+
+                const chenhLech = Number(item.chenh_lech_gia) || 0;
+                updateModalPrice(giaGoc + chenhLech, thapGoc + chenhLech, trungGoc + chenhLech);
+                updateStockDisplay(item);
             };
 
-            setVal('stockNs1', colorItem ? colorItem.ns1 : 0);
-            setVal('stockNs2', colorItem ? colorItem.ns2 : 0);
-            setVal('stockNs3', colorItem ? colorItem.ns3 : 0);
-            setVal('stockNs4', colorItem ? colorItem.ns4 : 0);
-            setVal('stockNs5', colorItem ? colorItem.ns5 : 0);
-            setVal('stockNsm1', colorItem ? colorItem.nsm1 : 0);
-        }
-
-        if (colors && colors.length > 0) {
-            colors.forEach((item, index) => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                
-                const cArr = getCssColors(item.ten_mau);
-                let bgStyle = cArr.length === 1 ? cArr[0] : `linear-gradient(135deg, ${cArr[0]} 50%, ${cArr[1]} 50%)`;
-                
-                btn.innerHTML = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:${bgStyle}; margin-right:6px; border:1px solid rgba(0,0,0,0.2); vertical-align:middle;"></span> ${item.ten_mau}`;
-                
-                btn.className = 'btn btn-sm ' + (index === 0 ? 'btn-dark' : 'btn-outline-dark');
-                btn.style.cssText = `
-                    border-radius: 20px; 
-                    padding: 6px 14px; 
-                    border: 1px solid #1a1a1a; 
-                    cursor: pointer; 
-                    font-size: 13px; 
-                    font-weight: 500;
-                    background-color: ${index === 0 ? '#1a1a1a' : '#ffffff'};
-                    color: ${index === 0 ? '#ffffff' : '#1a1a1a'};
-                    display: inline-flex;
-                    align-items: center;
-                    transition: all 0.2s;
-                `;
-                
-                btn.onclick = function() {
-                    Array.from(colorButtonsContainer.children).forEach(b => {
-                        b.style.backgroundColor = '#ffffff';
-                        b.style.color = '#1a1a1a';
-                    });
-                    btn.style.backgroundColor = '#1a1a1a';
-                    btn.style.color = '#ffffff';
-
-                    modalImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
-
-                    const chenhLech = Number(item.chenh_lech_gia) || 0;
-                    updateModalPrice(giaGoc + chenhLech, thapGoc + chenhLech, trungGoc + chenhLech);
-                    updateStockDisplay(item);
-                };
-
-                colorButtonsContainer.appendChild(btn);
-            });
-
-            modalImg.src = "{{ url_for('static', filename='uploads/') }}" + colors[0].hinh_anh_mau;
-            modalImg.style.display = 'block';
-            noImgText.style.display = 'none';
-
-            const chenhLechDau = Number(colors[0].chenh_lech_gia) || 0;
-            updateModalPrice(giaGoc + chenhLechDau, thapGoc + chenhLechDau, trungGoc + chenhLechDau);
-            updateStockDisplay(colors[0]);
-
-        } else if (defaultImg && defaultImg.trim() !== '') {
-            modalImg.src = defaultImg;
-            modalImg.style.display = 'block';
-            noImgText.style.display = 'none';
-            updateModalPrice(giaGoc, thapGoc, trungGoc);
-            updateStockDisplay(null);
-        } else {
-            modalImg.src = '';
-            modalImg.style.display = 'none';
-            noImgText.style.display = 'block';
-            updateModalPrice(giaGoc, thapGoc, trungGoc);
-            updateStockDisplay(null);
-        }
-        
-        document.querySelector('.extra-prices-content').style.display = 'none';
-        document.querySelector('.expand-toggle').classList.remove('active');
-        document.querySelector('.toggle-text').innerText = "Xem thêm giá bán thấp và trung";
-
-        modal.style.display = 'flex';
-    }
-
-    function closeModal() {
-        document.getElementById('carImageModal').style.display = 'none';
-    }
-
-    window.onclick = function(event) {
-        const modal = document.getElementById('carImageModal');
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
-    }
-
-    function toggleExtraPrices(element) {
-        element.classList.toggle('active');
-        var content = element.nextElementSibling;
-        var textSpan = element.querySelector('.toggle-text');
-        
-        if (content.style.display === "none" || content.style.display === "") {
-            content.style.display = "block";
-            textSpan.innerText = "Thu gọn";
-        } else {
-            content.style.display = "none";
-            textSpan.innerText = "Xem thêm giá bán thấp và trung";
-        }
-    }
-
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
-                .then(registration => {
-                    console.log('PWA: Đăng ký Service Worker thành công!');
-                })
-                .catch(error => {
-                    console.log('PWA: Lỗi đăng ký Service Worker:', error);
-                });
+            colorButtonsContainer.appendChild(btn);
         });
+
+        modalImg.src = "{{ url_for('static', filename='uploads/') }}" + colors[0].hinh_anh_mau;
+        modalImg.style.display = 'block';
+        noImgText.style.display = 'none';
+
+        const chenhLechDau = Number(colors[0].chenh_lech_gia) || 0;
+        updateModalPrice(giaGoc + chenhLechDau, thapGoc + chenhLechDau, trungGoc + chenhLechDau);
+        updateStockDisplay(colors[0]);
+
+    } else if (defaultImg && defaultImg.trim() !== '') {
+        modalImg.src = defaultImg;
+        modalImg.style.display = 'block';
+        noImgText.style.display = 'none';
+        updateModalPrice(giaGoc, thapGoc, trungGoc);
+        updateStockDisplay(null);
+    } else {
+        modalImg.src = '';
+        modalImg.style.display = 'none';
+        noImgText.style.display = 'block';
+        updateModalPrice(giaGoc, thapGoc, trungGoc);
+        updateStockDisplay(null);
     }
+    
+    document.querySelector('.extra-prices-content').style.display = 'none';
+    document.querySelector('.expand-toggle').classList.remove('active');
+    document.querySelector('.toggle-text').innerText = "Xem thêm giá bán thấp và trung";
+
+    modal.style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('carImageModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('carImageModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function toggleExtraPrices(element) {
+    element.classList.toggle('active');
+    var content = element.nextElementSibling;
+    var textSpan = element.querySelector('.toggle-text');
+    
+    if (content.style.display === "none" || content.style.display === "") {
+        content.style.display = "block";
+        textSpan.innerText = "Thu gọn";
+    } else {
+        content.style.display = "none";
+        textSpan.innerText = "Xem thêm giá bán thấp và trung";
+    }
+}
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+            .then(registration => {
+                console.log('PWA: Đăng ký Service Worker thành công!');
+            })
+            .catch(error => {
+                console.log('PWA: Lỗi đăng ký Service Worker:', error);
+            });
+    });
+}
 </script>
 
 <!-- SCRIPT AJAX POLLING ĐỂ TỰ ĐỘNG CẬP NHẬT GIAO DIỆN NGẦM -->
