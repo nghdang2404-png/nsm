@@ -65,10 +65,27 @@
         {% endif %}
     </div>
 
+    <!-- KHU VỰC THÔNG TIN USER VÀ NÚT CHỌN VÙNG TRỰC TIẾP -->
     <div class="user-panel">
-        <div class="user-badge">
-            <i class="fas fa-circle" style="color: #2e7d32;"></i>
-            <span>Xin chào, <strong>{{ username }}</strong> (Khu vực: <strong>{{ user_vung | default(session.get('vung', 'Cà Mau'), true) }}</strong>)</span>
+        <div class="user-badge" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <i class="fas fa-circle" style="color: #2e7d32;"></i>
+                <span>Xin chào, <strong>{{ username }}</strong></span>
+            </div>
+            
+<!-- NÚT CHỌN VÙNG XEM GIÁ TRỰC TIẾP (ĐÃ PHÂN QUYỀN) -->
+            {% if session.get('role') == 'admin' %}
+                <form action="{{ url_for('set_vung') }}" method="POST" style="margin: 0; display: inline-flex; align-items: center;">
+                    <select name="vung" class="filter-select" style="padding: 3px 8px; font-size: 12px; height: auto; background: #222; color: #fff; border: 1px solid #555; border-radius: 4px; cursor: pointer;" onchange="this.form.submit()" title="Chuyển đổi khu vực xem giá">
+                        <option value="Cà Mau" {% if user_vung == 'Cà Mau' %}selected{% endif %}>Khu vực: Cà Mau</option>
+                        <option value="Bạc Liêu" {% if user_vung == 'Bạc Liêu' %}selected{% endif %}>Khu vực: Bạc Liêu</option>
+                    </select>
+                </form>
+            {% else %}
+                <span style="background: #222; color: #ffcc00; padding: 4px 10px; font-size: 12px; border: 1px solid #555; border-radius: 4px; font-weight: 500;">
+                    <i class="fas fa-map-marker-alt"></i> Khu vực: {{ user_vung | default(session.get('vung', 'Cà Mau'), true) }}
+                </span>
+            {% endif %}
         </div>
         <a href="{{ url_for('logout') }}" class="logout-btn">
             <i class="fas fa-sign-out-alt"></i> Đăng xuất
@@ -451,10 +468,7 @@
     }
 
     if (colors && colors.length > 0) {
-        
-        // [BẮT ĐẦU THÊM] - Khởi tạo màu mặc định là màu đầu tiên khi vừa mở Modal
         window.activeColorName = colors[0].ten_mau; 
-        // [KẾT THÚC THÊM]
 
         colors.forEach((item, index) => {
             const btn = document.createElement('button');
@@ -481,9 +495,7 @@
             `;
             
             btn.onclick = function() {
-                // [BẮT ĐẦU THÊM] - Lưu lại màu người dùng vừa chọn vào biến toàn cục
                 window.activeColorName = item.ten_mau; 
-                // [KẾT THÚC THÊM]
 
                 Array.from(colorButtonsContainer.children).forEach(b => {
                     b.style.backgroundColor = '#ffffff';
@@ -523,7 +535,7 @@
         updateModalPrice(giaGoc, thapGoc, trungGoc);
         updateStockDisplay(null);
     }
-// Thiết lập mặc định THU GỌN khối Giá Thấp / Trung / Cao khi mở modal
+
     const extraContent = document.querySelector('.extra-prices-content');
     const expandToggle = document.querySelector('.expand-toggle');
     if (extraContent) {
@@ -542,7 +554,6 @@
         }
     }
 
-    // Thiết lập mặc định luôn mở rộng khối Máy tính
     const draftContent = document.getElementById('draftPriceContent');
     if (draftContent) {
         draftContent.style.display = 'block';
@@ -597,7 +608,6 @@ if ('serviceWorker' in navigator) {
 
 <!-- SCRIPT AJAX POLLING ĐỂ TỰ ĐỘNG CẬP NHẬT GIAO DIỆN NGẦM -->
 <script>
-    // Biến toàn cục để lưu trạng thái màu đang được chọn trên Modal
     window.activeColorName = null;
     window.currentCarModalData = null;
 
@@ -609,7 +619,6 @@ if ('serviceWorker' in navigator) {
             })
             .then(res => {
                 if (res.success && res.data) {
-                    // 1. Cập nhật dữ liệu cho các dòng tr ngoài bảng chính
                     res.data.forEach(item => {
                         let row = document.getElementById(`xe-row-${item.id}`);
                         if (row) {
@@ -622,7 +631,6 @@ if ('serviceWorker' in navigator) {
                         }
                     });
 
-                    // 2. Nếu Modal đang mở, tự động cập nhật lại giao diện Modal ngay lập tức
                     const modal = document.getElementById('carImageModal');
                     if (modal && modal.style.display === 'flex') {
                         const modalTitle = document.getElementById('modalCarTitle');
@@ -645,7 +653,6 @@ if ('serviceWorker' in navigator) {
 
                             let colors = matchedItem.mau_xe || [];
                             
-                            // Xác định màu đang chọn hiện tại (nếu chưa có thì lấy màu đầu tiên)
                             let selectedColorItem = colors.find(c => c.ten_mau === window.activeColorName) || colors[0];
                             if (selectedColorItem && !window.activeColorName) {
                                 window.activeColorName = selectedColorItem.ten_mau;
@@ -653,7 +660,6 @@ if ('serviceWorker' in navigator) {
 
                             const chenhLech = selectedColorItem ? (Number(selectedColorItem.chenh_lech_gia) || 0) : 0;
 
-                            // Cập nhật hiển thị giá tiền
                             document.getElementById('modalBasePrice').innerText = formatCurrency(basePrice + chenhLech);
                             document.getElementById('modalGiaPhuong').innerText = formatCurrency(giaPhuong);
                             document.getElementById('modalGiaXa').innerText = formatCurrency(giaXa);
@@ -662,7 +668,6 @@ if ('serviceWorker' in navigator) {
                             document.getElementById('modalGiaThap').innerText = formatCurrency(thapGoc + chenhLech);
                             document.getElementById('modalGiaTrung').innerText = formatCurrency(trungGoc + chenhLech);
 
-                            // Cập nhật lại số lượng tồn kho theo màu đang chọn
                             const setVal = (id, val) => {
                                 const el = document.getElementById(id);
                                 if (!el) return;
@@ -688,10 +693,8 @@ if ('serviceWorker' in navigator) {
                                 setVal('stockNs4', 0); setVal('stockNs5', 0); setVal('stockNsm1', 0);
                             }
 
-                            // Cập nhật lại các nút chọn màu sắc để phản ánh đúng trạng thái mới nhất
                             const colorButtonsContainer = document.getElementById('modalColorButtons');
                             if (colorButtonsContainer && colors.length > 0) {
-                                // Lưu vị trí cuộn hoặc trạng thái nếu cần, ở đây ta render lại danh sách nút màu
                                 colorButtonsContainer.innerHTML = '';
                                 colors.forEach((item) => {
                                     const btn = document.createElement('button');
@@ -753,8 +756,6 @@ if ('serviceWorker' in navigator) {
                             }
                         }
                     }
-
-                    console.log("Đã đồng bộ dữ liệu ngầm và cập nhật giao diện real-time lúc:", new Date().toLocaleTimeString());
                 }
             })
             .catch(error => {
@@ -762,7 +763,6 @@ if ('serviceWorker' in navigator) {
             });
     }
 
-    // Tự động gọi API cập nhật ngầm cứ sau 3 giây
     setInterval(fetchAndUpdateHomeData, 3000);
 </script>
 </body>

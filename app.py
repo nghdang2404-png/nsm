@@ -218,12 +218,22 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+@app.route("/set-vung", methods=["POST"])
+def set_vung():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    vung_moi = request.form.get("vung", "").strip()
+    if vung_moi:
+        session['vung'] = vung_moi
+        flash(f"Đã chuyển khu vực hiển thị sang: {vung_moi}", "success")
+    return redirect(url_for('home'))
+
 @app.route("/home")
 def home():
     if 'username' not in session: return redirect(url_for('login'))
     
     current_user = User.query.filter_by(username=session['username']).first()
-    khu_vuc_user = (current_user.khu_vuc or session.get('vung', 'Cà Mau')).strip()
+    khu_vuc_user = (session.get('vung') or current_user.khu_vuc or 'Cà Mau').strip()
     
     search_query = request.args.get('search', '')
     loai_filter = request.args.get('loai', '')
@@ -309,7 +319,6 @@ def run_sync_process():
             separator = '&' if '?' in csv_url else '?'
             csv_url += f'{separator}output=csv'
         
-        # Thêm timestamp chống cache để Google Sheets trả về dữ liệu tươi nhất
         import time as t_mod
         cache_buster = f"&_t={int(t_mod.time())}"
         csv_url += cache_buster
@@ -324,7 +333,6 @@ def run_sync_process():
             'lead', 'vario', 'cub', 'rebel', 'cb', 'cbr', 'afb', 'afs', 'supream'
         ]
 
-        # --- 1. TỐI ƯU XÓA XE RÁC BẰNG BATCH DELETE (1 CÂU LỆNH DUY NHẤT) ---
         all_xe_db = Xe.query.all()
         all_xe_dict = {xe.ten_xe: xe for xe in all_xe_db}
         
@@ -336,12 +344,10 @@ def run_sync_process():
             XeMau.query.filter(XeMau.xe_id.in_(garbage_xe_ids)).delete(synchronize_session=False)
             Xe.query.filter(Xe.id.in_(garbage_xe_ids)).delete(synchronize_session=False)
             db.session.commit()
-            # Làm mới lại dictionary sau khi xóa
             all_xe_dict = {xe.ten_xe: xe for xe in Xe.query.all()}
 
         all_mau_dict = {(m.xe_id, m.ten_mau): m for m in XeMau.query.all()}
 
-        # Tìm dòng tiêu đề
         header_row_idx = None
         for i, row in df_raw.iterrows():
             row_str = " ".join([str(val).upper() for val in row.values])
@@ -381,7 +387,6 @@ def run_sync_process():
             except:
                 return 0
 
-        # --- 2. GOM NHÓM DỮ LIỆU BẰNG PANDAS (GIẢM SỐ LƯỢNG VÒNG LẶP XUỐNG MỨC TỐI THIỂU) ---
         processed_data = []
         for idx in range(len(df)):
             if col_xe_idx >= df.shape[1] or col_mau_idx >= df.shape[1]:
@@ -414,7 +419,6 @@ def run_sync_process():
             return False, "Không tìm thấy dữ liệu hợp lệ trong Google Sheets."
 
         df_clean = pd.DataFrame(processed_data)
-        # Gom nhóm theo Tên xe và Màu để cộng dồn tồn kho nếu có dòng bị trùng
         df_grouped = df_clean.groupby(['ten_xe', 'ten_mau'], as_index=False).sum()
 
         so_luong_them = 0
@@ -422,7 +426,6 @@ def run_sync_process():
         xe_inventory_map = {}
         new_xe_objects = []
 
-        # --- 3. XỬ LÝ HÀNG LOẠT TRONG BỘ NHỚ (KHÔNG GỌI FLUSH/SQL TRONG VÒNG LẶP) ---
         for _, row in df_grouped.iterrows():
             ten_xe_excel = row['ten_xe']
             ten_mau_excel = row['ten_mau']
@@ -443,11 +446,9 @@ def run_sync_process():
                     xe.loai_xe = loai_xe_excel
                 so_luong_cap_nhat += 1
 
-        # Flush đúng 1 lần duy nhất cho toàn bộ xe mới để lấy ID cho các bản ghi màu
         if new_xe_objects:
             db.session.flush()
 
-        # Cập nhật lại từ điển màu sau khi đã có ID đầy đủ
         all_mau_dict = {(m.xe_id, m.ten_mau): m for m in XeMau.query.all()}
 
         for _, row in df_grouped.iterrows():
@@ -476,14 +477,12 @@ def run_sync_process():
             xe_inventory_map[xe.id]['ns5'] += ns5
             xe_inventory_map[xe.id]['nsm1'] += nsm1
 
-        # Cập nhật tổng tồn kho vào bảng chính Xe
         for xe_id, inv in xe_inventory_map.items():
             xe_obj = Xe.query.get(xe_id)
             if xe_obj:
                 xe_obj.ns1, xe_obj.ns2, xe_obj.ns3 = inv['ns1'], inv['ns2'], inv['ns3']
                 xe_obj.ns4, xe_obj.ns5, xe_obj.nsm1 = inv['ns4'], inv['ns5'], inv['nsm1']
 
-        # Commit toàn bộ giao dịch 1 lần duy nhất xuống CSDL
         db.session.commit()
         return True, f"Thêm mới {so_luong_them} xe, Cập nhật {so_luong_cap_nhat} xe."
         
@@ -494,10 +493,10 @@ def run_sync_process():
 
 def start_background_sync():
     def run_loop():
-        time.sleep(6) # Chờ 30 giây sau khi khởi động web là chạy lần đầu
+        time.sleep(6)
         while True:
             try:
-                time.sleep(6) # Cứ mỗi 60 giây (1 phút) tự động đồng bộ 1 lần
+                time.sleep(6)
                 with app.app_context():
                     success, msg = run_sync_process()
                     print(f"--- [BACKGROUND SYNC] {msg} ---")
@@ -517,14 +516,12 @@ def sync_sheet():
         flash(f"Lỗi khi đồng bộ từ Google Sheets: {message}", "danger")
     return redirect(url_for('admin_panel'))
 
-
-
 @app.route("/api/get-home-data")
 def get_home_data():
     if 'username' not in session:
         return jsonify({"success": False}), 401
     current_user = User.query.filter_by(username=session['username']).first()
-    khu_vuc_user = (current_user.khu_vuc or session.get('vung', 'Cà Mau')).strip()
+    khu_vuc_user = (session.get('vung') or current_user.khu_vuc or 'Cà Mau').strip()
     
     danh_sach_xe = Xe.query.order_by(get_order_priority(), Xe.ten_xe.asc()).all()
     data = [format_xe_data_home(xe, khu_vuc_user) for xe in danh_sach_xe]
@@ -961,7 +958,6 @@ if __name__ == "__main__":
         db.session.commit()
         print(f"Đã làm mới phân loại thành công!")
         
-    # THÊM DÒNG NÀY ĐỂ BẬT TỰ ĐỘNG ĐỒNG BỘ
     start_background_sync() 
     
     app.run(debug=True)
