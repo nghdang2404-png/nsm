@@ -2,15 +2,19 @@ import os
 import re
 import unicodedata
 import ssl
-ssl._create_default_https_context = ssl._create_unverified_context
-from datetime import timedelta
+import threading
+import time
+import traceback
+import pandas as pd
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import case
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-import pandas as pd
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key'
@@ -109,7 +113,6 @@ class XeMau(db.Model):
         return {
             'ten_mau': self.ten_mau, 
             'chenh_lech_gia': chenh_lech_vung,
-            # Bổ sung 2 dòng này để template home.html đọc được giá trị chênh lệch từng vùng
             'chenh_lech_cm': self.chenh_lech_cm or 0,
             'chenh_lech_bl': self.chenh_lech_bl or 0,
             'ds_ma_mau': lay_danh_sach_ma_mau(self.ten_mau),
@@ -201,6 +204,21 @@ def get_order_priority():
         else_=4
     )
 
+def cap_nhat_thoi_gian_dong_bo(vung='Cà Mau'):
+    vn_time = datetime.now(timezone(timedelta(hours=7)))
+    time_str = vn_time.strftime("%H:%M' %d/%m/%Y")
+    
+    is_bl = 'bạc liêu' in (vung or '').lower()
+    key_name = 'last_updated_bl' if is_bl else 'last_updated_cm'
+    
+    setting = Setting.query.filter_by(key=key_name).first()
+    if not setting:
+        db.session.add(Setting(key=key_name, value=time_str))
+    else:
+        setting.value = time_str
+    
+    db.session.commit()
+
 # --- ROUTES AUTH & USER ---
 @app.route("/", methods=["GET", "POST"])
 def login():
@@ -233,10 +251,20 @@ def set_vung():
 
 @app.route("/home")
 def home():
-    if 'username' not in session: return redirect(url_for('login'))
+    if 'username' not in session: 
+        return redirect(url_for('login'))
     
     current_user = User.query.filter_by(username=session['username']).first()
-    khu_vuc_user = (session.get('vung') or current_user.khu_vuc or 'Cà Mau').strip()
+    khu_vuc_user = (session.get('vung') or (current_user.khu_vuc if current_user else 'Cà Mau')).strip()
+    
+    is_bl = 'bạc liêu' in khu_vuc_user.lower()
+    key_name = 'last_updated_bl' if is_bl else 'last_updated_cm'
+    setting_time = Setting.query.filter_by(key=key_name).first()
+    
+    if setting_time and setting_time.value:
+        last_updated_str = setting_time.value
+    else:
+        last_updated_str = "Chưa cập nhật"
     
     search_query = request.args.get('search', '')
     loai_filter = request.args.get('loai', '')
@@ -250,7 +278,7 @@ def home():
     danh_sach_xe = query.order_by(get_order_priority(), Xe.ten_xe.asc()).all()
     danh_sach_loai = [l[0] for l in db.session.query(Xe.loai_xe).distinct().all() if l[0]]
     data = [format_xe_data_home(xe, khu_vuc_user) for xe in danh_sach_xe]
-        
+       
     return render_template(
         "home.html", 
         danh_sach_xe=data, 
@@ -258,7 +286,8 @@ def home():
         loai_filter=loai_filter, 
         danh_sach_loai=danh_sach_loai, 
         username=session.get('username'),
-        user_vung=khu_vuc_user
+        user_vung=khu_vuc_user,
+        last_updated=last_updated_str  
     )
 
 # --- ADMIN ROUTES ---
@@ -304,10 +333,6 @@ def save_settings():
     flash("Lưu link Google Sheets thành công!", "success")
     return redirect(url_for('admin_panel'))
 
-import threading
-import time
-import traceback
-
 def run_sync_process():
     setting = Setting.query.filter_by(key='csv_url').first()
     csv_url = setting.value if setting else None
@@ -322,8 +347,7 @@ def run_sync_process():
             separator = '&' if '?' in csv_url else '?'
             csv_url += f'{separator}output=csv'
         
-        import time as t_mod
-        cache_buster = f"&_t={int(t_mod.time())}"
+        cache_buster = f"&_t={int(time.time())}"
         csv_url += cache_buster
 
         try:
@@ -377,6 +401,12 @@ def run_sync_process():
         col_ns5_idx = col_mau_idx + 5
         col_nsm1_idx = col_mau_idx + 6
 
+        col_gia_cm_cao_idx = -1
+        col_gia_bl_cao_idx = -1
+        for idx, col_name in enumerate(cols):
+            if 'gia_cm_cao' in col_name.lower(): col_gia_cm_cao_idx = idx
+            if 'gia_bl_cao' in col_name.lower(): col_gia_bl_cao_idx = idx
+
         if col_xe_idx < df.shape[1]:
             df.iloc[:, col_xe_idx] = df.iloc[:, col_xe_idx].ffill()
 
@@ -412,31 +442,34 @@ def run_sync_process():
             ns5 = parse_stock(df.iloc[idx, col_ns5_idx]) if col_ns5_idx < df.shape[1] else 0
             nsm1 = parse_stock(df.iloc[idx, col_nsm1_idx]) if col_nsm1_idx < df.shape[1] else 0
 
+            gia_cm_moi = safe_float(df.iloc[idx, col_gia_cm_cao_idx]) if col_gia_cm_cao_idx != -1 and col_gia_cm_cao_idx < df.shape[1] else None
+            gia_bl_moi = safe_float(df.iloc[idx, col_gia_bl_cao_idx]) if col_gia_bl_cao_idx != -1 and col_gia_bl_cao_idx < df.shape[1] else None
+
             processed_data.append({
                 'ten_xe': ten_xe_excel,
                 'ten_mau': ten_mau_excel,
-                'ns1': ns1, 'ns2': ns2, 'ns3': ns3, 'ns4': ns4, 'ns5': ns5, 'nsm1': nsm1
+                'ns1': ns1, 'ns2': ns2, 'ns3': ns3, 'ns4': ns4, 'ns5': ns5, 'nsm1': nsm1,
+                'gia_cm_moi': gia_cm_moi,
+                'gia_bl_moi': gia_bl_moi
             })
 
         if not processed_data:
             return False, "Không tìm thấy dữ liệu hợp lệ trong Google Sheets."
 
         df_clean = pd.DataFrame(processed_data)
-        df_grouped = df_clean.groupby(['ten_xe', 'ten_mau'], as_index=False).sum()
-
+        
         so_luong_them = 0
         so_luong_cap_nhat = 0
         xe_inventory_map = {}
         new_xe_objects = []
+        
+        has_price_changed_cm = False
+        has_price_changed_bl = False
 
-        for _, row in df_grouped.iterrows():
+        for _, row in df_clean.iterrows():
             ten_xe_excel = row['ten_xe']
-            ten_mau_excel = row['ten_mau']
             loai_xe_excel = tu_dong_phan_loai(ten_xe_excel)
             
-            ns1, ns2, ns3 = int(row['ns1']), int(row['ns2']), int(row['ns3'])
-            ns4, ns5, nsm1 = int(row['ns4']), int(row['ns5']), int(row['nsm1'])
-
             if ten_xe_excel not in all_xe_dict:
                 xe = Xe(loai_xe=loai_xe_excel, ten_xe=ten_xe_excel, phien_ban='')
                 new_xe_objects.append(xe)
@@ -449,12 +482,21 @@ def run_sync_process():
                     xe.loai_xe = loai_xe_excel
                 so_luong_cap_nhat += 1
 
+            if row.get('gia_cm_moi') is not None and row['gia_cm_moi'] > 0:
+                if xe.gia_cm_cao != row['gia_cm_moi']:
+                    xe.gia_cm_cao = row['gia_cm_moi']
+                    has_price_changed_cm = True
+            if row.get('gia_bl_moi') is not None and row['gia_bl_moi'] > 0:
+                if xe.gia_bl_cao != row['gia_bl_moi']:
+                    xe.gia_bl_cao = row['gia_bl_moi']
+                    has_price_changed_bl = True
+
         if new_xe_objects:
             db.session.flush()
 
         all_mau_dict = {(m.xe_id, m.ten_mau): m for m in XeMau.query.all()}
 
-        for _, row in df_grouped.iterrows():
+        for _, row in df_clean.iterrows():
             xe = all_xe_dict[row['ten_xe']]
             ten_mau_excel = row['ten_mau']
             ns1, ns2, ns3 = int(row['ns1']), int(row['ns2']), int(row['ns3'])
@@ -481,12 +523,18 @@ def run_sync_process():
             xe_inventory_map[xe.id]['nsm1'] += nsm1
 
         for xe_id, inv in xe_inventory_map.items():
-            xe_obj = Xe.query.get(xe_id)
+            xe_obj = db.session.get(Xe, xe_id)
             if xe_obj:
                 xe_obj.ns1, xe_obj.ns2, xe_obj.ns3 = inv['ns1'], inv['ns2'], inv['ns3']
                 xe_obj.ns4, xe_obj.ns5, xe_obj.nsm1 = inv['ns4'], inv['ns5'], inv['nsm1']
 
         db.session.commit()
+        
+        if has_price_changed_cm:
+            cap_nhat_thoi_gian_dong_bo("Cà Mau")
+        if has_price_changed_bl:
+            cap_nhat_thoi_gian_dong_bo("Bạc Liêu")
+            
         return True, f"Thêm mới {so_luong_them} xe, Cập nhật {so_luong_cap_nhat} xe."
         
     except Exception as e:
@@ -519,17 +567,38 @@ def sync_sheet():
         flash(f"Lỗi khi đồng bộ từ Google Sheets: {message}", "danger")
     return redirect(url_for('admin_panel'))
 
+
 @app.route("/api/get-home-data")
 def get_home_data():
-    if 'username' not in session:
-        return jsonify({"success": False}), 401
-    current_user = User.query.filter_by(username=session['username']).first()
-    khu_vuc_user = (session.get('vung') or current_user.khu_vuc or 'Cà Mau').strip()
+    vung = session.get('vung', 'Cà Mau')
+    is_bl = 'bạc liêu' in vung.lower()
     
-    danh_sach_xe = Xe.query.order_by(get_order_priority(), Xe.ten_xe.asc()).all()
-    data = [format_xe_data_home(xe, khu_vuc_user) for xe in danh_sach_xe]
-    return jsonify({"success": True, "data": data})
+    key_name = 'last_updated_bl' if is_bl else 'last_updated_cm'
+    st = Setting.query.filter_by(key=key_name).first()
+    last_updated_str = st.value if st else "Chưa cập nhật"
 
+    danh_sach_xe = Xe.query.all()
+    data = []
+    for xe in danh_sach_xe:
+        data.append({
+            "id": xe.id,
+            "ten_xe": xe.ten_xe,
+            "loai_xe": xe.loai_xe,
+            "gia_cao": xe.gia_bl_cao if is_bl else xe.gia_cm_cao,
+            "gia_trung": xe.gia_bl_trung if is_bl else xe.gia_cm_trung,
+            "gia_thap": xe.gia_bl_thap if is_bl else xe.gia_cm_thap,
+            "gia_giay_to_phuong": getattr(xe, 'gia_giay_to_phuong', 0),
+            "gia_giay_to_xa": getattr(xe, 'gia_giay_to_xa', 0),
+            # Sửa chỗ này: chuyển đổi danh sách XeMau thành dictionary bằng to_dict()
+            "mau_xe": [mau.to_dict(vung) for mau in xe.mau_xe]
+        })
+        
+    return jsonify({
+        "success": True, 
+        "vung": vung,
+        "last_updated": last_updated_str,
+        "data": data
+    })
 @app.route("/admin/api/data", methods=["GET"])
 @admin_required
 def get_admin_data():
@@ -600,7 +669,7 @@ def register():
 @app.route("/admin/users/edit/<int:id>", methods=["POST"])
 @admin_required
 def edit_user(id):
-    user = User.query.get_or_404(id)
+    user = db.get_or_404(User, id)
     new_password = request.form.get("password")
     if new_password:
         user.password = generate_password_hash(new_password)
@@ -616,7 +685,7 @@ def edit_user(id):
 @app.route("/admin/users/delete/<int:id>")
 @admin_required
 def delete_user(id):
-    user = User.query.get_or_404(id)
+    user = db.get_or_404(User, id)
     if user.username == session.get('username'):
         flash("Không thể xóa tài khoản của chính bạn!", "danger")
         return redirect(url_for('manage_users'))
@@ -677,6 +746,13 @@ def add_xe():
                 ))
                 
         db.session.commit()
+        
+        # Nếu thêm xe mới mà có nhập giá cao > 0, cập nhật thời gian tương ứng
+        if new_xe.gia_cm_cao > 0:
+            cap_nhat_thoi_gian_dong_bo("Cà Mau")
+        if new_xe.gia_bl_cao > 0:
+            cap_nhat_thoi_gian_dong_bo("Bạc Liêu")
+
         flash("Thêm xe mới thành công!", "success")
     except Exception as e:
         db.session.rollback()
@@ -687,7 +763,7 @@ def add_xe():
 @app.route("/admin/edit/<int:id>", methods=["POST"])
 @admin_required
 def edit_xe(id):
-    xe = Xe.query.get_or_404(id)
+    xe = db.get_or_404(Xe, id)
     ten_xe_moi = request.form.get("ten_xe", "").strip()
     if ten_xe_moi and ten_xe_moi != xe.ten_xe and Xe.query.filter_by(ten_xe=ten_xe_moi).first():
         flash(f"Lỗi: Tên xe '{ten_xe_moi}' đã tồn tại!", "danger")
@@ -696,6 +772,14 @@ def edit_xe(id):
     loai_xe_nhap = request.form.get("loai_xe", "").strip()
     if not loai_xe_nhap or loai_xe_nhap == "Chưa phân loại":
         loai_xe_nhap = tu_dong_phan_loai(ten_xe_moi if ten_xe_moi else xe.ten_xe)
+
+    # Lưu lại giá trị cũ để kiểm tra thay đổi
+    old_cm_cao = xe.gia_cm_cao
+    old_bl_cao = xe.gia_bl_cao
+    old_cm_trung = xe.gia_cm_trung
+    old_bl_trung = xe.gia_bl_trung
+    old_cm_thap = xe.gia_cm_thap
+    old_bl_thap = xe.gia_bl_thap
 
     try:
         xe.loai_xe = loai_xe_nhap
@@ -741,6 +825,13 @@ def edit_xe(id):
                 ))
 
         db.session.commit()
+
+        # TỰ ĐỘNG CẬP NHẬT THỜI GIAN NẾU GIÁ THAY ĐỔI
+        if xe.gia_cm_cao != old_cm_cao or xe.gia_cm_trung != old_cm_trung or xe.gia_cm_thap != old_cm_thap:
+            cap_nhat_thoi_gian_dong_bo("Cà Mau")
+        if xe.gia_bl_cao != old_bl_cao or xe.gia_bl_trung != old_bl_trung or xe.gia_bl_thap != old_bl_thap:
+            cap_nhat_thoi_gian_dong_bo("Bạc Liêu")
+
         flash("Cập nhật thông tin xe thành công!", "success")
     except Exception as e:
         db.session.rollback()
@@ -752,7 +843,7 @@ def edit_xe(id):
 @admin_required
 def delete_xe(id):
     try:
-        db.session.delete(Xe.query.get_or_404(id))
+        db.session.delete(db.get_or_404(Xe, id))
         db.session.commit()
         flash("Đã xóa xe thành công!", "success")
     except Exception as e:
@@ -764,7 +855,7 @@ def delete_xe(id):
 @admin_required
 def delete_mau(id):
     try:
-        db.session.delete(XeMau.query.get_or_404(id))
+        db.session.delete(db.get_or_404(XeMau, id))
         db.session.commit()
         flash("Đã xóa màu thành công!", "success")
     except Exception as e:
@@ -786,6 +877,8 @@ def import_excel():
         
         so_luong_them = 0
         so_luong_cap_nhat = 0
+        has_price_changed_cm = False
+        has_price_changed_bl = False
 
         for _, row in df.iterrows():
             ten_xe_excel = str(row.get('ten_xe', '')).strip()
@@ -800,12 +893,27 @@ def import_excel():
             if xe:
                 if loai_xe_excel: xe.loai_xe = loai_xe_excel
                 if row.get('phien_ban'): xe.phien_ban = str(row.get('phien_ban')).strip()
-                xe.gia_cm_thap = safe_float(row.get('gia_cm_thap'), xe.gia_cm_thap)
-                xe.gia_cm_trung = safe_float(row.get('gia_cm_trung'), xe.gia_cm_trung)
-                xe.gia_cm_cao = safe_float(row.get('gia_cm_cao'), xe.gia_cm_cao)
-                xe.gia_bl_thap = safe_float(row.get('gia_bl_thap'), xe.gia_bl_thap)
-                xe.gia_bl_trung = safe_float(row.get('gia_bl_trung'), xe.gia_bl_trung)
-                xe.gia_bl_cao = safe_float(row.get('gia_bl_cao'), xe.gia_bl_cao)
+                
+                g_cm_cao = safe_float(row.get('gia_cm_cao'), xe.gia_cm_cao)
+                g_cm_trung = safe_float(row.get('gia_cm_trung'), xe.gia_cm_trung)
+                g_cm_thap = safe_float(row.get('gia_cm_thap'), xe.gia_cm_thap)
+                
+                g_bl_cao = safe_float(row.get('gia_bl_cao'), xe.gia_bl_cao)
+                g_bl_trung = safe_float(row.get('gia_bl_trung'), xe.gia_bl_trung)
+                g_bl_thap = safe_float(row.get('gia_bl_thap'), xe.gia_bl_thap)
+
+                if xe.gia_cm_cao != g_cm_cao or xe.gia_cm_trung != g_cm_trung or xe.gia_cm_thap != g_cm_thap:
+                    has_price_changed_cm = True
+                if xe.gia_bl_cao != g_bl_cao or xe.gia_bl_trung != g_bl_trung or xe.gia_bl_thap != g_bl_thap:
+                    has_price_changed_bl = True
+
+                xe.gia_cm_thap = g_cm_thap
+                xe.gia_cm_trung = g_cm_trung
+                xe.gia_cm_cao = g_cm_cao
+                xe.gia_bl_thap = g_bl_thap
+                xe.gia_bl_trung = g_bl_trung
+                xe.gia_bl_cao = g_bl_cao
+
                 xe.gia_gt_phuong_cm = safe_float(row.get('gia_gt_phuong_cm'), xe.gia_gt_phuong_cm)
                 xe.gia_gt_xa_cm = safe_float(row.get('gia_gt_xa_cm'), xe.gia_gt_xa_cm)
                 xe.gia_gt_phuong_bl = safe_float(row.get('gia_gt_phuong_bl'), xe.gia_gt_phuong_bl)
@@ -835,6 +943,8 @@ def import_excel():
                 db.session.add(xe)
                 db.session.flush()
                 so_luong_them += 1
+                if xe.gia_cm_cao > 0 or xe.gia_cm_trung > 0 or xe.gia_cm_thap > 0: has_price_changed_cm = True
+                if xe.gia_bl_cao > 0 or xe.gia_bl_trung > 0 or xe.gia_bl_thap > 0: has_price_changed_bl = True
 
             ten_mau_excel = str(row.get('ten_mau', '')).strip()
             if ten_mau_excel and ten_mau_excel != '0':
@@ -860,6 +970,12 @@ def import_excel():
                     ))
 
         db.session.commit()
+        
+        if has_price_changed_cm:
+            cap_nhat_thoi_gian_dong_bo("Cà Mau")
+        if has_price_changed_bl:
+            cap_nhat_thoi_gian_dong_bo("Bạc Liêu")
+
         flash(f"Thao tác thành công! Thêm mới: {so_luong_them} xe, Cập nhật: {so_luong_cap_nhat} xe.", "success")
     except Exception as e:
         db.session.rollback()
@@ -951,6 +1067,79 @@ def format_xe_data_home(xe, khu_vuc_user):
 @app.route('/cong-cu-tinh-gia')
 def cong_cu_tinh_gia():
     return render_template('tinh_gia_nhap.html')
+
+@app.route("/admin/update_price/<int:xe_id>", methods=["POST", "PUT"])
+@admin_required
+def update_regional_price(xe_id):
+    xe = db.get_or_404(Xe, xe_id)
+    
+    data = {}
+    if request.form:
+        data.update(request.form.to_dict())
+    if request.args:
+        data.update(request.args.to_dict())
+        
+    json_data = request.get_json(silent=True)
+    if not json_data:
+        try:
+            if request.data:
+                import json
+                json_data = json.loads(request.data.decode('utf-8'))
+        except Exception:
+            pass
+    if json_data and isinstance(json_data, dict):
+        data.update(json_data)
+
+    if 'gia_bl_cao' in data or 'gia_bl_trung' in data or 'gia_bl_thap' in data:
+        vung = 'Bạc Liêu'
+    elif 'gia_cm_cao' in data or 'gia_cm_trung' in data or 'gia_cm_thap' in data:
+        vung = 'Cà Mau'
+    else:
+        vung = data.get('vung', '').strip() or session.get('vung', 'Cà Mau')
+        
+    is_bl = 'bạc liêu' in vung.lower()
+    
+    if is_bl:
+        gia_cao_moi = safe_float(data.get('gia_bl_cao') or data.get('gia_cao'), xe.gia_bl_cao)
+        gia_trung_moi = safe_float(data.get('gia_bl_trung') or data.get('gia_trung'), xe.gia_bl_trung)
+        gia_thap_moi = safe_float(data.get('gia_bl_thap') or data.get('gia_thap'), xe.gia_bl_thap)
+    else:
+        gia_cao_moi = safe_float(data.get('gia_cm_cao') or data.get('gia_cao'), xe.gia_cm_cao)
+        gia_trung_moi = safe_float(data.get('gia_cm_trung') or data.get('gia_trung'), xe.gia_cm_trung)
+        gia_thap_moi = safe_float(data.get('gia_cm_thap') or data.get('gia_thap'), xe.gia_cm_thap)
+    
+    has_changes = False
+    
+    if is_bl:
+        if xe.gia_bl_cao != gia_cao_moi or xe.gia_bl_trung != gia_trung_moi or xe.gia_bl_thap != gia_thap_moi:
+            xe.gia_bl_cao = gia_cao_moi
+            xe.gia_bl_trung = gia_trung_moi
+            xe.gia_bl_thap = gia_thap_moi
+            has_changes = True
+    else:
+        if xe.gia_cm_cao != gia_cao_moi or xe.gia_cm_trung != gia_trung_moi or xe.gia_cm_thap != gia_thap_moi:
+            xe.gia_cm_cao = gia_cao_moi
+            xe.gia_cm_trung = gia_trung_moi
+            xe.gia_cm_thap = gia_thap_moi
+            has_changes = True
+            
+    db.session.commit()
+    
+    if has_changes:
+        cap_nhat_thoi_gian_dong_bo(vung)
+        
+    if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or data:
+        key_name = 'last_updated_bl' if is_bl else 'last_updated_cm'
+        st = Setting.query.filter_by(key=key_name).first()
+        return jsonify({
+            "success": True, 
+            "message": f"Cập nhật giá {vung} thành công!", 
+            "vung": vung,
+            "last_updated": st.value if st else "Chưa cập nhật"
+        })
+    
+    flash(f"Cập nhật giá {vung} thành công!", "success")
+    return redirect(url_for('admin_panel'))
 
 if __name__ == "__main__":
     with app.app_context(): 

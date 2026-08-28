@@ -444,7 +444,10 @@
 
     <!-- KHU VỰC THÔNG TIN USER VÀ NÚT CHỌN VÙNG -->
     <div class="user-panel">
-        <div class="user-badge">
+    <!-- Bọc phần thông tin user và thời gian cập nhật thành 1 cột -->
+    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+        
+        <div class="user-badge" style="margin-bottom: 0;">
             <div style="display: flex; align-items: center; gap: 5px;">
                 <i class="fas fa-circle" style="color: #22c55e; font-size: 9px;"></i>
                 <span>Xin chào, <strong>{{ username }}</strong></span>
@@ -463,10 +466,18 @@
                 </span>
             {% endif %}
         </div>
-        <a href="{{ url_for('logout') }}" class="logout-btn">
-            <i class="fas fa-sign-out-alt"></i> Đăng xuất
-        </a>
+
+        <!-- Dòng hiển thị thời gian cập nhật mới được thêm vào -->
+        <span style="font-size: 11px; color: #6b7280; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;">
+    <i class="fas fa-clock" style="color: #9ca3af;"></i> Giá xe cập nhật: <strong id="lastUpdatedTime" style="color: var(--primary-red);">{{ last_updated }}</strong>
+</span>
+        
     </div>
+
+    <a href="{{ url_for('logout') }}" class="logout-btn">
+        <i class="fas fa-sign-out-alt"></i> Đăng xuất
+    </a>
+</div>
 </nav>
 
 <header class="hero-banner">
@@ -1036,13 +1047,23 @@ function getColorStyle(colorName) {
     window.currentCarModalData = null;
 
     function fetchAndUpdateHomeData() {
-        fetch('/api/get-home-data')
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.json();
-            })
-            .then(res => {
-                if (res.success && res.data) {
+    fetch('/api/get-home-data')
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(res => {
+            if (res.success) {
+                // 1. TỰ ĐỘNG CẬP NHẬT THỜI GIAN LÊN THANH NAVIGATION NGAY LẬP TỨC
+                if (res.last_updated) {
+                    const timeEl = document.getElementById('lastUpdatedTime') || document.querySelector('.user-panel strong[style*="var(--primary-red)"]');
+                    if (timeEl) {
+                        timeEl.innerText = res.last_updated;
+                    }
+                }
+
+                // 2. CẬP NHẬT DỮ LIỆU GIÁ VÀ TỒN KHO CHO BẢNG VÀ MODAL
+                if (res.data) {
                     res.data.forEach(item => {
                         let row = document.getElementById(`xe-row-${item.id}`);
                         if (row) {
@@ -1119,74 +1140,102 @@ function getColorStyle(colorName) {
 
                             const colorButtonsContainer = document.getElementById('modalColorButtons');
                             if (colorButtonsContainer && colors.length > 0) {
-                                colorButtonsContainer.innerHTML = '';
-                                colors.forEach((item) => {
-                                    const btn = document.createElement('button');
-                                    btn.type = 'button';
-                                    
-                                    const dotStyle = getColorStyle(item.ten_mau);
-                                    
-                                    btn.innerHTML = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; ${dotStyle}; margin-right:6px; border:1px solid #cbd5e1; vertical-align:middle;"></span> ${item.ten_mau}`;
-                                    
-                                    const isActive = (item.ten_mau === window.activeColorName);
+                                const existingButtons = colorButtonsContainer.children;
+                                
+                                if (existingButtons.length !== colors.length) {
+                                    colorButtonsContainer.innerHTML = '';
+                                    colors.forEach((item) => {
+                                        const btn = document.createElement('button');
+                                        btn.type = 'button';
+                                        
+                                        const dotStyle = getColorStyle(item.ten_mau);
+                                        btn.innerHTML = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; ${dotStyle}; margin-right:6px; border:1px solid #cbd5e1; vertical-align:middle;"></span> ${item.ten_mau}`;
+                                        
+                                        const isActive = (item.ten_mau === window.activeColorName);
+                                        applyButtonStyle(btn, isActive);
+                                        
+                                        btn.onclick = function() {
+                                            window.activeColorName = item.ten_mau;
+                                            Array.from(colorButtonsContainer.children).forEach(b => {
+                                                applyButtonStyle(b, false);
+                                            });
+                                            applyButtonStyle(btn, true);
 
-                                    btn.className = 'btn btn-sm ' + (isActive ? 'btn-dark' : 'btn-outline-dark');
-                                    btn.style.cssText = `
-                                        border-radius: 20px; 
-                                        padding: 6px 14px; 
-                                        border: 1px solid var(--primary-blue); 
-                                        cursor: pointer; 
-                                        font-size: 13px; 
-                                        font-weight: 500;
-                                        background-color: ${isActive ? 'var(--primary-blue)' : '#ffffff'};
-                                        color: ${isActive ? '#ffffff' : 'var(--primary-blue)'};
-                                        display: inline-flex;
-                                        align-items: center;
-                                        transition: all 0.2s;
-                                    `;
-                                    
-                                    btn.onclick = function() {
-                                        window.activeColorName = item.ten_mau;
-                                        Array.from(colorButtonsContainer.children).forEach(b => {
-                                            b.style.backgroundColor = '#ffffff';
-                                            b.style.color = 'var(--primary-blue)';
-                                        });
-                                        btn.style.backgroundColor = 'var(--primary-blue)';
-                                        btn.style.color = '#ffffff';
+                                            const modalImg = document.getElementById('modalCarImg');
+                                            if (item.hinh_anh_mau && modalImg) {
+                                                modalImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
+                                            }
 
-                                        const modalImg = document.getElementById('modalCarImg');
-                                        if (item.hinh_anh_mau) {
-                                            modalImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
+                                            const cl = Number(item.chenh_lech_gia) || 0;
+                                            document.getElementById('modalBasePrice').innerText = formatCurrency(basePrice + cl);
+                                            document.getElementById('modalTongPhuong').innerText = formatCurrency(basePrice + cl + giaPhuong);
+                                            document.getElementById('modalTongXa').innerText = formatCurrency(basePrice + cl + giaXa);
+                                            document.getElementById('modalGiaThap').innerText = formatCurrency(thapGoc + cl);
+                                            document.getElementById('modalGiaTrung').innerText = formatCurrency(trungGoc + cl);
+
+                                            setVal('stockNs1', item.ns1);
+                                            setVal('stockNs2', item.ns2);
+                                            setVal('stockNs3', item.ns3);
+                                            setVal('stockNs4', item.ns4);
+                                            setVal('stockNs5', item.ns5);
+                                            setVal('stockNsm1', item.nsm1);
+                                        };
+
+                                        colorButtonsContainer.appendChild(btn);
+                                    });
+                                } else {
+                                    // Đã sửa dòng bị lỗi ở đây:
+                                    Array.from(colorButtonsContainer.children).forEach((btn, index) => {
+                                        const item = colors[index];
+                                        if (item) {
+                                            const isActive = (item.ten_mau === window.activeColorName);
+                                            applyButtonStyle(btn, isActive);
                                         }
-
-                                        const cl = Number(item.chenh_lech_gia) || 0;
-                                        document.getElementById('modalBasePrice').innerText = formatCurrency(basePrice + cl);
-                                        document.getElementById('modalTongPhuong').innerText = formatCurrency(basePrice + cl + giaPhuong);
-                                        document.getElementById('modalTongXa').innerText = formatCurrency(basePrice + cl + giaXa);
-                                        document.getElementById('modalGiaThap').innerText = formatCurrency(thapGoc + cl);
-                                        document.getElementById('modalGiaTrung').innerText = formatCurrency(trungGoc + cl);
-
-                                        setVal('stockNs1', item.ns1);
-                                        setVal('stockNs2', item.ns2);
-                                        setVal('stockNs3', item.ns3);
-                                        setVal('stockNs4', item.ns4);
-                                        setVal('stockNs5', item.ns5);
-                                        setVal('stockNsm1', item.nsm1);
-                                    };
-
-                                    colorButtonsContainer.appendChild(btn);
-                                });
+                                    });
+                                }
                             }
                         }
                     }
                 }
-            })
-            .catch(error => {
-                console.error("Lỗi khi đồng bộ dữ liệu ngầm:", error);
-            });
+            }
+        })
+        .catch(error => {
+            console.error("Lỗi khi đồng bộ dữ liệu ngầm:", error);
+        });
+}
+
+    // Hàm phụ trợ để tái sử dụng style nút bấm màu
+    function applyButtonStyle(btn, isActive) {
+        btn.className = 'btn btn-sm ' + (isActive ? 'btn-dark' : 'btn-outline-dark');
+        btn.style.cssText = `
+            border-radius: 20px; 
+            padding: 6px 14px; 
+            border: 1px solid var(--primary-blue); 
+            cursor: pointer; 
+            font-size: 13px; 
+            font-weight: 500;
+            background-color: ${isActive ? 'var(--primary-blue)' : '#ffffff'};
+            color: ${isActive ? '#ffffff' : 'var(--primary-blue)'};
+            display: inline-flex;
+            align-items: center;
+            transition: all 0.2s;
+        `;
     }
 
     setInterval(fetchAndUpdateHomeData, 3000);
+setInterval(function() {
+    fetch('/api/get-home-data')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.last_updated) {
+                const timeElement = document.getElementById('last-updated-time');
+                if (timeElement && timeElement.innerText !== data.last_updated) {
+                    timeElement.innerText = data.last_updated;
+                }
+            }
+        })
+        .catch(error => console.error('Lỗi cập nhật thời gian:', error));
+}, 5000); // Kiểm tra ngầm mỗi 5 giây
 </script>
 </body>
 </html>
