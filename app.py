@@ -308,6 +308,11 @@ def run_sync_process():
         if 'output=csv' not in csv_url:
             separator = '&' if '?' in csv_url else '?'
             csv_url += f'{separator}output=csv'
+        
+        # Thêm timestamp chống cache để Google Sheets trả về dữ liệu tươi nhất
+        import time as t_mod
+        cache_buster = f"&_t={int(t_mod.time())}"
+        csv_url += cache_buster
 
         try:
             df_raw = pd.read_csv(csv_url, header=None, on_bad_lines='skip')
@@ -489,10 +494,10 @@ def run_sync_process():
 
 def start_background_sync():
     def run_loop():
-        time.sleep(120) 
+        time.sleep(6) # Chờ 30 giây sau khi khởi động web là chạy lần đầu
         while True:
             try:
-                time.sleep(120) # Rút ngắn thời gian đồng bộ nền xuống 1 phút vì tốc độ đã cực nhanh
+                time.sleep(6) # Cứ mỗi 60 giây (1 phút) tự động đồng bộ 1 lần
                 with app.app_context():
                     success, msg = run_sync_process()
                     print(f"--- [BACKGROUND SYNC] {msg} ---")
@@ -956,4 +961,7 @@ if __name__ == "__main__":
         db.session.commit()
         print(f"Đã làm mới phân loại thành công!")
         
+    # THÊM DÒNG NÀY ĐỂ BẬT TỰ ĐỘNG ĐỒNG BỘ
+    start_background_sync() 
+    
     app.run(debug=True)
