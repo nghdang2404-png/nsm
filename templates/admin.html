@@ -83,7 +83,6 @@
         text-transform: uppercase;
     }
     
-    /* HIỂN THỊ TỒN KHO MẶC ĐỊNH (HẾT HÀNG = 0) */
     .tonkho-badge {
         font-size: 10px;
         font-weight: 500;
@@ -97,7 +96,6 @@
         margin-bottom: 4px;
     }
 
-    /* HIGHLIGHT TỒN KHO CÓ HÀNG (> 0) NỔI BẬT */
     .tonkho-badge.has-stock {
         background: #ffe5e5;
         border: 1px solid #ff9999;
@@ -106,14 +104,12 @@
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
 
-    /* HIGHLIGHT Ô TÊN MÀU */
     .highlight-ten-mau {
         background-color: #fff5f5 !important;
         border-color: #ffb3b3 !important;
         color: #c53030 !important;
     }
 
-    /* KHUNG TỒN KHO CHO XE CÓ NHIỀU MÀU */
     .stock-box-multi {
         background-color: #fffbeb !important;
         border: 1.5px solid #f59e0b !important;
@@ -123,7 +119,6 @@
         border: 1px solid #ced4da !important;
     }
 
-    /* HIỆU ỨNG XOAY MŨI TÊN KHI SỔ RA / THU GỌN */
     .transition-icon {
         transition: transform 0.3s ease;
     }
@@ -131,7 +126,6 @@
         transform: rotate(180deg);
     }
 
-    /* TỐI ƯU HÓA ĐẶC BIỆT CHO ĐIỆN THOẠI (MOBILE OPTIMIZATION) */
     @media (max-width: 768px) {
         .table-responsive {
             border: 0;
@@ -139,7 +133,7 @@
             -webkit-overflow-scrolling: touch;
         }
         .form-control, .form-control-sm, .form-select-sm {
-            font-size: 14px !important; /* Chống iOS tự động zoom khi focus */
+            font-size: 14px !important;
             padding: 8px 10px !important;
             height: auto !important;
         }
@@ -199,31 +193,24 @@
     </div>
 </div>
 
-<!-- Form Cấu hình Link Google Sheets (Đổi link khi qua tháng mới) -->
+<!-- Form Cấu hình Link Google Sheets -->
 <div class="card mb-4 shadow-sm border-primary">
     <div class="card-body py-3">
         <h6 class="text-primary mb-2 fw-bold"><i class="fa-solid fa-link me-1"></i> Đồng bộ Google Sheets (Cập nhật link khi qua tháng)</h6>
-        
         <div class="row g-2 align-items-center">
-            <!-- Form lưu link -->
             <div class="col-md-9 col-12">
                 <form action="/admin/settings" method="POST" class="d-flex gap-2">
                     <input type="url" name="csv_url" value="{{ csv_url }}" class="form-control form-control-sm" placeholder="Dán link Publish to web (CSV) của tháng này vào đây..." required>
                     <button type="submit" class="btn btn-outline-primary btn-sm fw-semibold text-nowrap"><i class="fa-solid fa-save me-1"></i> Lưu link</button>
                 </form>
             </div>
-            
-            <!-- Nút Đồng bộ -->
             <div class="col-md-3 col-12">
                 <form action="/admin/sync-sheet" method="POST">
-                    <button type="submit" class="btn btn-success btn-sm w-100 fw-semibold" {% if not csv_url %}disabled{% endif %} title="Vui lòng lưu link trước khi đồng bộ">
+                    <button type="submit" class="btn btn-success btn-sm w-100 fw-semibold" {% if not csv_url %}disabled{% endif %}>
                         <i class="fa-solid fa-rotate me-1"></i> Kéo dữ liệu ngay
                     </button>
                 </form>
             </div>
-        </div>
-        <div class="form-text mt-1 text-muted" style="font-size: 11px;">
-            * Cấu hình lại link này mỗi khi qua tháng mới. Bạn cần "Lưu link" trước thì nút "Kéo dữ liệu ngay" mới sáng lên để sử dụng.
         </div>
     </div>
 </div>
@@ -242,14 +229,11 @@
                     </tr>
                 </thead>
                 <tbody style="font-size: 13px;">
-                    
-                    <!-- DANH SÁCH XE HIỆN CÓ -->
                     {% for xe in danh_sach_xe %}
-                    <form action="/admin/edit/{{ xe.id }}" method="POST" enctype="multipart/form-data" id="form_edit_{{ xe.id }}"></form>
+                    <form action="/admin/edit/{{ xe.id }}" method="POST" enctype="multipart/form-data" id="form_edit_{{ xe.id }}" class="edit-xe-form"></form>
                     <input type="hidden" name="loai_xe" id="loai_xe_input_{{ xe.id }}" value="{{ xe.loai_xe }}" form="form_edit_{{ xe.id }}">
                     <input type="hidden" name="ten_xe" id="ten_xe_input_{{ xe.id }}" value="{{ xe.ten_xe }}" form="form_edit_{{ xe.id }}">
 
-                    <!-- Hàng 1 của xe hiện có (Hiển thị Tên & Loại, tích hợp ID để đồng bộ thời gian thực) -->
                     <tr class="align-middle">
                         <td rowspan="2" class="align-middle bg-light">
                             <span class="fw-bold text-primary" id="loai_xe_{{ xe.id }}" style="font-size: 12px;">{{ xe.loai_xe }}</span>
@@ -262,16 +246,14 @@
                             </div>
                         </td>
                         <td rowspan="2" class="align-middle text-center">
-                            <button type="submit" form="form_edit_{{ xe.id }}" class="btn btn-primary btn-sm px-2 mb-1 w-100 shadow-sm" title="Lưu thay đổi"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu</button>
+                            <button type="submit" form="form_edit_{{ xe.id }}" class="btn btn-primary btn-sm px-2 mb-1 w-100 shadow-sm btn-save-xe" title="Lưu thay đổi"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu</button>
                             <a href="/admin/delete/{{ xe.id }}" class="btn btn-danger btn-sm px-2 mb-1 w-100 shadow-sm" onclick="return confirm('Bạn có chắc muốn xóa xe này cùng toàn bộ thông tin màu sắc liên quan?')" title="Xóa"><i class="fa-solid fa-trash me-1"></i> Xóa</a>
                         </td>
                     </tr>
 
-                    <!-- Hàng 2 của xe hiện có -->
                     <tr class="align-middle">
                         <!-- CỘT 1: GIÁ & GIẤY TỜ -->
                         <td class="text-start align-top">
-                            <!-- Khối Cà Mau -->
                             <div class="box-cm">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="badge-cm">CÀ MAU</span>
@@ -303,7 +285,6 @@
                                 </div>
                             </div>
 
-                            <!-- Khối Bạc Liêu -->
                             <div class="box-bl">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="badge-bl">BẠC LIÊU</span>
@@ -343,7 +324,6 @@
                                 <input type="file" name="hinh_anh" form="form_edit_{{ xe.id }}" class="form-control form-control-sm mt-1" accept="image/*">
                             </div>
                             
-                            <!-- HIỂN THỊ TỒN KHO & MÀU SẮC -->
                             {% if xe.mau_xe %}
                             <div class="mb-2 p-2 rounded text-start {% if xe.mau_xe|length > 1 %}stock-box-multi{% else %}stock-box-single{% endif %}" style="font-size: 11px;">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -360,7 +340,6 @@
 
                                 {% for mau in xe.mau_xe %}
                                 <div class="mb-2 pb-2 {% if not loop.last %}border-bottom border-light-subtle{% endif %}">
-                                    <!-- TIÊU ĐỀ MÀU: CLICK ĐỂ MỞ RỘNG / THU GỌN KÈM MŨI TÊN XOAY -->
                                     <div class="d-flex justify-content-between align-items-center bg-light p-1 rounded border" data-bs-toggle="collapse" data-bs-target="#collapseColor_{{ mau.id }}" aria-expanded="false" style="cursor: pointer;">
                                         <div>
                                             <span class="fw-bold text-danger" style="font-size: 11px;"><i class="fa-solid fa-palette me-1"></i>{{ mau.ten_mau }}</span>
@@ -374,7 +353,6 @@
                                         </span>
                                     </div>
 
-                                    <!-- HIỂN THỊ CÁC Ô TỒN KHO -->
                                     <div class="mt-1">
                                         <span class="tonkho-badge {% if mau.ns1 and mau.ns1 > 0 %}has-stock{% endif %}" title="Kho NS1">NS1: <b>{{ mau.ns1|default(0) }}</b></span>
                                         <span class="tonkho-badge {% if mau.ns2 and mau.ns2 > 0 %}has-stock{% endif %}" title="Kho NS2">NS2: <b>{{ mau.ns2|default(0) }}</b></span>
@@ -384,7 +362,6 @@
                                         <span class="tonkho-badge {% if mau.nsm1 and mau.nsm1 > 0 %}has-stock{% endif %}" title="Kho NSM1">NSM1: <b>{{ mau.nsm1|default(0) }}</b></span>
                                     </div>
 
-                                    <!-- FORM CHỈNH SỬA RIÊNG CHO MÀU NÀY (ẨN/HIỆN KHI CLICK) -->
                                     <div class="collapse mt-2" id="collapseColor_{{ mau.id }}">
                                         <div class="color-row-item p-2 bg-white rounded border">
                                             <div class="d-flex gap-1 align-items-center mb-1">
@@ -409,7 +386,8 @@
                                                 </div>
                                             </div>
                                             <div>
-                                                <span class="small text-muted d-block mb-1">Ảnh màu: <strong class="text-dark">{{ mau.hinh_anh if mau.hinh_anh else 'Chưa có' }}</strong></span>
+                                                <!-- ĐÃ SỬA: Dùng mau.hinh_anh_mau thay vì mau.hinh_anh để hiển thị đúng tên file ảnh màu -->
+                                                <span class="small text-muted d-block mb-1">Ảnh màu: <strong class="text-dark">{{ mau.hinh_anh_mau if mau.hinh_anh_mau else 'Chưa có' }}</strong></span>
                                                 <input type="file" name="edit_hinh_anh_mau_{{ mau.id }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm" accept="image/*">
                                             </div>
                                         </div>
@@ -427,11 +405,24 @@
     </div>
 </div>
 
-<!-- SCRIPT XỬ LÝ ĐỊNH DẠNG SỐ TIỀN & ĐỒNG BỘ NGẦM THỜI GIAN THỰC -->
 <script>
+    // --- GHI NHỚ VÀ KHÔI PHỤC VỊ TRÍ CUỘN TRANG KHI BẤM LƯU ---
     document.addEventListener("DOMContentLoaded", function () {
-        
-        // 1. XỬ LÝ DỮ LIỆU KHI VỪA TẢI TRANG (Hỗ trợ số âm)
+        // Khôi phục lại vị trí cuộn cũ nếu có lưu lại trước đó
+        let scrollPos = sessionStorage.getItem("admin_scroll_pos");
+        if (scrollPos) {
+            window.scrollTo(0, parseInt(scrollPos));
+            sessionStorage.removeItem("admin_scroll_pos");
+        }
+
+        // Bắt sự kiện khi bấm nút Lưu để lưu lại vị trí cuộn hiện tại
+        document.querySelectorAll(".btn-save-xe").forEach(function(btn) {
+            btn.addEventListener("click", function() {
+                sessionStorage.setItem("admin_scroll_pos", window.scrollY);
+            });
+        });
+
+        // 1. XỬ LÝ DỮ LIỆU KHI VỪA TẢI TRANG
         document.querySelectorAll(".currency-input").forEach(function (input) {
             if (input.value) {
                 let num = Number(input.value);
@@ -483,16 +474,13 @@
                 }
             });
         });
-        
     });
 </script>
 
 <script>
-    // --- 4. TỰ ĐỘNG CẬP NHẬT DỮ LIỆU NGẦM (REAL-TIME POLLING TÊN XE, LOẠI XE VÀ TỒN KHO) ---
+    // --- 4. TỰ ĐỘNG CẬP NHẬT DỮ LIỆU NGẦM (REAL-TIME POLLING) ---
     document.addEventListener("DOMContentLoaded", function () {
-        
         function fetchLatestData() {
-            // Không chạy cập nhật ngầm nếu người dùng đang bận nhập liệu ở các ô input để tránh xung đột
             if (document.activeElement && document.activeElement.tagName === "INPUT") {
                 return; 
             }
@@ -504,7 +492,6 @@
                     
                     let dsXe = res.data;
                     dsXe.forEach(xe => {
-                        // Cập nhật Tên xe tự động
                         let tenXeSpan = document.getElementById(`ten_xe_text_${xe.id}`);
                         let tenXeInput = document.getElementById(`ten_xe_input_${xe.id}`);
                         if (tenXeSpan && tenXeSpan.innerText !== xe.ten_xe) {
@@ -512,7 +499,6 @@
                             if (tenXeInput) tenXeInput.value = xe.ten_xe;
                         }
 
-                        // Cập nhật Loại xe tự động
                         let loaiXeSpan = document.getElementById(`loai_xe_${xe.id}`);
                         let loaiXeInput = document.getElementById(`loai_xe_input_${xe.id}`);
                         if (loaiXeSpan && loaiXeSpan.innerText !== xe.loai_xe) {
@@ -520,7 +506,6 @@
                             if (loaiXeInput) loaiXeInput.value = xe.loai_xe;
                         }
 
-                        // Cập nhật Tồn kho các màu của xe
                         xe.mau_xe.forEach(mau => {
                             let container = document.getElementById(`collapseColor_${mau.id}`);
                             if (container) {
@@ -556,7 +541,6 @@
             }
         }
 
-        // Tự động quét và đồng bộ ngầm mỗi 5 giây
         setInterval(fetchLatestData, 10000);
     });
 </script>

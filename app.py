@@ -109,6 +109,9 @@ class XeMau(db.Model):
         return {
             'ten_mau': self.ten_mau, 
             'chenh_lech_gia': chenh_lech_vung,
+            # Bổ sung 2 dòng này để template home.html đọc được giá trị chênh lệch từng vùng
+            'chenh_lech_cm': self.chenh_lech_cm or 0,
+            'chenh_lech_bl': self.chenh_lech_bl or 0,
             'ds_ma_mau': lay_danh_sach_ma_mau(self.ten_mau),
             'hinh_anh_mau': self.hinh_anh_mau,
             'ns1': self.ns1 or 0,

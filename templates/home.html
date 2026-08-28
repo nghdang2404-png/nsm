@@ -7,42 +7,419 @@
     
     <!-- CẤU HÌNH PWA CHO ANDROID & IOS -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <meta name="theme-color" content="#1a1a1a">
+    <meta name="theme-color" content="#dc2626">
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Nam Sương Motor">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
 
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     
     <style>
+        :root {
+            --primary-red: #dc2626;
+            --primary-blue: #1d4ed8;
+            --bg-main: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border-color: #e2e8f0;
+            --radius: 12px;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* NAVBAR TRẮNG - ĐỎ - XANH */
+        .navbar {
+            background: #ffffff;
+            color: var(--text-main);
+            padding: 12px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--primary-red);
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: 0.5px;
+        }
+        .brand-logo img {
+            height: 36px;
+            width: auto;
+            object-fit: contain;
+        }
+        .main-menu {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        .main-menu a {
+            color: #4b5563;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        .main-menu a:hover {
+            color: var(--primary-red);
+        }
+        .user-panel {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f1f5f9;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            border: 1px solid #cbd5e1;
+        }
+        .logout-btn {
+            background: var(--primary-red);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+        .logout-btn:hover {
+            background: #b91c1c;
+        }
+
+        /* HERO BANNER */
+        .hero-banner {
+            background: var(--primary-red);
+            color: white;
+            text-align: center;
+            padding: 45px 20px;
+            margin-bottom: 30px;
+            border-bottom: 4px solid var(--primary-blue);
+        }
+        .hero-banner h1 {
+            font-size: 26px;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            letter-spacing: 0.5px;
+        }
+        .hero-banner p {
+            font-size: 14px;
+            opacity: 0.95;
+            margin: 0;
+            font-weight: 300;
+        }
+
+        /* CONTAINER & BỘ LỌC */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 16px 40px 16px;
+        }
+
+        .filter-container {
+            background: var(--card-bg);
+            padding: 22px;
+            border-radius: var(--radius);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            margin-bottom: 25px;
+            border: 1px solid var(--border-color);
+            border-top: 3px solid var(--primary-red);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 1.6fr 1.1fr 1.1fr auto;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .filter-input, .filter-select {
+            width: 100%;
+            padding: 11px 15px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: #f8fafc;
+            color: var(--text-main);
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+        .filter-input:focus, .filter-select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+        }
+
+        .filter-btn {
+            background-color: #475569;
+            color: white;
+            border: none;
+            padding: 11px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            height: 44px;
+            white-space: nowrap;
+        }
+        .filter-btn:hover {
+            background-color: #334155;
+        }
+
+        /* SECTION HEADER */
+        .section-header {
+            margin-bottom: 16px;
+            border-left: 4px solid var(--primary-red);
+            padding-left: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        /* BẢNG SẢN PHẨM */
+        .table-responsive {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .price-table th {
+            background-color: var(--primary-blue);
+            color: #ffffff;
+            font-weight: 600;
+            padding: 15px 18px;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.8px;
+            border-top: 3px solid var(--primary-red);
+        }
+
+        .price-table td {
+            padding: 15px 18px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .car-row-item {
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        .car-row-item:hover {
+            background-color: #eff6ff;
+        }
+
+        .car-type-text {
+            display: inline-block;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #bae6fd;
+        }
+
+        .car-name-text {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 15px;
+        }
+
         .color-dot {
             display: inline-block;
             width: 14px;
             height: 14px;
             border-radius: 50%;
-            border: 1px solid rgba(0,0,0,0.2);
             flex-shrink: 0;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
-        }
-        .car-row-item {
-            cursor: pointer;
+            border: 1px solid #cbd5e1;
         }
 
-        /* KHU VỰC BỘ LỌC CẢI TIẾN */
-        .filter-grid {
-            display: grid;
-            grid-template-columns: 1.2fr 1fr 1fr auto;
-            gap: 10px;
+        .view-detail-hint {
+            display: inline-flex;
             align-items: center;
-            width: 100%;
+            gap: 6px;
+            background: #f1f5f9;
+            color: #334155;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 13px;
+            border: 1px solid #cbd5e1;
+            transition: all 0.2s;
         }
+        .car-row-item:hover .view-detail-hint {
+            background: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+
+        /* FOOTER */
+        .footer {
+            background: #0f172a;
+            color: #94a3b8;
+            padding: 45px 0 20px 0;
+            margin-top: 60px;
+            font-size: 13px;
+            border-top: 4px solid var(--primary-red);
+        }
+        .footer-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+        .footer-col h3 {
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            letter-spacing: 0.5px;
+        }
+        .footer-col p {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .footer-bottom {
+            text-align: center;
+            border-top: 1px solid #1e293b;
+            padding-top: 20px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        /* RESPONSIVE CHO DI ĐỘNG */
         @media (max-width: 768px) {
+            .navbar {
+                padding: 10px 15px;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .main-menu {
+                width: 100%;
+                justify-content: center;
+                gap: 15px;
+                border-top: 1px solid var(--border-color);
+                padding-top: 8px;
+            }
+            .user-panel {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .hero-banner {
+                padding: 25px 15px;
+            }
+            .hero-banner h1 {
+                font-size: 18px;
+            }
             .filter-grid {
                 grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .filter-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+            
+            .price-table thead {
+                display: none;
+            }
+            .price-table, .price-table tbody, .price-table tr, .price-table td {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .price-table tr {
+                background: #fff;
+                margin-bottom: 12px;
+                border-radius: 8px;
+                border: 1px solid var(--border-color);
+                box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+                padding: 12px;
+            }
+            .price-table td {
+                padding: 6px 0;
+                border: none;
+                text-align: left !important;
+            }
+            .price-table td:nth-child(1) {
+                margin-bottom: 4px;
+            }
+            .price-table td:nth-child(2) {
+                font-size: 15px;
+                margin-bottom: 8px;
+            }
+            .price-table td:nth-child(3) {
+                border-top: 1px dashed var(--border-color);
+                border-bottom: 1px dashed var(--border-color);
+                padding: 8px 0;
+                margin: 6px 0;
+            }
+            .price-table td:nth-child(4) {
+                text-align: right !important;
+                padding-top: 8px;
+            }
+            .view-detail-hint {
+                display: flex;
+                width: 100%;
+                justify-content: center;
+                padding: 10px;
+                background: var(--primary-blue);
+                color: white;
+                border-radius: 6px;
+                font-weight: 600;
             }
         }
     </style>
@@ -51,7 +428,7 @@
 
 <nav class="navbar">
     <a href="{{ url_for('home') }}" class="brand-logo">
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Nam Sương" style="height: 40px; width: auto; object-fit: contain;">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Nam Sương">
         <span>NAM SƯƠNG MOTOR</span>
     </a>
         
@@ -59,31 +436,30 @@
         <a href="{{ url_for('home') }}">Tất cả xe</a>
         
         {% if session.get('role') == 'admin' %}
-        <a href="{{ url_for('admin_panel') }}" style="color: #ffcc00; font-weight: bold; border-left: 1px solid #444; padding-left: 15px; margin-left: 10px;">
+        <a href="{{ url_for('admin_panel') }}" style="color: var(--primary-red); font-weight: bold; border-left: 1px solid #cbd5e1; padding-left: 15px; margin-left: 5px;">
             <i class="fas fa-edit"></i> Cập nhật dữ liệu
         </a>
         {% endif %}
     </div>
 
-    <!-- KHU VỰC THÔNG TIN USER VÀ NÚT CHỌN VÙNG TRỰC TIẾP -->
+    <!-- KHU VỰC THÔNG TIN USER VÀ NÚT CHỌN VÙNG -->
     <div class="user-panel">
-        <div class="user-badge" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <div class="user-badge">
             <div style="display: flex; align-items: center; gap: 5px;">
-                <i class="fas fa-circle" style="color: #2e7d32;"></i>
+                <i class="fas fa-circle" style="color: #22c55e; font-size: 9px;"></i>
                 <span>Xin chào, <strong>{{ username }}</strong></span>
             </div>
             
-<!-- NÚT CHỌN VÙNG XEM GIÁ TRỰC TIẾP (ĐÃ PHÂN QUYỀN) -->
             {% if session.get('role') == 'admin' %}
                 <form action="{{ url_for('set_vung') }}" method="POST" style="margin: 0; display: inline-flex; align-items: center;">
-                    <select name="vung" class="filter-select" style="padding: 3px 8px; font-size: 12px; height: auto; background: #222; color: #fff; border: 1px solid #555; border-radius: 4px; cursor: pointer;" onchange="this.form.submit()" title="Chuyển đổi khu vực xem giá">
+                    <select name="vung" class="filter-select" style="padding: 3px 8px; font-size: 12px; height: auto; background: #fff; color: #111; border: 1px solid #cbd5e1; border-radius: 4px; cursor: pointer;" onchange="this.form.submit()" title="Chuyển đổi khu vực xem giá">
                         <option value="Cà Mau" {% if user_vung == 'Cà Mau' %}selected{% endif %}>Khu vực: Cà Mau</option>
                         <option value="Bạc Liêu" {% if user_vung == 'Bạc Liêu' %}selected{% endif %}>Khu vực: Bạc Liêu</option>
                     </select>
                 </form>
             {% else %}
-                <span style="background: #222; color: #ffcc00; padding: 4px 10px; font-size: 12px; border: 1px solid #555; border-radius: 4px; font-weight: 500;">
-                    <i class="fas fa-map-marker-alt"></i> Khu vực: {{ user_vung | default(session.get('vung', 'Cà Mau'), true) }}
+                <span style="background: #fff; color: var(--primary-blue); padding: 3px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 600;">
+                    <i class="fas fa-map-marker-alt"></i> {{ user_vung | default(session.get('vung', 'Cà Mau'), true) }}
                 </span>
             {% endif %}
         </div>
@@ -98,7 +474,7 @@
     <p>Cập nhật số liệu trực tuyến toàn hệ thống các chi nhánh Nam Sương</p>
 </header>
 
-<div class="container" style="max-width: 1200px; padding: 0 15px;">
+<div class="container">
     
     <!-- KHU VỰC BỘ LỌC TỰ ĐỘNG -->
     <div class="filter-container">
@@ -124,7 +500,7 @@
                 
                 <!-- 4. NÚT ĐẶT LẠI -->
                 <div>
-                    <button type="button" class="filter-btn" style="background-color: #64748b;" onclick="resetFilters()" title="Đặt lại bộ lọc">
+                    <button type="button" class="filter-btn" onclick="resetFilters()" title="Đặt lại bộ lọc">
                         <i class="fas fa-redo"></i> Đặt lại
                     </button>
                 </div>
@@ -166,26 +542,26 @@
                         data-vung="{{ current_vung }}"
                         title="Click để xem hình ảnh và dự toán chi phí lăn bánh">
                         
-                        <td><strong class="car-type-text">{{ xe.loai_xe }}</strong></td>
-                        <td class="car-name-text">{{ xe.ten_xe }}</td>
+                        <td><span class="car-type-text">{{ xe.loai_xe }}</span></td>
+                        <td><span class="car-name-text">{{ xe.ten_xe }}</span></td>
                         
                         <td>
                             {% if xe.mau_xe and xe.mau_xe|length > 0 %}
-                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
                                     {% for mau in xe.mau_xe %}
-                                        <div style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                                        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
                                             <span class="color-dot" data-color-name="{{ mau.ten_mau }}"></span>
-                                            <span style="color: #333; font-weight: 500;">{{ mau.ten_mau }}</span>
+                                            <span style="color: #374151; font-weight: 500;">{{ mau.ten_mau }}</span>
                                         </div>
                                     {% endfor %}
                                 </div>
                             {% else %}
-                                <span class="text-muted" style="font-size: 12px; font-style: italic; color: #888;">Chưa cập nhật</span>
+                                <span class="text-muted" style="font-size: 12px; font-style: italic; color: #9ca3af;">Chưa cập nhật</span>
                             {% endif %}
                         </td>
 
                         <td class="text-center">
-                            <span class="view-detail-hint col-gia">
+                            <span class="view-detail-hint">
                                 <i class="fas fa-eye"></i> Xem giá
                             </span>
                         </td>
@@ -193,7 +569,7 @@
                     {% endfor %}
                 {% endif %}
                 <tr id="noDataRow" style="display: none;">
-                    <td colspan="4" class="text-center" style="padding: 30px; color: #777;">Không tìm thấy dòng xe phù hợp.</td>
+                    <td colspan="4" class="text-center" style="padding: 30px; color: #6b7280;">Không tìm thấy dòng xe phù hợp.</td>
                 </tr>
             </tbody>
         </table>
@@ -201,7 +577,7 @@
 
 </div>
 
-<!-- GỌI COMPONENT MODAL TÍNH GIÁ NHÁP TỪ FILE BÊN NGOÀI -->
+<!-- GỌI COMPONENT MODAL TÍNH GIÁ NHÁP -->
 {% include 'tinh_gia_nhap.html' %}
 
 <footer class="footer">
@@ -226,7 +602,7 @@
     </div>
 </footer>
 
-<!-- SCRIPT LỌC THỜI GIAN THỰC VÀ XỬ LÝ SỰ KIỆN CƠ BẢN -->
+<!-- SCRIPTS XỬ LÝ SỰ KIỆN VÀ AJAX -->
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const loaiSelect = document.getElementById('loaiSelect');
@@ -337,46 +713,95 @@
         return new Intl.NumberFormat('vi-VN').format(amount).replace(/,/g, '.') + ' VNĐ';
     }
 
-    function getCssColors(colorName) {
-        if (!colorName) return ['#757575'];
-        
-        const t = colorName.normalize('NFC').toLowerCase();
-        const noAccent = t.normalize('NFD')
-                          .replace(/[\u0300-\u036f]/g, '')
-                          .replace(/đ/g, 'd');
-
-        let cols = [];
-
-        if (t.includes('đen') || noAccent.includes('den')) cols.push('#1a1a1a');
-        if (t.includes('đỏ') || noAccent.includes('do')) cols.push('#e53935');
-        if (t.includes('xanh')) cols.push('#1e88e5');
-        if (t.includes('xám') || t.includes('ghi') || noAccent.includes('xam')) cols.push('#757575');
-        if (t.includes('trắng') || noAccent.includes('trang')) cols.push('#e0e0e0');
-        if (t.includes('bạc') || noAccent.includes('bac')) cols.push('#b0bec5');
-        if (t.includes('vàng') || noAccent.includes('vang')) cols.push('#fbc02d');
-        if (t.includes('cam')) cols.push('#fb8c00');
-        if (t.includes('nâu') || noAccent.includes('nau')) cols.push('#6d4c41');
-
-        return cols.length > 0 ? cols : ['#757575', '#1a1a1a'];
+    // HỆ THỐNG XỬ LÝ MÀU CHUẨN XÁC CHO HONDA
+    // HỆ THỐNG XỬ LÝ MÀU CHUẨN XÁC CHO HONDA (ĐÃ FIX LỖI TIẾNG VIỆT & MÃ MÀU)
+function getColorStyle(colorName) {
+    if (!colorName) return 'background: #757575;';
+    
+    // Chuẩn hóa Unicode tiếng Việt (NFC) để nhận diện chính xác các từ có dấu
+    let normalized = colorName.normalize('NFC').toLowerCase();
+    
+    // 1. ƯU TIÊN XỬ LÝ THEO MÃ CHÍNH HÃNG TRONG NGOẶC (Đảm bảo chính xác 100%)
+    if (normalized.includes('pb421')) {
+        return 'background: linear-gradient(135deg, #1a1a1a 50%, #1d4ed8 50%);'; // Đen Xanh
     }
+    if (normalized.includes('r389') || normalized.includes('r368')) {
+        return 'background: linear-gradient(135deg, #1a1a1a 50%, #dc2626 50%);'; // Đen Đỏ
+    }
+    if (normalized.includes('nhd01')) {
+        return 'background: #f1f5f9; border: 1px solid #cbd5e1;'; // Trắng
+    }
+    if (normalized.includes('nhd14')) {
+        return 'background: linear-gradient(135deg, #f1f5f9 50%, #1a1a1a 50%);'; // Trắng Đen
+    }
+    if (normalized.includes('nhc60') || normalized.includes('nhd03')) {
+        return 'background: linear-gradient(135deg, #64748b 50%, #1a1a1a 50%);'; // Xám Đen
+    }
+    if (normalized.includes('gy163')) {
+        return 'background: conic-gradient(#1d4ed8 0% 33%, #1a1a1a 33% 66%, #dc2626 66% 100%);'; // Xanh Đen Đỏ
+    }
+    if (normalized.includes('nha76') || (normalized.includes('đen') && !normalized.includes('xanh') && !normalized.includes('do') && !normalized.includes('đỏ'))) {
+        return 'background: #1a1a1a;'; // Đen tuyền
+    }
+
+    // 2. DỰ PHÒNG: QUÉT TỪ KHÓA TỰ ĐỘNG
+    let cleanText = normalized.replace(/\([^)]*\)/g, '');
+    const colorMap = [
+        { kws: ['đỏ', 'do'], hex: '#dc2626' },
+        { kws: ['trắng', 'trang'], hex: '#f1f5f9' },
+        { kws: ['vàng', 'vang'], hex: '#eab308' },
+        { kws: ['cam'], hex: '#f97316' },
+        { kws: ['xám', 'xam', 'ghi'], hex: '#64748b' },
+        { kws: ['bạc', 'bac'], hex: '#94a3b8' },
+        { kws: ['xanh'], hex: '#1d4ed8' },
+        { kws: ['đen', 'den'], hex: '#1a1a1a' },
+        { kws: ['nâu', 'nau'], hex: '#78350f' }
+    ];
+    
+    let matches = [];
+    colorMap.forEach(item => {
+        item.kws.forEach(kw => {
+            let idx = cleanText.indexOf(kw);
+            while (idx !== -1) {
+                matches.push({ pos: idx, hex: item.hex });
+                idx = cleanText.indexOf(kw, idx + 1);
+            }
+        });
+    });
+    
+    matches.sort((a, b) => a.pos - b.pos);
+    
+    let foundColors = [];
+    let seenHex = new Set();
+    matches.forEach(m => {
+        if (!seenHex.has(m.hex)) {
+            seenHex.add(m.hex);
+            foundColors.push(m.hex);
+        }
+    });
+    
+    if (foundColors.length >= 3) {
+        let n = foundColors.length;
+        let stops = [];
+        for (let i = 0; i < n; i++) {
+            let startPct = (i / n) * 100;
+            let endPct = ((i + 1) / n) * 100;
+            stops.push(`${foundColors[i]} ${startPct}% ${endPct}%`);
+        }
+        return `background: conic-gradient(${stops.join(', ')});`;
+    } else if (foundColors.length === 2) {
+        return `background: linear-gradient(135deg, ${foundColors[0]} 50%, ${foundColors[1]} 50%);`;
+    } else if (foundColors.length === 1) {
+        return `background: ${foundColors[0]};`;
+    }
+    return 'background: #1a1a1a;';
+}
 
     document.addEventListener("DOMContentLoaded", function() {
         document.querySelectorAll('.color-dot[data-color-name]').forEach(dot => {
             const colorName = dot.getAttribute('data-color-name');
-            const cArr = getCssColors(colorName);
-            if (cArr.length === 1) {
-                dot.style.background = cArr[0];
-            } else if (cArr.length === 2) {
-                dot.style.background = `linear-gradient(135deg, ${cArr[0]} 50%, ${cArr[1]} 50%)`;
-            } else if (cArr.length > 2) {
-                let grad = 'linear-gradient(135deg, ';
-                cArr.forEach((m, idx) => {
-                    grad += `${m.trim()} ${idx * (100 / cArr.length)}%, ${m.trim()} ${(idx + 1) * (100 / cArr.length)}%`;
-                    if (idx < cArr.length - 1) grad += ', ';
-                });
-                grad += ')';
-                dot.style.background = grad;
-            }
+            const bgStyle = getColorStyle(colorName);
+            dot.style.cssText = bgStyle + " width: 14px; height: 14px; border-radius: 50%; display: inline-block; flex-shrink: 0; border: 1px solid #cbd5e1;";
         });
 
         document.querySelectorAll('.car-row-item').forEach(row => {
@@ -403,207 +828,206 @@
     });
 
     function showCarImage(carName, defaultImg, colors, basePrice, giaPhuong, giaXa, giaThap, giaTrung, userVung) {
-    const modal = document.getElementById('carImageModal');
-    const modalTitle = document.getElementById('modalCarTitle');
-    const modalImg = document.getElementById('modalCarImg');
-    const noImgText = document.getElementById('modalNoImgText');
-    const colorButtonsContainer = document.getElementById('modalColorButtons');
+        const modal = document.getElementById('carImageModal');
+        const modalTitle = document.getElementById('modalCarTitle');
+        const modalImg = document.getElementById('modalCarImg');
+        const noImgText = document.getElementById('modalNoImgText');
+        const colorButtonsContainer = document.getElementById('modalColorButtons');
 
-    const khuVuc = userVung || 'Cà Mau'; 
-    
-    const regionTextEl = document.getElementById('modalRegionText');
-    if (regionTextEl) {
-        regionTextEl.innerText = khuVuc;
-    }
-
-    modalTitle.innerText = carName;
-    colorButtonsContainer.innerHTML = '';
-    
-    const giaGoc = Number(basePrice) || 0;
-    const phiPhuong = Number(giaPhuong) || 0;
-    const phiXa = Number(giaXa) || 0;
-    
-    const thapGoc = Number(giaThap) || 0;
-    const trungGoc = Number(giaTrung) || 0;
-
-    const draftInput = document.getElementById('draftPriceInput');
-    if (draftInput) {
-        draftInput.setAttribute('data-phi-phuong', phiPhuong);
-        draftInput.setAttribute('data-phi-xa', phiXa);
-        draftInput.value = '';
-        document.getElementById('draftTotalPhuong').innerText = '0 VNĐ';
-        document.getElementById('draftTotalXa').innerText = '0 VNĐ';
-    }
-
-    function updateModalPrice(currentBasePrice, currentThap, currentTrung) {
-        document.getElementById('modalBasePrice').innerText = formatCurrency(currentBasePrice);
-        document.getElementById('modalGiaPhuong').innerText = formatCurrency(phiPhuong);
-        document.getElementById('modalGiaXa').innerText = formatCurrency(phiXa);
-        document.getElementById('modalTongPhuong').innerText = formatCurrency(currentBasePrice + phiPhuong);
-        document.getElementById('modalTongXa').innerText = formatCurrency(currentBasePrice + phiXa);
+        const khuVuc = userVung || 'Cà Mau'; 
         
-        document.getElementById('modalGiaThap').innerText = formatCurrency(currentThap);
-        document.getElementById('modalGiaTrung').innerText = formatCurrency(currentTrung);
-    }
+        const regionTextEl = document.getElementById('modalRegionText');
+        if (regionTextEl) {
+            regionTextEl.innerText = khuVuc;
+        }
 
-    function updateStockDisplay(colorItem) {
-        const setVal = (id, val) => {
-            const el = document.getElementById(id);
-            const num = Number(val) || 0;
-            if (num > 0) {
-                el.innerText = num + " xe";
-                el.style.color = "#2e7d32";
-            } else {
-                el.innerText = "Hết hàng";
-                el.style.color = "#d32f2f";
-            }
-        };
+        modalTitle.innerText = carName;
+        colorButtonsContainer.innerHTML = '';
+        
+        const giaGoc = Number(basePrice) || 0;
+        const phiPhuong = Number(giaPhuong) || 0;
+        const phiXa = Number(giaXa) || 0;
+        
+        const thapGoc = Number(giaThap) || 0;
+        const trungGoc = Number(giaTrung) || 0;
 
-        setVal('stockNs1', colorItem ? colorItem.ns1 : 0);
-        setVal('stockNs2', colorItem ? colorItem.ns2 : 0);
-        setVal('stockNs3', colorItem ? colorItem.ns3 : 0);
-        setVal('stockNs4', colorItem ? colorItem.ns4 : 0);
-        setVal('stockNs5', colorItem ? colorItem.ns5 : 0);
-        setVal('stockNsm1', colorItem ? colorItem.nsm1 : 0);
-    }
+        const draftInput = document.getElementById('draftPriceInput');
+        if (draftInput) {
+            draftInput.setAttribute('data-phi-phuong', phiPhuong);
+            draftInput.setAttribute('data-phi-xa', phiXa);
+            draftInput.value = '';
+            document.getElementById('draftTotalPhuong').innerText = '0 VNĐ';
+            document.getElementById('draftTotalXa').innerText = '0 VNĐ';
+        }
 
-    if (colors && colors.length > 0) {
-        window.activeColorName = colors[0].ten_mau; 
-
-        colors.forEach((item, index) => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
+        function updateModalPrice(currentBasePrice, currentThap, currentTrung) {
+            document.getElementById('modalBasePrice').innerText = formatCurrency(currentBasePrice);
+            document.getElementById('modalGiaPhuong').innerText = formatCurrency(phiPhuong);
+            document.getElementById('modalGiaXa').innerText = formatCurrency(phiXa);
+            document.getElementById('modalTongPhuong').innerText = formatCurrency(currentBasePrice + phiPhuong);
+            document.getElementById('modalTongXa').innerText = formatCurrency(currentBasePrice + phiXa);
             
-            const cArr = getCssColors(item.ten_mau);
-            let bgStyle = cArr.length === 1 ? cArr[0] : `linear-gradient(135deg, ${cArr[0]} 50%, ${cArr[1]} 50%)`;
-            
-            btn.innerHTML = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:${bgStyle}; margin-right:6px; border:1px solid rgba(0,0,0,0.2); vertical-align:middle;"></span> ${item.ten_mau}`;
-            
-            btn.className = 'btn btn-sm ' + (index === 0 ? 'btn-dark' : 'btn-outline-dark');
-            btn.style.cssText = `
-                border-radius: 20px; 
-                padding: 6px 14px; 
-                border: 1px solid #1a1a1a; 
-                cursor: pointer; 
-                font-size: 13px; 
-                font-weight: 500;
-                background-color: ${index === 0 ? '#1a1a1a' : '#ffffff'};
-                color: ${index === 0 ? '#ffffff' : '#1a1a1a'};
-                display: inline-flex;
-                align-items: center;
-                transition: all 0.2s;
-            `;
-            
-            btn.onclick = function() {
-                window.activeColorName = item.ten_mau; 
+            document.getElementById('modalGiaThap').innerText = formatCurrency(currentThap);
+            document.getElementById('modalGiaTrung').innerText = formatCurrency(currentTrung);
+        }
 
-                Array.from(colorButtonsContainer.children).forEach(b => {
-                    b.style.backgroundColor = '#ffffff';
-                    b.style.color = '#1a1a1a';
-                });
-                btn.style.backgroundColor = '#1a1a1a';
-                btn.style.color = '#ffffff';
-
-                modalImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
-
-                const chenhLech = Number(item.chenh_lech_gia) || 0;
-                updateModalPrice(giaGoc + chenhLech, thapGoc + chenhLech, trungGoc + chenhLech);
-                updateStockDisplay(item);
+        function updateStockDisplay(colorItem) {
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                const num = Number(val) || 0;
+                if (num > 0) {
+                    el.innerText = num + " xe";
+                    el.style.color = "#16a34a";
+                } else {
+                    el.innerText = "Hết hàng";
+                    el.style.color = "#dc2626";
+                }
             };
 
-            colorButtonsContainer.appendChild(btn);
-        });
-
-        modalImg.src = "{{ url_for('static', filename='uploads/') }}" + colors[0].hinh_anh_mau;
-        modalImg.style.display = 'block';
-        noImgText.style.display = 'none';
-
-        const chenhLechDau = Number(colors[0].chenh_lech_gia) || 0;
-        updateModalPrice(giaGoc + chenhLechDau, thapGoc + chenhLechDau, trungGoc + chenhLechDau);
-        updateStockDisplay(colors[0]);
-
-    } else if (defaultImg && defaultImg.trim() !== '') {
-        modalImg.src = defaultImg;
-        modalImg.style.display = 'block';
-        noImgText.style.display = 'none';
-        updateModalPrice(giaGoc, thapGoc, trungGoc);
-        updateStockDisplay(null);
-    } else {
-        modalImg.src = '';
-        modalImg.style.display = 'none';
-        noImgText.style.display = 'block';
-        updateModalPrice(giaGoc, thapGoc, trungGoc);
-        updateStockDisplay(null);
-    }
-
-    const extraContent = document.querySelector('.extra-prices-content');
-    const expandToggle = document.querySelector('.expand-toggle');
-    if (extraContent) {
-        extraContent.style.display = 'none';
-    }
-    if (expandToggle) {
-        expandToggle.classList.remove('active');
-        const icon = expandToggle.querySelector('i');
-        if (icon) {
-            icon.classList.remove('fa-chevron-up');
-            icon.classList.add('fa-chevron-down');
+            setVal('stockNs1', colorItem ? colorItem.ns1 : 0);
+            setVal('stockNs2', colorItem ? colorItem.ns2 : 0);
+            setVal('stockNs3', colorItem ? colorItem.ns3 : 0);
+            setVal('stockNs4', colorItem ? colorItem.ns4 : 0);
+            setVal('stockNs5', colorItem ? colorItem.ns5 : 0);
+            setVal('stockNsm1', colorItem ? colorItem.nsm1 : 0);
         }
-        const textSpan = expandToggle.querySelector('.toggle-text');
-        if (textSpan) {
+
+        if (colors && colors.length > 0) {
+            window.activeColorName = colors[0].ten_mau; 
+
+            colors.forEach((item, index) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                
+                const dotStyle = getColorStyle(item.ten_mau);
+                
+                btn.innerHTML = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; ${dotStyle}; margin-right:6px; border:1px solid #cbd5e1; vertical-align:middle;"></span> ${item.ten_mau}`;
+                
+                btn.className = 'btn btn-sm ' + (index === 0 ? 'btn-dark' : 'btn-outline-dark');
+                btn.style.cssText = `
+                    border-radius: 20px; 
+                    padding: 6px 14px; 
+                    border: 1px solid var(--primary-blue); 
+                    cursor: pointer; 
+                    font-size: 13px; 
+                    font-weight: 500;
+                    background-color: ${index === 0 ? 'var(--primary-blue)' : '#ffffff'};
+                    color: ${index === 0 ? '#ffffff' : 'var(--primary-blue)'};
+                    display: inline-flex;
+                    align-items: center;
+                    transition: all 0.2s;
+                `;
+                
+                btn.onclick = function() {
+                    window.activeColorName = item.ten_mau; 
+
+                    Array.from(colorButtonsContainer.children).forEach(b => {
+                        b.style.backgroundColor = '#ffffff';
+                        b.style.color = 'var(--primary-blue)';
+                    });
+                    btn.style.backgroundColor = 'var(--primary-blue)';
+                    btn.style.color = '#ffffff';
+
+                    modalImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
+
+                    const chenhLech = Number(item.chenh_lech_gia) || 0;
+                    updateModalPrice(giaGoc + chenhLech, thapGoc + chenhLech, trungGoc + chenhLech);
+                    updateStockDisplay(item);
+                };
+
+                colorButtonsContainer.appendChild(btn);
+            });
+
+            modalImg.src = "{{ url_for('static', filename='uploads/') }}" + colors[0].hinh_anh_mau;
+            modalImg.style.display = 'block';
+            noImgText.style.display = 'none';
+
+            const chenhLechDau = Number(colors[0].chenh_lech_gia) || 0;
+            updateModalPrice(giaGoc + chenhLechDau, thapGoc + chenhLechDau, trungGoc + chenhLechDau);
+            updateStockDisplay(colors[0]);
+
+        } else if (defaultImg && defaultImg.trim() !== '') {
+            modalImg.src = defaultImg;
+            modalImg.style.display = 'block';
+            noImgText.style.display = 'none';
+            updateModalPrice(giaGoc, thapGoc, trungGoc);
+            updateStockDisplay(null);
+        } else {
+            modalImg.src = '';
+            modalImg.style.display = 'none';
+            noImgText.style.display = 'block';
+            updateModalPrice(giaGoc, thapGoc, trungGoc);
+            updateStockDisplay(null);
+        }
+
+        const extraContent = document.querySelector('.extra-prices-content');
+        const expandToggle = document.querySelector('.expand-toggle');
+        if (extraContent) {
+            extraContent.style.display = 'none';
+        }
+        if (expandToggle) {
+            expandToggle.classList.remove('active');
+            const icon = expandToggle.querySelector('i');
+            if (icon) {
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+            const textSpan = expandToggle.querySelector('.toggle-text');
+            if (textSpan) {
+                textSpan.innerText = "Xem thêm giá";
+            }
+        }
+
+        const draftContent = document.getElementById('draftPriceContent');
+        if (draftContent) {
+            draftContent.style.display = 'block';
+        }
+        const draftIcon = document.querySelector('[onclick="toggleDraftPrice(this)"] i');
+        if (draftIcon) {
+            draftIcon.classList.remove('fa-chevron-down');
+            draftIcon.classList.add('fa-chevron-up');
+            draftIcon.style.transform = 'rotate(180deg)';
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('carImageModal').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('carImageModal');
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    function toggleExtraPrices(element) {
+        element.classList.toggle('active');
+        var content = element.nextElementSibling;
+        var textSpan = element.querySelector('.toggle-text');
+        
+        if (content.style.display === "none" || content.style.display === "") {
+            content.style.display = "block";
+            textSpan.innerText = "Thu gọn";
+        } else {
+            content.style.display = "none";
             textSpan.innerText = "Xem thêm giá";
         }
     }
 
-    const draftContent = document.getElementById('draftPriceContent');
-    if (draftContent) {
-        draftContent.style.display = 'block';
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+                .then(registration => {
+                    console.log('PWA: Đăng ký Service Worker thành công!');
+                })
+                .catch(error => {
+                    console.log('PWA: Lỗi đăng ký Service Worker:', error);
+                });
+        });
     }
-    const draftIcon = document.querySelector('[onclick="toggleDraftPrice(this)"] i');
-    if (draftIcon) {
-        draftIcon.classList.remove('fa-chevron-down');
-        draftIcon.classList.add('fa-chevron-up');
-        draftIcon.style.transform = 'rotate(180deg)';
-    }
-
-    modal.style.display = 'flex';
-}
-
-function closeModal() {
-    document.getElementById('carImageModal').style.display = 'none';
-}
-
-window.onclick = function(event) {
-    const modal = document.getElementById('carImageModal');
-    if (event.target === modal) {
-        modal.style.display = 'none';
-    }
-}
-
-function toggleExtraPrices(element) {
-    element.classList.toggle('active');
-    var content = element.nextElementSibling;
-    var textSpan = element.querySelector('.toggle-text');
-    
-    if (content.style.display === "none" || content.style.display === "") {
-        content.style.display = "block";
-        textSpan.innerText = "Thu gọn";
-    } else {
-        content.style.display = "none";
-        textSpan.innerText = "Xem thêm giá";
-    }
-}
-
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
-            .then(registration => {
-                console.log('PWA: Đăng ký Service Worker thành công!');
-            })
-            .catch(error => {
-                console.log('PWA: Lỗi đăng ký Service Worker:', error);
-            });
-    });
-}
 </script>
 
 <!-- SCRIPT AJAX POLLING ĐỂ TỰ ĐỘNG CẬP NHẬT GIAO DIỆN NGẦM -->
@@ -674,10 +1098,10 @@ if ('serviceWorker' in navigator) {
                                 const num = Number(val) || 0;
                                 if (num > 0) {
                                     el.innerText = num + " xe";
-                                    el.style.color = "#2e7d32";
+                                    el.style.color = "#16a34a";
                                 } else {
                                     el.innerText = "Hết hàng";
-                                    el.style.color = "#d32f2f";
+                                    el.style.color = "#dc2626";
                                 }
                             };
 
@@ -700,10 +1124,9 @@ if ('serviceWorker' in navigator) {
                                     const btn = document.createElement('button');
                                     btn.type = 'button';
                                     
-                                    const cArr = getCssColors(item.ten_mau);
-                                    let bgStyle = cArr.length === 1 ? cArr[0] : `linear-gradient(135deg, ${cArr[0]} 50%, ${cArr[1]} 50%)`;
+                                    const dotStyle = getColorStyle(item.ten_mau);
                                     
-                                    btn.innerHTML = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:${bgStyle}; margin-right:6px; border:1px solid rgba(0,0,0,0.2); vertical-align:middle;"></span> ${item.ten_mau}`;
+                                    btn.innerHTML = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; ${dotStyle}; margin-right:6px; border:1px solid #cbd5e1; vertical-align:middle;"></span> ${item.ten_mau}`;
                                     
                                     const isActive = (item.ten_mau === window.activeColorName);
 
@@ -711,12 +1134,12 @@ if ('serviceWorker' in navigator) {
                                     btn.style.cssText = `
                                         border-radius: 20px; 
                                         padding: 6px 14px; 
-                                        border: 1px solid #1a1a1a; 
+                                        border: 1px solid var(--primary-blue); 
                                         cursor: pointer; 
                                         font-size: 13px; 
                                         font-weight: 500;
-                                        background-color: ${isActive ? '#1a1a1a' : '#ffffff'};
-                                        color: ${isActive ? '#ffffff' : '#1a1a1a'};
+                                        background-color: ${isActive ? 'var(--primary-blue)' : '#ffffff'};
+                                        color: ${isActive ? '#ffffff' : 'var(--primary-blue)'};
                                         display: inline-flex;
                                         align-items: center;
                                         transition: all 0.2s;
@@ -726,9 +1149,9 @@ if ('serviceWorker' in navigator) {
                                         window.activeColorName = item.ten_mau;
                                         Array.from(colorButtonsContainer.children).forEach(b => {
                                             b.style.backgroundColor = '#ffffff';
-                                            b.style.color = '#1a1a1a';
+                                            b.style.color = 'var(--primary-blue)';
                                         });
-                                        btn.style.backgroundColor = '#1a1a1a';
+                                        btn.style.backgroundColor = 'var(--primary-blue)';
                                         btn.style.color = '#ffffff';
 
                                         const modalImg = document.getElementById('modalCarImg');
