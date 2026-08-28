@@ -19,7 +19,7 @@
             <p id="modalNoImgText" style="display: none; color: #999; font-style: italic;">Chưa cập nhật hình ảnh</p>
         </div>
 
-        <!-- KHỐI PHÂN VÙNG ÁP DỤNG (ĐÃ SẠCH SẼ, KHÔNG LỒNG NHAU) -->
+        <!-- KHỐI PHÂN VÙNG ÁP DỤNG -->
         <div style="background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
             <div style="font-weight: 600; color: #1e293b; font-size: 14px; display: flex; align-items: center;">
                 <i class="fa-solid fa-location-dot" style="color: #dc2626; margin-right: 6px;"></i> Phân vùng áp dụng:
@@ -31,36 +31,43 @@
             </div>
         </div>
 
-        <!-- Bảng giá cố định -->
+        <!-- Bảng giá cố định (Đã bỏ Tổng lăn bánh, đưa Giá cao xuống phần Mở rộng) -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 14px;">
-            <tr><td style="padding: 5px 0; color: #555;">Giá tham khảo:</td><td id="modalBasePrice" style="text-align: right; font-weight: bold;">0 VNĐ</td></tr>
-            <tr><td style="padding: 5px 0; color: #555;">Phí ra biển (Phường):</td><td id="modalGiaPhuong" style="text-align: right;">0 VNĐ</td></tr>
-            <tr><td style="padding: 5px 0; color: #555;">Phí ra biển (Xã):</td><td id="modalGiaXa" style="text-align: right;">0 VNĐ</td></tr>
-            <tr style="background: #fafafa; border-top: 1px solid #eee;">
-                <td style="padding: 8px 0;"><strong>Tổng lăn bánh (Phường):</strong></td>
-                <td id="modalTongPhuong" style="text-align: right; font-weight: bold; color: #d32f2f;">0 VNĐ</td>
-            </tr>
-            <tr style="background: #fafafa; border-bottom: 1px solid #eee;">
-                <td style="padding: 8px 0;"><strong>Tổng lăn bánh (Xã):</strong></td>
-                <td id="modalTongXa" style="text-align: right; font-weight: bold; color: #d32f2f;">0 VNĐ</td>
-            </tr>
+            <tr><td style="padding: 5px 0; color: #555;">Phí ra biển (Phường):</td><td id="modalGiaPhuong" style="text-align: right; font-weight: bold;">0 VNĐ</td></tr>
+            <tr><td style="padding: 5px 0; color: #555;">Phí ra biển (Xã):</td><td id="modalGiaXa" style="text-align: right; font-weight: bold;">0 VNĐ</td></tr>
+            
+            <!-- Ẩn các trường tổng lăn bánh để code JS không bị báo lỗi (Bảo vệ tính năng khác) -->
+            <tr style="display: none;"><td id="modalTongPhuong">0 VNĐ</td></tr>
+            <tr style="display: none;"><td id="modalTongXa">0 VNĐ</td></tr>
         </table>
 
-        <!-- Khối tính giá nháp động -->
+        <!-- Khối tính giá nháp động (Mở rộng sẵn mặc định) -->
         <div style="background: #f1f8e9; border-radius: 8px; margin-bottom: 15px; border: 1px solid #c5e1a5; overflow: hidden;">
             <div onclick="toggleDraftPrice(this)" style="padding: 12px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #e8f5e9;">
                 <span style="font-weight: 600; color: #2e7d32; font-size: 14px;">
                     <i class="fas fa-calculator"></i> Máy tính
                 </span>
-                <i class="fas fa-chevron-down" style="color: #2e7d32; transition: transform 0.3s ease;"></i>
+                <i class="fas fa-chevron-down" style="color: #2e7d32; transition: transform 0.3s ease; transform: rotate(180deg);"></i>
             </div>
             
-            <div id="draftPriceContent" style="display: none; padding: 15px; border-top: 1px solid #c5e1a5;">
-                <input type="number" id="draftPriceInput" placeholder="Nhập giá xe thực tế (VNĐ)..." style="width: 100%; padding: 10px; border: 1px solid #bdbdbd; border-radius: 6px; font-size: 14px; box-sizing: border-box;"
+            <div id="draftPriceContent" style="display: block; padding: 15px; border-top: 1px solid #c5e1a5;">
+                <input type="text" inputmode="numeric" id="draftPriceInput" placeholder="Nhập giá xe thực tế (VNĐ)..." style="width: 100%; padding: 10px; border: 1px solid #bdbdbd; border-radius: 6px; font-size: 14px; box-sizing: border-box;"
                     oninput="
-                        const val = Number(this.value) || 0;
+                        // Lọc bỏ ký tự chữ, chỉ giữ lại số
+                        let rawValue = this.value.replace(/\D/g, '');
+                        
+                        // Cập nhật lại input hiển thị format có dấu chấm
+                        if (rawValue !== '') {
+                            this.value = new Intl.NumberFormat('vi-VN').format(rawValue).replace(/,/g, '.');
+                        } else {
+                            this.value = '';
+                        }
+                        
+                        // Lấy giá trị số thực để tính toán
+                        const val = Number(rawValue) || 0;
                         const p = Number(this.getAttribute('data-phi-phuong')) || 0;
                         const x = Number(this.getAttribute('data-phi-xa')) || 0;
+                        
                         document.getElementById('draftTotalPhuong').innerText = formatCurrency(val + p);
                         document.getElementById('draftTotalXa').innerText = formatCurrency(val + x);
                     ">
@@ -90,15 +97,35 @@
                     icon.style.transform = 'rotate(0deg)';
                 }
             }
+
+            function toggleExtraPrices(element) {
+                element.classList.toggle('active');
+                var content = element.nextElementSibling;
+                var textSpan = element.querySelector('.toggle-text');
+                var icon = element.querySelector('i');
+                
+                if (content.style.display === 'none' || content.style.display === '') {
+                    content.style.display = 'block';
+                    textSpan.innerText = 'Thu gọn';
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
+                } else {
+                    content.style.display = 'none';
+                    textSpan.innerText = 'Xem thêm các mức giá';
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
+                }
+            }
         </script>
 
-        <!-- Mở rộng giá -->
-        <div class="expand-toggle" onclick="toggleExtraPrices(this)" style="cursor: pointer; color: #1976d2; font-weight: 500; text-align: center; margin-bottom: 15px; font-size: 14px;">
-            <i class="fas fa-chevron-down"></i> <span class="toggle-text">Xem thêm giá bán thấp và trung</span>
+        <!-- Mở rộng giá (Đã dời Giá Cao lên đầu danh sách này và thiết lập mặc định Mở) -->
+        <div class="expand-toggle active" onclick="toggleExtraPrices(this)" style="cursor: pointer; color: #1976d2; font-weight: 500; text-align: center; margin-bottom: 15px; font-size: 14px;">
+            <i class="fas fa-chevron-up"></i> <span class="toggle-text">Thu gọn</span>
         </div>
-        <div class="extra-prices-content" style="display: none; background: #fff8e1; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffe082; font-size: 14px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span style="color: #555;">Giá thấp:</span> <strong id="modalGiaThap">0 VNĐ</strong></div>
-            <div style="display: flex; justify-content: space-between;"><span style="color: #555;">Giá trung:</span> <strong id="modalGiaTrung">0 VNĐ</strong></div>
+        <div class="extra-prices-content" style="display: block; background: #fff8e1; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffe082; font-size: 14px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span style="color: #555;">Giá cao:</span> <strong id="modalBasePrice">0 VNĐ</strong></div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span style="color: #555;">Giá trung:</span> <strong id="modalGiaTrung">0 VNĐ</strong></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: #555;">Giá thấp:</span> <strong id="modalGiaThap">0 VNĐ</strong></div>
         </div>
 
         <!-- Khối Tồn kho -->

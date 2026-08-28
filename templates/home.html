@@ -523,10 +523,36 @@
         updateModalPrice(giaGoc, thapGoc, trungGoc);
         updateStockDisplay(null);
     }
-    
-    document.querySelector('.extra-prices-content').style.display = 'none';
-    document.querySelector('.expand-toggle').classList.remove('active');
-    document.querySelector('.toggle-text').innerText = "Xem thêm giá bán thấp và trung";
+// Thiết lập mặc định THU GỌN khối Giá Thấp / Trung / Cao khi mở modal
+    const extraContent = document.querySelector('.extra-prices-content');
+    const expandToggle = document.querySelector('.expand-toggle');
+    if (extraContent) {
+        extraContent.style.display = 'none';
+    }
+    if (expandToggle) {
+        expandToggle.classList.remove('active');
+        const icon = expandToggle.querySelector('i');
+        if (icon) {
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        }
+        const textSpan = expandToggle.querySelector('.toggle-text');
+        if (textSpan) {
+            textSpan.innerText = "Xem thêm giá";
+        }
+    }
+
+    // Thiết lập mặc định luôn mở rộng khối Máy tính
+    const draftContent = document.getElementById('draftPriceContent');
+    if (draftContent) {
+        draftContent.style.display = 'block';
+    }
+    const draftIcon = document.querySelector('[onclick="toggleDraftPrice(this)"] i');
+    if (draftIcon) {
+        draftIcon.classList.remove('fa-chevron-down');
+        draftIcon.classList.add('fa-chevron-up');
+        draftIcon.style.transform = 'rotate(180deg)';
+    }
 
     modal.style.display = 'flex';
 }
@@ -552,7 +578,7 @@ function toggleExtraPrices(element) {
         textSpan.innerText = "Thu gọn";
     } else {
         content.style.display = "none";
-        textSpan.innerText = "Xem thêm giá bán thấp và trung";
+        textSpan.innerText = "Xem thêm giá";
     }
 }
 
