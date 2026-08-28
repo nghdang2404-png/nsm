@@ -2,18 +2,231 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Đăng nhập Nam Sương Motor</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Giữ lại FontAwesome để hiển thị icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* =========================================
+           1. RESET CSS - KHÔNG KẾ THỪA TỪ ĐÂU
+        ========================================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* =========================================
+           2. BỐ CỤC TOÀN MÀN HÌNH (DESKTOP + MOBILE)
+        ========================================= */
+        html, body {
+            height: 100%;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f2f5; /* Nền xám nhạt hiện đại, làm nổi bật form */
+        }
+
+        /* =========================================
+           3. KHUNG ĐĂNG NHẬP (FORM CONTAINER)
+        ========================================= */
+        .login-container {
+            background: #ffffff;
+            width: 100%;
+            max-width: 420px; /* Giới hạn độ rộng trên máy tính */
+            margin: 20px;     /* Tạo lề an toàn trên điện thoại */
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); /* Đổ bóng mềm mại */
+            border: 1px solid #e5e7eb;
+        }
+
+        /* =========================================
+           4. KHU VỰC LOGO & TIÊU ĐỀ
+        ========================================= */
+        .logo-area {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-area img {
+            max-width: 160px; /* Khống chế kích thước logo vừa phải */
+            height: auto;
+            margin-bottom: 15px;
+            object-fit: contain;
+        }
+
+        .logo-area h1 {
+            font-size: 22px;
+            color: #1f2937;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* =========================================
+           5. KHU VỰC THÔNG BÁO LỖI (FLASH MESSAGES)
+        ========================================= */
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .alert-error, .alert-danger {
+            background-color: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+
+        .alert-success {
+            background-color: #f0fdf4;
+            color: #166534;
+            border: 1px solid #4ade80;
+        }
+
+        /* =========================================
+           6. Ô NHẬP LIỆU (INPUT FIELDS)
+        ========================================= */
+        .input-group {
+            display: flex;
+            align-items: center;
+            background: #f9fafb;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            padding: 0 14px;
+            transition: all 0.3s ease;
+        }
+
+        .input-group:focus-within {
+            border-color: #dc3545; /* Viền đỏ khi click vào */
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15);
+            background: #ffffff;
+        }
+
+        .input-group label {
+            color: #6b7280;
+            padding-right: 12px;
+            font-size: 16px;
+        }
+
+        .input-group input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 14px 0;
+            font-size: 15px;
+            color: #111827;
+            outline: none;
+            width: 100%;
+        }
+
+        .input-group input::placeholder {
+            color: #9ca3af;
+        }
+
+        /* =========================================
+           7. CHECKBOX NHỚ ĐĂNG NHẬP
+        ========================================= */
+        .remember-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .remember-group label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #4b5563;
+            user-select: none;
+        }
+
+        .remember-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #dc3545; /* Đổi màu tick sang đỏ */
+        }
+
+        /* =========================================
+           8. NÚT ĐĂNG NHẬP
+        ========================================= */
+        .login-btn {
+            width: 100%;
+            background-color: #212529; /* Màu đen sang trọng */
+            color: #ffffff;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .login-btn:hover {
+            background-color: #dc3545; /* Chuyển sang đỏ Nam Sương khi hover */
+        }
+
+        .login-btn:active {
+            transform: scale(0.98); /* Hiệu ứng lún nhẹ khi click */
+        }
+
+        /* =========================================
+           9. RESPONSIVE CHO ĐIỆN THOẠI
+        ========================================= */
+        @media (max-width: 480px) {
+            html, body {
+                background-color: #ffffff; /* Tràn viền trắng trên mobile */
+                align-items: flex-start; /* Đẩy form lên cao một chút */
+            }
+
+            .login-container {
+                margin: 0;
+                padding: 40px 20px;
+                border-radius: 0;
+                box-shadow: none; /* Bỏ viền và bóng râm để nhìn phẳng hơn */
+                border: none;
+                max-width: 100%;
+            }
+
+            .logo-area h1 {
+                font-size: 20px;
+            }
+
+            .input-group input {
+                font-size: 16px; /* Bắt buộc 16px để chống lỗi Auto-zoom trên iOS */
+                padding: 12px 0;
+            }
+
+            .login-btn {
+                padding: 14px;
+            }
+        }
+    </style>
 </head>
 <body>
+
     <div class="login-container">
+        <!-- Logo và Header -->
         <div class="logo-area">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Nam Sương Motor">
+            <!-- Đã bọc thẻ img trong if để tránh lỗi hiển thị icon ảnh vỡ nếu thiếu logo -->
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Nam Sương Motor" onerror="this.style.display='none'">
             <h1>ĐĂNG NHẬP HỆ THỐNG</h1>
         </div>
 
+        <!-- Thông báo lỗi -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -24,20 +237,21 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Form nhập liệu -->
         <form method="POST">
             <div class="input-group">
                 <label for="username"><i class="fas fa-user"></i></label>
-                <input type="text" id="username" name="username" placeholder="Tên đăng nhập or Email" required>
-            </div>
-            <div class="input-group">
-                <label for="password"><i class="fas fa-lock"></i></label>
-                <input type="password" id="password" name="password" placeholder="Mật khẩu" required>
+                <input type="text" id="username" name="username" placeholder="Tên đăng nhập hoặc Email" required autocomplete="username">
             </div>
             
-            <!-- Tùy chọn nhớ phiên đăng nhập -->
-            <div class="remember-group" style="text-align: left; margin-bottom: 20px; font-size: 14px;">
-                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" name="remember" checked style="width: 16px; height: 16px;">
+            <div class="input-group">
+                <label for="password"><i class="fas fa-lock"></i></label>
+                <input type="password" id="password" name="password" placeholder="Mật khẩu" required autocomplete="current-password">
+            </div>
+            
+            <div class="remember-group">
+                <label>
+                    <input type="checkbox" name="remember" checked>
                     Nhớ phiên đăng nhập (30 ngày)
                 </label>
             </div>
@@ -46,35 +260,5 @@
         </form>
     </div>
 
-    <style>
-        /* Bắt buộc set body và html chiếm toàn bộ chiều cao màn hình */
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            display: flex; /* Kích hoạt Flexbox */
-            justify-content: center; /* Căn giữa theo chiều ngang */
-            align-items: center; /* Căn giữa theo chiều dọc */
-            background-color: #f4f7f9; /* Màu nền nhẹ nhàng */
-        }
-
-        /* Container đăng nhập của bạn */
-        .login-container {
-            background: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08); /* Đổ bóng nhẹ cho chuyên nghiệp */
-            width: 100%;
-            max-width: 400px; /* Giới hạn độ rộng tối đa */
-            text-align: center;
-            border: 1px solid #eee;
-        }
-
-        /* Đảm bảo hình ảnh logo không bị quá to */
-        .brand-logo {
-            max-width: 200px;
-            margin-bottom: 20px;
-        }
-    </style>
 </body>
 </html>
