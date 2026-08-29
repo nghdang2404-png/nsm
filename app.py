@@ -587,9 +587,9 @@ def get_home_data():
             "gia_cao": xe.gia_bl_cao if is_bl else xe.gia_cm_cao,
             "gia_trung": xe.gia_bl_trung if is_bl else xe.gia_cm_trung,
             "gia_thap": xe.gia_bl_thap if is_bl else xe.gia_cm_thap,
-            "gia_giay_to_phuong": getattr(xe, 'gia_giay_to_phuong', 0),
-            "gia_giay_to_xa": getattr(xe, 'gia_giay_to_xa', 0),
-            # Sửa chỗ này: chuyển đổi danh sách XeMau thành dictionary bằng to_dict()
+            # Sửa lại gọi đúng cột trong database tương ứng với khu vực
+            "gia_giay_to_phuong": xe.gia_gt_phuong_bl if is_bl else xe.gia_gt_phuong_cm,
+            "gia_giay_to_xa": xe.gia_gt_xa_bl if is_bl else xe.gia_gt_xa_cm,
             "mau_xe": [mau.to_dict(vung) for mau in xe.mau_xe]
         })
         
