@@ -240,7 +240,81 @@
     </div>
 </div>
 
-<!-- Form Import Excel -->
+<!-- Form Quản lý & Phê duyệt tài khoản nhân viên (MỚI THÊM) -->
+<div class="card mb-3 brand-card" style="border-top-color: #0d6efd;">
+    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseUsers" aria-expanded="false" style="cursor: pointer; border-bottom: none;">
+        <h6 class="text-primary mb-0 fw-bold" style="font-size: 14px;">
+            <i class="fa-solid fa-users-gear me-1"></i> Quản lý & Phê duyệt tài khoản 
+            {% if danh_sach_user %}
+                <span class="badge bg-danger ms-1" style="font-size: 10px;">{{ danh_sach_user|length }}</span>
+            {% endif %}
+        </h6>
+        <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 10px;">
+            Mở rộng <i class="fa-solid fa-chevron-down transition-icon ms-1"></i>
+        </span>
+    </div>
+    <div class="collapse" id="collapseUsers">
+        <div class="card-body py-2 pt-0">
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle text-center mb-0" style="font-size: 12px;">
+    <thead class="table-light">
+        <tr>
+            <th style="background-color: #0d6efd !important;">ID</th>
+            <th style="background-color: #0d6efd !important; text-align: left;">Tên đăng nhập</th>
+            <th style="background-color: #0d6efd !important;">Trạng thái</th>
+            <th style="background-color: #0d6efd !important;">Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if danh_sach_user %}
+            {% for u in danh_sach_user %}
+            <tr>
+                <td>{{ u.id }}</td>
+                <td class="fw-bold text-start text-dark"><i class="fa-solid fa-user me-1 text-muted"></i> {{ u.username }}</td>
+                <td>
+                    {% if u.trang_thai == 'approved' %}
+                        <span class="badge bg-success px-2 py-1" style="font-size: 10px;">Đã duyệt</span>
+                    {% elif u.trang_thai == 'rejected' %}
+                        <span class="badge bg-secondary px-2 py-1" style="font-size: 10px;">Từ chối</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark px-2 py-1" style="font-size: 10px;">Chờ duyệt</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="d-flex justify-content-center gap-1">
+                        {% if u.trang_thai != 'approved' %}
+                            <!-- Sửa lại đúng URL trong app.py: /admin/users/approve/ -->
+                            <a href="/admin/users/approve/{{ u.id }}" class="btn btn-success btn-sm py-1 px-2" style="font-size: 11px;" title="Phê duyệt tài khoản">
+                                <i class="fa-solid fa-check me-1"></i> Duyệt
+                            </a>
+                        {% else %}
+                            <!-- Sửa lại đúng URL từ chối trong app.py: /admin/users/reject/ -->
+                            <a href="/admin/users/reject/{{ u.id }}" class="btn btn-outline-warning btn-sm py-1 px-2 text-dark" style="font-size: 11px;" title="Từ chối/Khóa">
+                                <i class="fa-solid fa-lock me-1"></i> Khóa
+                            </a>
+                        {% endif %}
+                        
+                        <!-- Sửa lại đúng URL xóa trong app.py: /admin/users/delete/ -->
+                        <a href="/admin/users/delete/{{ u.id }}" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 11px;" onclick="return confirm('Bạn có chắc muốn xóa tài khoản {{ u.username }} không?')" title="Xóa tài khoản">
+                            <i class="fa-solid fa-trash"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td colspan="4" class="text-muted py-3">Không có tài khoản nào chờ duyệt.</td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form Import Excel[cite: 17] -->
 <div class="card mb-3 brand-card">
     <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseExcel" aria-expanded="false" style="cursor: pointer; border-bottom: none;">
         <h6 class="text-danger mb-0 fw-bold" style="font-size: 14px;"><i class="fa-solid fa-file-excel me-1 text-success"></i> Cập nhật dữ liệu nhanh từ Excel</h6>
@@ -262,7 +336,7 @@
     </div>
 </div>
 
-<!-- Form Cấu hình Link Google Sheets -->
+<!-- Form Cấu hình Link Google Sheets[cite: 17] -->
 <div class="card mb-4 brand-card">
     <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseSheets" aria-expanded="false" style="cursor: pointer; border-bottom: none;">
         <h6 class="text-danger mb-0 fw-bold" style="font-size: 14px;"><i class="fa-solid fa-link me-1"></i> Đồng bộ Google Sheets (Cập nhật link khi qua tháng)</h6>
@@ -291,7 +365,7 @@
     </div>
 </div>
 
-<!-- Bảng dữ liệu quản lý -->
+<!-- Bảng dữ liệu quản lý[cite: 17] -->
 <div class="card mb-5 brand-card" style="border-top-color: #1a56db;">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -326,7 +400,7 @@
                     </tr>
 
                     <tr class="align-middle">
-                        <!-- CỘT 1: GIÁ & GIẤY TỜ -->
+                        <!-- CỘT 1: GIÁ & GIẤY TỜ[cite: 17] -->
                         <td class="text-start align-top">
                             <div class="box-cm">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -391,7 +465,7 @@
                             </div>
                         </td>
                         
-                        <!-- CỘT 2: TỒN KHO, HÌNH ẢNH & MÀU SẮC -->
+                        <!-- CỘT 2: TỒN KHO, HÌNH ẢNH & MÀU SẮC[cite: 17] -->
                         <td class="text-start bg-white align-top">
                             <div class="mb-2">
                                 <span class="small text-muted">Ảnh chính: <strong class="text-dark">{{ xe.hinh_anh if xe.hinh_anh else 'Chưa có' }}</strong></span>
@@ -479,7 +553,7 @@
 </div>
 
 <script>
-    // Hàm hiển thị thông báo nổi Toast
+    // Hàm hiển thị thông báo nổi Toast[cite: 17]
     function showToast(message) {
         let container = document.getElementById("toast-container");
         let toast = document.createElement("div");
@@ -489,13 +563,13 @@
         setTimeout(() => toast.remove(), 2500);
     }
 
-    // Kiểm tra xem Admin có đang bấm vào ô nhập liệu nào không
+    // Kiểm tra xem Admin có đang bấm vào ô nhập liệu nào không[cite: 17]
     function isAdminEditing() {
         const activeEl = document.activeElement;
         return activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
     }
 
-    // --- HÀM CẬP NHẬT THỜI GIAN & NGƯỜI SỬA BÊN TRÊN NAVBAR ---
+    // --- HÀM CẬP NHẬT THỜI GIAN & NGƯỜI SỬA BÊN TRÊN NAVBAR ---[cite: 17]
     function pollAndUpdateAdminData() {
         fetch('/api/get-home-data')
             .then(response => {
@@ -505,7 +579,6 @@
             .then(res => {
                 if (res && res.success) {
                     if (res.vungs && Array.isArray(res.vungs)) {
-                        // Tách riêng Bạc Liêu & Cà Mau
                         res.vungs.forEach(v => {
                             let vungStr = (v.vung || "").toLowerCase();
                             let timeVal = v.last_updated || '';
@@ -524,7 +597,6 @@
                             }
                         });
                     } else {
-                        // Cập nhật chung nếu không tách vùng
                         const timeVal = res.last_updated || '';
                         const userVal = res.updated_by || res.last_updated_by || '';
                         
@@ -539,11 +611,9 @@
     }
 
 document.addEventListener("DOMContentLoaded", function () {
-        
-        // Cập nhật giờ lúc load trang lần đầu
         pollAndUpdateAdminData();
 
-        // --- BƯỚC 1: ĐỊNH DẠNG TIỀN TỆ KHI TẢI TRANG LẦN ĐẦU (PHẢI CHẠY TRƯỚC) ---
+        // --- BƯỚC 1: ĐỊNH DẠNG TIỀN TỆ KHI TẢI TRANG LẦN ĐẦU ---[cite: 17]
         document.querySelectorAll(".currency-input").forEach(function (input) {
             let val = input.value.trim();
             if (val && val !== '0' && val !== 'None') {
@@ -561,10 +631,10 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // --- BƯỚC 2: LƯU LẠI TRẠNG THÁI BAN ĐẦU SAU KHI ĐÃ ĐỊNH DẠNG XONG ---
+        // --- BƯỚC 2: LƯU LẠI TRẠNG THÁI BAN ĐẦU ---[cite: 17]
         document.querySelectorAll("input[form^='form_edit_'], select[form^='form_edit_'], textarea[form^='form_edit_']").forEach(input => {
             if (input.type === 'file') {
-                // File ban đầu chưa chọn gì
+                // Không xử lý file ban đầu
             } else if (input.type === 'checkbox' || input.type === 'radio') {
                 input.dataset.initial = input.checked ? "1" : "0";
             } else {
@@ -572,7 +642,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // --- BƯỚC 3: LƯU TOÀN BỘ THAY ĐỔI SONG SONG (CHỈ LƯU Ô THỰC SỬ SỬA) ---
+        // --- BƯỚC 3: LƯU TOÀN BỘ THAY ĐỔI SONG SONG ---[cite: 17]
         document.getElementById("btn-save-all").addEventListener("click", async function () {
             let forms = document.querySelectorAll(".edit-xe-form");
             if (forms.length === 0) return;
@@ -698,7 +768,7 @@ document.addEventListener("DOMContentLoaded", function () {
             setTimeout(pollAndUpdateAdminData, 500);
         });
 
-        // --- ĐỊNH DẠNG TIỀN TỆ KHI ĐANG GÕ ---
+        // --- ĐỊNH DẠNG TIỀN TỆ KHI ĐANG GÕ ---[cite: 17]
         document.addEventListener("input", function (e) {
             if (e.target.classList.contains("currency-input")) {
                 let input = e.target;
@@ -722,7 +792,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // --- TỰ ĐỘNG CẬP NHẬT DỮ LIỆU BẢNG NGẦM ---
+        // --- TỰ ĐỘNG CẬP NHẬT DỮ LIỆU BẢNG NGẦM ---[cite: 17]
         function fetchLatestData() {
             if (isAdminEditing()) return; 
 

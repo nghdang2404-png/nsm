@@ -2,40 +2,131 @@
 
 {% block title %}Đăng ký tài khoản mới - Hệ thống Nam Sương{% endblock %}
 
+<!-- ẨN BỚT CÁC BANNER THỪA NẾU CÓ -->
+{% block hero_section %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- TÙY CHỈNH HEADER: CHỈ GIỮ LẠI LOGO VÀ TÊN NAM SƯƠNG MOTOR --- */
+    /* Ẩn thanh menu giữa, khối user bên phải và dòng thời gian cập nhật */
+    header .navbar .collapse,
+    header .navbar .navbar-nav,
+    header .navbar .ms-auto,
+    header .navbar [class*="text-end"],
+    header .navbar .d-flex.align-items-center,
+    .navbar .container > *:not(.navbar-brand),
+    .navbar .container-fluid > *:not(.navbar-brand) {
+        display: none !important;
+    }
+
+    /* Đảm bảo khung chứa logo hiển thị gọn gàng, cân đối */
+    header .navbar {
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+    }
+
+    /* --- CÂN ĐỐI FORM ĐĂNG KÝ CHO CẢ MÁY TÍNH VÀ ĐIỆN THOẠI --- */
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .register-wrapper {
+        min-height: calc(100vh - 120px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px 15px;
+    }
+
+    .register-card {
+        width: 100%;
+        max-width: 480px;
+        background: #ffffff;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        padding: 30px;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 14px;
+        border-color: #dee2e6;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.15);
+    }
+
+    .btn-register {
+        background-color: #dc3545;
+        border: none;
+        border-radius: 8px;
+        padding: 11px;
+        font-weight: 600;
+        font-size: 15px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-register:hover {
+        background-color: #bb2d3b;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+
+    /* Tối ưu riêng cho màn hình điện thoại nhỏ */
+    @media (max-width: 576px) {
+        .register-wrapper {
+            padding: 10px;
+            align-items: flex-start;
+        }
+        .register-card {
+            padding: 20px 15px;
+            box-shadow: none;
+            background: transparent;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-3" style="max-width: 550px;">
-    <div class="card p-4 bg-white shadow-sm border-0" style="border-radius: 10px;">
+<div class="register-wrapper">
+    <div class="register-card">
         <div class="text-center mb-4">
-            <h4 class="fw-bold text-danger mb-1">
+            <h4 class="fw-bold text-danger mb-1" style="font-size: 22px;">
                 <i class="fa-solid fa-user-plus me-2"></i> Đăng Ký Tài Khoản
             </h4>
-            <p class="text-muted small m-0">
-                Tạo tài khoản truy cập hệ thống cho nhân viên các bộ phận.
+            <p class="text-muted small m-0 px-2">
+                Tạo tài khoản truy cập hệ thống. Tài khoản mới sẽ cần Admin phê duyệt trước khi đăng nhập.
             </p>
         </div>
 
         <form action="{{ url_for('register') }}" method="POST" id="registerForm">
             
-            <!-- Trường Họ và tên -->
+            <!-- Họ và tên -->
             <div class="mb-3">
                 <label class="form-label fw-semibold small text-secondary">Họ và tên:</label>
-                <input type="text" name="ho_ten" class="form-control form-control-sm" placeholder="Nhập họ và tên nhân viên..." autocomplete="off">
+                <input type="text" name="ho_ten" class="form-control" placeholder="Nhập họ và tên nhân viên..." autocomplete="off">
             </div>
 
+            <!-- Tên đăng nhập -->
             <div class="mb-3">
                 <label class="form-label fw-semibold small text-secondary">Tên đăng nhập:</label>
-                <input type="text" name="username" class="form-control form-control-sm" placeholder="Nhập tên đăng nhập..." required autocomplete="off">
+                <input type="text" name="username" class="form-control" placeholder="Nhập tên đăng nhập..." required autocomplete="off">
             </div>
 
+            <!-- Mật khẩu & Nhập lại mật khẩu (Chia cột trên máy tính, xếp dọc trên điện thoại) -->
             <div class="row">
-                <div class="col-md-6 mb-3">
+                <div class="col-sm-6 mb-3">
                     <label class="form-label fw-semibold small text-secondary">Mật khẩu:</label>
-                    <input type="password" id="password" name="password" class="form-control form-control-sm" placeholder="Nhập mật khẩu..." required>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Mật khẩu..." required>
                 </div>
 
-                <div class="col-md-6 mb-3">
+                <div class="col-sm-6 mb-3">
                     <label class="form-label fw-semibold small text-secondary">Nhập lại mật khẩu:</label>
-                    <input type="password" id="confirm_password" name="confirm_password" class="form-control form-control-sm" placeholder="Xác nhận mật khẩu..." required>
+                    <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Xác nhận..." required>
                 </div>
             </div>
 
@@ -43,30 +134,33 @@
                 <i class="fa-solid fa-triangle-exclamation me-1"></i> Mật khẩu xác nhận không trùng khớp!
             </div>
 
+            <!-- Bộ phận làm việc -->
             <div class="mb-3">
                 <label class="form-label fw-semibold small text-secondary">Bộ phận làm việc:</label>
-                <input type="text" name="bo_phan" class="form-control form-control-sm" placeholder="VD: Kế toán dịch vụ, Phụ tùng...">
+                <input type="text" name="bo_phan" class="form-control" placeholder="VD: Kế toán dịch vụ, Phụ tùng...">
             </div>
 
-            <div class="mb-3">
+            <!-- Khu vực làm việc -->
+            <div class="mb-4">
                 <label class="form-label fw-semibold small text-secondary">Khu vực làm việc:</label>
-                <select name="khu_vuc" class="form-select form-select-sm" required>
+                <select name="khu_vuc" class="form-select" required>
                     <option value="" disabled selected>-- Chọn khu vực --</option>
                     <option value="Cà Mau">Cà Mau</option>
                     <option value="Bạc Liêu">Bạc Liêu</option>
                 </select>
             </div>
 
-            <div class="mb-4 form-check bg-light p-2 rounded border ms-0 ps-4">
-                <input type="checkbox" name="is_admin" value="yes" class="form-check-input" id="adminCheck">
-                <label class="form-check-label small fw-semibold text-danger ms-2" for="adminCheck">
-                    Cấp quyền Quản trị viên (Admin)
-                </label>
-            </div>
-
-            <button type="submit" class="btn btn-danger w-100 fw-semibold py-2" style="background-color: #dc3545; border: none;">
-                <i class="fa-solid fa-check me-1"></i> Tạo tài khoản
+            <!-- Nút gửi yêu cầu -->
+            <button type="submit" class="btn btn-register btn-danger w-100 text-white shadow-sm">
+                <i class="fa-solid fa-check me-1"></i> Gửi yêu cầu đăng ký
             </button>
+            
+            <!-- Link quay lại -->
+            <div class="text-center mt-3">
+                <a href="{{ url_for('login') }}" class="text-muted small text-decoration-none">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Quay lại trang Đăng nhập
+                </a>
+            </div>
         </form>
     </div>
 </div>

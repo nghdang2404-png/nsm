@@ -27,7 +27,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #f8f9fa; /* Nền sáng hiện đại, đồng bộ trang chủ */
+            background-color: #f8f9fa;
         }
 
         /* =========================================
@@ -36,13 +36,13 @@
         .login-container {
             background: #ffffff;
             width: 100%;
-            max-width: 420px; /* Giới hạn độ rộng trên máy tính */
-            margin: 20px;     /* Tạo lề an toàn trên điện thoại */
+            max-width: 420px;
+            margin: 20px;
             padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); /* Đổ bóng mềm mại */
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
             border: 1px solid #e5e7eb;
-            border-top: 4px solid #dc3545; /* Điểm nhấn màu đỏ chủ đạo giống banner trang chủ */
+            border-top: 4px solid #dc3545;
         }
 
         /* =========================================
@@ -54,7 +54,7 @@
         }
 
         .logo-area img {
-            max-width: 160px; /* Khống chế kích thước logo vừa phải */
+            max-width: 160px;
             height: auto;
             margin-bottom: 15px;
             object-fit: contain;
@@ -62,7 +62,7 @@
 
         .logo-area h1 {
             font-size: 22px;
-            color: #dc3545; /* Dùng màu đỏ thương hiệu Nam Sương Motor */
+            color: #dc3545;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -107,7 +107,7 @@
         }
 
         .input-group:focus-within {
-            border-color: #dc3545; /* Viền đỏ khi click vào */
+            border-color: #dc3545;
             box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15);
             background: #ffffff;
         }
@@ -155,15 +155,15 @@
             width: 16px;
             height: 16px;
             cursor: pointer;
-            accent-color: #dc3545; /* Đổi màu tick sang đỏ */
+            accent-color: #dc3545;
         }
 
         /* =========================================
-           8. NÚT ĐĂNG NHẬP
+           8. NÚT ĐĂNG NHẬP & ĐĂNG KÝ
         ========================================= */
         .login-btn {
             width: 100%;
-            background-color: #dc3545; /* Màu đỏ chủ đạo giống banner trang chủ Nam Sương */
+            background-color: #dc3545;
             color: #ffffff;
             border: none;
             padding: 14px;
@@ -177,11 +177,32 @@
         }
 
         .login-btn:hover {
-            background-color: #b02a37; /* Đỏ sậm hơn khi hover */
+            background-color: #b02a37;
         }
 
         .login-btn:active {
-            transform: scale(0.98); /* Hiệu ứng lún nhẹ khi click */
+            transform: scale(0.98);
+        }
+
+        .register-link-container {
+            text-align: center;
+            margin-top: 18px;
+        }
+
+        .register-link-container a {
+            font-size: 14px;
+            color: #4b5563;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .register-link-container a span {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .register-link-container a:hover span {
+            text-decoration: underline;
         }
 
         /* =========================================
@@ -189,15 +210,15 @@
         ========================================= */
         @media (max-width: 480px) {
             html, body {
-                background-color: #ffffff; /* Tràn viền trắng trên mobile */
-                align-items: flex-start; /* Đẩy form lên cao một chút */
+                background-color: #ffffff;
+                align-items: flex-start;
             }
 
             .login-container {
                 margin: 0;
                 padding: 40px 20px;
                 border-radius: 0;
-                box-shadow: none; /* Bỏ viền và bóng râm để nhìn phẳng hơn */
+                box-shadow: none;
                 border: none;
                 border-top: 4px solid #dc3545;
                 max-width: 100%;
@@ -208,12 +229,8 @@
             }
 
             .input-group input {
-                font-size: 16px; /* Bắt buộc 16px để chống lỗi Auto-zoom trên iOS */
+                font-size: 16px;
                 padding: 12px 0;
-            }
-
-            .login-btn {
-                padding: 14px;
             }
         }
     </style>
@@ -223,7 +240,6 @@
     <div class="login-container">
         <!-- Logo và Header -->
         <div class="logo-area">
-            <!-- Đã bọc thẻ img trong if để tránh lỗi hiển thị icon ảnh vỡ nếu thiếu logo -->
             <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Nam Sương Motor" onerror="this.style.display='none'">
             <h1>ĐĂNG NHẬP HỆ THỐNG</h1>
         </div>
@@ -243,7 +259,7 @@
         <form method="POST">
             <div class="input-group">
                 <label for="username"><i class="fas fa-user"></i></label>
-                <input type="text" id="username" name="username" placeholder="Tên đăng nhập hoặc Email" required autocomplete="username">
+                <input type="text" id="username" name="username" placeholder="Tên đăng nhập" required autocomplete="username">
             </div>
             
             <div class="input-group">
@@ -259,6 +275,13 @@
             </div>
             
             <button type="submit" class="login-btn">ĐĂNG NHẬP</button>
+
+            <!-- Nút chuyển sang trang Đăng ký -->
+            <div class="register-link-container">
+                <a href="{{ url_for('register') }}">
+                    Chưa có tài khoản? <span>Đăng ký ngay</span>
+                </a>
+            </div>
         </form>
     </div>
 

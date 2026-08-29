@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, has_request_context
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import case
+from sqlalchemy import case, text
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
@@ -66,6 +66,7 @@ class User(db.Model):
     role = db.Column(db.String(50), default='user')
     bo_phan = db.Column(db.String(100))
     khu_vuc = db.Column(db.String(100))
+    trang_thai = db.Column(db.String(20), default='approved') # 'pending' (chờ duyệt), 'approved' (đã duyệt), 'rejected' (từ chối)
 
 class Xe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -148,7 +149,7 @@ def lay_danh_sach_ma_mau(ten_mau):
         return ['#cccccc']
     
     ten_mau_norm = unicodedata.normalize('NFC', str(ten_mau))
-    text = re.sub(r'\([^)]*\)', '', ten_mau_norm).lower().strip()
+    text_val = re.sub(r'\([^)]*\)', '', ten_mau_norm).lower().strip()
     
     bang_mau = {
         'đỏ': '#ff0000', 'do': '#ff0000',
@@ -161,12 +162,12 @@ def lay_danh_sach_ma_mau(ten_mau):
     
     danh_sach_kq = []
     for tu_khoa, ma in sorted(bang_mau.items(), key=lambda x: len(x[0]), reverse=True):
-        if tu_khoa in text:
+        if tu_khoa in text_val:
             if ma not in danh_sach_kq: 
                 danh_sach_kq.append(ma)
-            text = text.replace(tu_khoa, ' ')
+            text_val = text_val.replace(tu_khoa, ' ')
             
-    tu_list = text.split()
+    tu_list = text_val.split()
     for tu in tu_list:
         tu_sach = tu.strip()
         if tu_sach in bang_mau:
@@ -206,7 +207,6 @@ def get_order_priority():
     )
 
 def cap_nhat_thoi_gian_dong_bo(vung='Cà Mau', username=None):
-    """Cập nhật thời gian và tên người thực hiện thay đổi dữ liệu/giá xe gần nhất"""
     vn_time = datetime.now(timezone(timedelta(hours=7)))
     time_str = vn_time.strftime("%H:%M' %d/%m/%Y")
     
@@ -214,14 +214,12 @@ def cap_nhat_thoi_gian_dong_bo(vung='Cà Mau', username=None):
     key_time = 'last_updated_bl' if is_bl else 'last_updated_cm'
     key_user = 'last_user_bl' if is_bl else 'last_user_cm'
     
-    # Lưu mốc thời gian cập nhật
     setting_time = Setting.query.filter_by(key=key_time).first()
     if not setting_time:
         db.session.add(Setting(key=key_time, value=time_str))
     else:
         setting_time.value = time_str
         
-    # Xác định tên hiển thị người cập nhật
     curr_user = username
     if not curr_user and has_request_context() and 'username' in session:
         curr_user = session.get('username')
@@ -246,15 +244,26 @@ def cap_nhat_thoi_gian_dong_bo(vung='Cà Mau', username=None):
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        user = User.query.filter_by(username=request.form.get("username")).first()
-        if user and check_password_hash(user.password, request.form.get("password")):
+        username_input = request.form.get("username")
+        password_input = request.form.get("password")
+        user = User.query.filter_by(username=username_input).first()
+        
+        if user and check_password_hash(user.password, password_input):
+            # Kiểm tra trạng thái duyệt tài khoản
+            trang_thai_tk = getattr(user, 'trang_thai', 'approved')
+            if trang_thai_tk == 'pending':
+                flash("Tài khoản của bạn đang chờ quản trị viên duyệt", "danger")
+                return render_template("login.html")
+            elif trang_thai_tk == 'rejected':
+                flash("Tài khoản của bạn đã bị từ chối truy cập hệ thống.", "danger")
+                return render_template("login.html")
+
             session.clear()
             session.permanent = True 
             
-            # --- BỔ SUNG CÁC DÒNG NÀY ---
-            session['is_logged_in'] = True  # Đánh dấu đã đăng nhập thành công
+            session['is_logged_in'] = True  
             session['username'] = user.username
-            session['role'] = str(user.role or '').strip().lower()  # Ép về chữ thường ('admin') để khớp tuyệt đối
+            session['role'] = str(user.role or '').strip().lower()  
             session['vung'] = user.khu_vuc or 'Cà Mau'
             session['ho_ten'] = user.ho_ten or user.username
             
@@ -339,18 +348,22 @@ def admin_panel():
     setting = Setting.query.filter_by(key='csv_url').first()
     csv_url = setting.value if setting else ''
 
+    # --- CHỈ LẤY CÁC TÀI KHOẢN ĐANG CHỜ DUYỆT (trang_thai = 'pending') ---
+    danh_sach_user = User.query.filter_by(trang_thai='pending').order_by(User.id.asc()).all()
+
     return render_template(
         "admin.html", 
         danh_sach_xe=danh_sach_xe, 
+        danh_sach_user=danh_sach_user,  # <--- Truyền biến này ra giao diện admin.html
         search_query=search_query, 
         loai_filter=loai_filter, 
         danh_sach_loai=danh_sach_loai, 
         username=session.get('username'),
         csv_url=csv_url
     )
+
 @app.context_processor
 def inject_update_info():
-    """Tự động truyền thông tin cập nhật của Cà Mau & Bạc Liêu cho tất cả các trang (Home, Admin,...)"""
     t_cm = Setting.query.filter_by(key='last_updated_cm').first()
     u_cm = Setting.query.filter_by(key='last_user_cm').first()
     
@@ -363,8 +376,10 @@ def inject_update_info():
         'thoi_gian_baclieu': t_bl.value if t_bl else 'Chưa cập nhật',
         'nguoi_baclieu': u_bl.value if u_bl else 'Admin'
     }
+
 @app.route("/admin/settings", methods=["POST"])
 @admin_required
+
 def save_settings():
     csv_url = request.form.get("csv_url", "").strip()
     setting = Setting.query.filter_by(key='csv_url').first()
@@ -615,14 +630,12 @@ def sync_sheet():
 def get_home_data():
     vung = session.get('vung', 'Cà Mau')
     
-    # Lấy thời gian riêng biệt của từng vùng từ bảng Setting
     st_cm = Setting.query.filter_by(key='last_updated_cm').first()
     su_cm = Setting.query.filter_by(key='last_user_cm').first()
     
     st_bl = Setting.query.filter_by(key='last_updated_bl').first()
     su_bl = Setting.query.filter_by(key='last_user_bl').first()
 
-    # Xác định thời gian cho vùng hiện tại của session
     if vung == 'Bạc Liêu':
         current_time = st_bl.value if st_bl else "Chưa cập nhật"
         current_user = su_bl.value if su_bl else "Hệ thống"
@@ -666,6 +679,7 @@ def get_home_data():
         ],
         "data": data
     })
+
 @app.route("/admin/api/data", methods=["GET"])
 @admin_required
 def get_admin_data():
@@ -696,9 +710,8 @@ def manage_users():
     users = User.query.order_by(User.id.asc()).all()
     return render_template('manage_users.html', users=users, username=session.get('username'))
 
+# --- ROUTE ĐĂNG KÝ CÔNG KHAI (TỪ TRANG LOGIN - TRẠNG THÁI CHỜ DUYỆT) ---
 @app.route("/register", methods=["GET", "POST"])
-@app.route("/admin/register", methods=["GET", "POST"])
-@admin_required
 def register():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
@@ -708,9 +721,6 @@ def register():
         bo_phan = request.form.get("bo_phan", "").strip()
         khu_vuc = request.form.get("khu_vuc", "Cà Mau")
         
-        is_admin = request.form.get("is_admin")
-        role = "admin" if is_admin == "yes" else request.form.get("role", "user")
-
         if confirm_password and password != confirm_password:
             flash("Mật khẩu xác nhận không trùng khớp!", "danger")
             return redirect(url_for('register'))
@@ -719,13 +729,55 @@ def register():
             flash(f"Tài khoản '{username}' đã tồn tại!", "danger")
             return redirect(url_for('register'))
 
+        # Đăng ký mới mặc định là 'user' và trạng thái 'pending' (chờ duyệt)
+        new_user = User(
+            username=username, 
+            password=generate_password_hash(password), 
+            ho_ten=ho_ten,
+            role="user", 
+            bo_phan=bo_phan, 
+            khu_vuc=khu_vuc,
+            trang_thai="pending"
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        
+        flash("Đăng ký thành công! Vui lòng chờ quản trị viên duyệt tài khoản trước khi đăng nhập.", "success")
+        return redirect(url_for('login'))
+        
+    return render_template("register.html")
+
+# --- ROUTE ADMIN THÊM TÀI KHOẢN TRỰC TIẾP ---
+@app.route("/admin/register", methods=["GET", "POST"])
+@admin_required
+def admin_add_user():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password")
+        confirm_password = request.form.get("confirm_password")
+        ho_ten = request.form.get("ho_ten", "").strip()
+        bo_phan = request.form.get("bo_phan", "").strip()
+        khu_vuc = request.form.get("khu_vuc", "Cà Mau")
+        
+        is_admin = request.form.get("is_admin")
+        role = "admin" if is_admin == "yes" else "user"
+
+        if confirm_password and password != confirm_password:
+            flash("Mật khẩu xác nhận không trùng khớp!", "danger")
+            return redirect(url_for('admin_add_user'))
+
+        if User.query.filter_by(username=username).first():
+            flash(f"Tài khoản '{username}' đã tồn tại!", "danger")
+            return redirect(url_for('admin_add_user'))
+
         new_user = User(
             username=username, 
             password=generate_password_hash(password), 
             ho_ten=ho_ten,
             role=role, 
             bo_phan=bo_phan, 
-            khu_vuc=khu_vuc
+            khu_vuc=khu_vuc,
+            trang_thai="approved" # Tài khoản do admin tạo được duyệt sẵn
         )
         db.session.add(new_user)
         db.session.commit()
@@ -734,6 +786,24 @@ def register():
         return redirect(url_for('manage_users'))
         
     return render_template("register.html", username=session.get('username'))
+
+# --- DUYỆT HOẶC TỪ CHỐI TÀI KHOẢN (DÀNH CHO ADMIN) ---
+@app.route("/admin/users/approve/<int:id>")
+@admin_required
+def approve_user(id):  # <--- Đổi 'user_id' thành 'id' cho khớp với <int:id> ở trên
+    user = User.query.get_or_404(id)
+    user.trang_thai = 'approved'
+    db.session.commit()
+    
+    return redirect(url_for('admin_panel'))
+@app.route("/admin/users/reject/<int:id>")
+@admin_required
+def reject_user(id):
+    user = db.get_or_404(User, id)
+    user.trang_thai = "rejected"
+    db.session.commit()
+    flash(f"Đã từ chối tài khoản {user.username}!", "warning")
+    return redirect(url_for('manage_users'))
 
 @app.route("/admin/users/edit/<int:id>", methods=["POST"])
 @admin_required
@@ -842,7 +912,6 @@ def edit_xe(id):
     if not loai_xe_nhap or loai_xe_nhap == "Chưa phân loại":
         loai_xe_nhap = tu_dong_phan_loai(ten_xe_moi if ten_xe_moi else xe.ten_xe)
 
-    # --- LƯU LẠI GIÁ TRỊ CŨ TRƯỚC KHI CẬP NHẬT ---
     old_cm_cao = xe.gia_cm_cao
     old_bl_cao = xe.gia_bl_cao
     old_cm_trung = xe.gia_cm_trung
@@ -895,7 +964,6 @@ def edit_xe(id):
 
         db.session.commit()
 
-        # --- KIỂM TRA VÀ GHI VÀO BẢNG LỊCH SỬ NẾU GIÁ THAY ĐỔI ---
         has_price_change = (
             xe.gia_cm_cao != old_cm_cao or xe.gia_cm_trung != old_cm_trung or xe.gia_cm_thap != old_cm_thap or
             xe.gia_bl_cao != old_bl_cao or xe.gia_bl_trung != old_bl_trung or xe.gia_bl_thap != old_bl_thap
@@ -903,7 +971,6 @@ def edit_xe(id):
 
         if has_price_change:
             try:
-                from sqlalchemy import text
                 sql_log = text("""
                     INSERT INTO history_logs (username, action, target_id, old_value, new_value) 
                     VALUES (:username, :action, :target_id, :old_val, :new_val)
@@ -918,19 +985,18 @@ def edit_xe(id):
                 db.session.commit()
             except Exception as e:
                 print("Lỗi ghi log lịch sử:", e)
-        # --------------------------------------------------------
 
         if xe.gia_cm_cao != old_cm_cao or xe.gia_cm_trung != old_cm_trung or xe.gia_cm_thap != old_cm_thap:
             cap_nhat_thoi_gian_dong_bo("Cà Mau", session.get('username'))
         if xe.gia_bl_cao != old_bl_cao or xe.gia_bl_trung != old_bl_trung or xe.gia_bl_thap != old_bl_thap:
             cap_nhat_thoi_gian_dong_bo("Bạc Liêu", session.get('username'))
 
-        #flash("Cập nhật thông tin xe thành công!", "success")
     except Exception as e:
         db.session.rollback()
         flash(f"Có lỗi xảy ra: {str(e)}", "danger")
 
     return redirect(url_for('admin_panel'))
+
 @app.route("/admin/delete/<int:id>", methods=["GET"])
 @admin_required
 def delete_xe(id):
@@ -1127,13 +1193,12 @@ def sync_inventory_api():
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
-def is_bac_lieu(khu_vuc):
 
+def is_bac_lieu(khu_vuc):
     kv = (khu_vuc or '').lower()
     return 'bạc liêu' in kv or 'bac lieu' in kv
 
 def lay_gia_theo_vung(xe, khu_vuc_user):
-
     if is_bac_lieu(khu_vuc_user):
         return {
             'gia_hien_thi': getattr(xe, 'gia_bl_cao', 0) or 0,
@@ -1152,6 +1217,7 @@ def lay_gia_theo_vung(xe, khu_vuc_user):
             'gia_trung': getattr(xe, 'gia_cm_trung', 0) or 0,
             'gia_cao': getattr(xe, 'gia_cm_cao', 0) or 0
         }
+
 def format_xe_data_home(xe, khu_vuc_user):
     is_bl = 'bạc liêu' in (khu_vuc_user or '').lower()
     gia_thap = xe.gia_bl_thap if is_bl else xe.gia_cm_thap
@@ -1215,7 +1281,6 @@ def update_regional_price(xe_id):
         
     is_bl = 'bạc liêu' in vung.lower()
     
-    # === LƯU LẠI GIÁ TRỊ CŨ TRƯỚC KHI CẬP NHẬT ===
     old_gia_cao = xe.gia_bl_cao if is_bl else xe.gia_cm_cao
     old_gia_trung = xe.gia_bl_trung if is_bl else xe.gia_cm_trung
     old_gia_thap = xe.gia_bl_thap if is_bl else xe.gia_cm_thap
@@ -1249,9 +1314,7 @@ def update_regional_price(xe_id):
     if has_changes:
         cap_nhat_thoi_gian_dong_bo(vung, session.get('username'))
         
-        # --- BỔ SUNG ĐOẠN CODE NÀY ĐỂ GHI VÀO BẢNG LỊCH SỬ ---
         try:
-            from sqlalchemy import text
             sql_log = text("""
                 INSERT INTO history_logs (username, action, target_id, old_value, new_value) 
                 VALUES (:username, :action, :target_id, :old_val, :new_val)
@@ -1266,7 +1329,6 @@ def update_regional_price(xe_id):
             db.session.commit()
         except Exception as e:
             print("Lỗi ghi log lịch sử:", e)
-        # ----------------------------------------------------
 
     if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or data:
         key_name = 'last_updated_bl' if is_bl else 'last_updated_cm'
@@ -1280,16 +1342,10 @@ def update_regional_price(xe_id):
             "last_updated": st.value if st else "Chưa cập nhật",
             "last_updated_by": su.value if su else "Admin"
         })
-# Ví dụ kiểm tra quyền Admin ở Backend
-from sqlalchemy import text
-
-from datetime import datetime, timedelta
-from sqlalchemy import text
 
 @app.route('/admin/history', methods=['GET'])
 @admin_required
 def admin_history():
-    # --- 1. TỰ ĐỘNG XÓA LỊCH SỬ CŨ HƠN 2 THÁNG (60 NGÀY) ---
     try:
         threshold_date = datetime.now() - timedelta(days=60)
         db.session.execute(
@@ -1301,14 +1357,10 @@ def admin_history():
         db.session.rollback()
         print("Lỗi tự động xóa lịch sử cũ:", e)
 
-    # --- 2. TRUY VẤN DANH SÁCH LỊCH SỬ ĐỂ HIỂN THỊ ---
     try:
         sql = text("SELECT * FROM history_logs ORDER BY created_at DESC LIMIT 150")
         result = db.session.execute(sql)
-        
-        # Chuyển đổi dữ liệu sang dạng danh sách từ điển để template dễ hiển thị
         history_logs = [dict(row._mapping) for row in result]
-        
     except Exception as e:
         return f"""
         <div style="padding: 20px; font-family: sans-serif; color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; margin: 20px;">
@@ -1318,11 +1370,19 @@ def admin_history():
         </div>
         """, 500
 
-    # Trả về template hiển thị (đảm bảo tên file html khớp với dự án của bạn)
     return render_template('history.html', history_logs=history_logs)
+
 if __name__ == "__main__":
     with app.app_context(): 
         db.create_all()
+        # Tự động thêm cột trang_thai nếu cơ sở dữ liệu cũ chưa có
+        try:
+            db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS trang_thai VARCHAR(20) DEFAULT 'approved';"))
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print("Lỗi tự động thêm cột trang_thai:", e)
+
         danh_sach_tat_ca_xe = Xe.query.all()
         for xe in danh_sach_tat_ca_xe:
             xe.loai_xe = tu_dong_phan_loai(xe.ten_xe)
