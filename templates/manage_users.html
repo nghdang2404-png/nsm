@@ -1,98 +1,98 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Tài Khoản - Nam Sương Motor</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #f4f6f9; font-family: 'Roboto', sans-serif; }
-        .navbar { background-color: #1a1a1a; }
-        .card { border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .table th { background-color: #212529; color: #fff; font-size: 14px; vertical-align: middle; }
-        .table td { vertical-align: middle; font-size: 14px; }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark px-4">
-    <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="{{ url_for('admin_panel') }}"><i class="fas fa-tools me-2"></i> Quản Trị Hệ Thống</a>
-        <div class="d-flex align-items-center gap-3">
-            <span class="text-white small">Xin chào, <b>{{ username }}</b></span>
-            <a href="{{ url_for('admin_panel') }}" class="btn btn-outline-light btn-sm"><i class="fas fa-car me-1"></i> Quản lý Xe</a>
-            <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt me-1"></i> Đăng xuất</a>
-        </div>
-    </div>
-</nav>
+{% block title %}Quản Lý Tài Khoản - Nam Sương Motor{% endblock %}
 
-<div class="container my-4">
-    <!-- Hiển thị thông báo flash -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+{% block extra_css %}
+<style>
+    .brand-card {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+    }
+    .table th {
+        background-color: #212529 !important;
+        color: #ffffff !important;
+        font-size: 13px;
+        vertical-align: middle;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 12px 10px !important;
+        border: none;
+    }
+    .table td {
+        vertical-align: middle;
+        font-size: 13px;
+        padding: 12px 10px !important;
+    }
+    .btn-ns-red {
+        background-color: #dc3545;
+        color: white;
+        font-weight: 600;
+        border: none;
+    }
+    .btn-ns-red:hover {
+        background-color: #bb2d3b;
+        color: white;
+    }
+</style>
+{% endblock %}
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold m-0"><i class="fas fa-users-cog me-2"></i> Danh Sách Tài Khoản Người Dùng</h3>
-        <a href="{{ url_for('register') }}" class="btn btn-dark">
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold m-0 text-dark text-uppercase">
+            <i class="fas fa-users-cog text-danger me-2"></i> Danh Sách Tài Khoản Người Dùng
+        </h5>
+        <a href="{{ url_for('register') }}" class="btn btn-ns-red btn-sm px-3">
             <i class="fas fa-user-plus me-1"></i> Thêm tài khoản mới
         </a>
     </div>
 
     <!-- Bảng danh sách tài khoản -->
-    <div class="card p-3">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
+    <div class="card brand-card p-0 mb-5 bg-white">
+        <div class="table-responsive mb-0">
+            <table class="table table-hover align-middle text-center mb-0">
                 <thead>
                     <tr>
-                        <th class="text-center">#ID</th>
-                        <th>Tên đăng nhập</th>
-                        <th>Bộ phận</th>
+                        <th style="width: 70px;">#ID</th>
+                        <th class="text-start">Tên đăng nhập</th>
+                        <th class="text-start">Họ và tên</th>
+                        <th class="text-start">Bộ phận</th>
                         <th>Khu vực</th>
-                        <th class="text-center">Quyền hạn (Role)</th>
-                        <th class="text-center">Thao tác</th>
+                        <th>Quyền hạn (Role)</th>
+                        <th style="width: 150px;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Đã sửa danh_sach_user thành users -->
                     {% for u in users %}
                     <tr>
-                        <td class="text-center fw-bold">{{ u.id }}</td>
-                        <td><i class="fas fa-user text-secondary me-2"></i> {{ u.username }}</td>
-                        <td>{{ u.bo_phan or 'Chưa cập nhật' }}</td>
-                        <td>
-                            <span class="badge bg-info text-dark">{{ u.khu_vuc or 'Chưa chọn' }}</span>
+                        <td class="fw-bold text-muted">{{ u.id }}</td>
+                        <td class="text-start fw-semibold text-dark">
+                            <i class="fas fa-user text-secondary me-2"></i> {{ u.username }}
                         </td>
-                        <td class="text-center">
+                        <td class="text-start fw-semibold">{{ u.ho_ten or 'Chưa cập nhật' }}</td>
+                        <td class="text-start">{{ u.bo_phan or 'Chưa cập nhật' }}</td>
+                        <td>
+                            <span class="badge bg-light text-dark border px-2 py-1">{{ u.khu_vuc or 'Chưa chọn' }}</span>
+                        </td>
+                        <td>
                             {% if u.role == 'admin' %}
-                                <span class="badge bg-danger">ADMIN</span>
+                                <span class="badge bg-danger px-2 py-1">ADMIN</span>
                             {% else %}
-                                <span class="badge bg-secondary">USER</span>
+                                <span class="badge bg-secondary px-2 py-1">USER</span>
                             {% endif %}
                         </td>
-                        <td class="text-center">
-                            <!-- Nút Sửa kích hoạt Modal -->
-                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editUserModal{{ u.id }}">
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary px-2" data-bs-toggle="modal" data-bs-target="#editUserModal{{ u.id }}" title="Chỉnh sửa">
                                 <i class="fas fa-edit"></i> Sửa
                             </button>
                             
-                            <!-- Nút Xóa -->
                             {% if u.username != username %}
-                                <a href="{{ url_for('delete_user', id=u.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa tài khoản {{ u.username }} này không?');">
+                                <a href="{{ url_for('delete_user', id=u.id) }}" class="btn btn-sm btn-outline-danger px-2" onclick="return confirm('Bạn có chắc chắn muốn xóa tài khoản {{ u.username }} này không?');" title="Xóa">
                                     <i class="fas fa-trash"></i> Xóa
                                 </a>
                             {% else %}
-                                <button class="btn btn-sm btn-outline-secondary" disabled title="Không thể xóa chính mình">Xóa</button>
+                                <button class="btn btn-sm btn-outline-secondary px-2" disabled title="Không thể xóa chính mình">Xóa</button>
                             {% endif %}
                         </td>
                     </tr>
@@ -100,42 +100,48 @@
                     <!-- Modal Chỉnh Sửa Tài Khoản -->
                     <div class="modal fade" id="editUserModal{{ u.id }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog">
-                            <div class="modal-content">
+                            <div class="modal-content border-0 shadow">
                                 <form action="{{ url_for('edit_user', id=u.id) }}" method="POST">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title fw-bold">Chỉnh sửa tài khoản: {{ u.username }}</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    <div class="modal-header bg-dark text-white">
+                                        <h5 class="modal-title fw-bold fs-6 text-warning">
+                                            <i class="fas fa-user-pen me-1"></i> Chỉnh sửa tài khoản: {{ u.username }}
+                                        </h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body text-start">
                                         <div class="mb-3">
-                                            <label class="form-label fw-semibold">Tên đăng nhập:</label>
-                                            <input type="text" class="form-control bg-light" value="{{ u.username }}" disabled>
+                                            <label class="form-label fw-semibold small text-secondary">Tên đăng nhập:</label>
+                                            <input type="text" class="form-control form-control-sm bg-light" value="{{ u.username }}" disabled>
                                         </div>
                                         <div class="mb-3">
-                                            <label class="form-label fw-semibold">Mật khẩu mới (bỏ trống nếu không đổi):</label>
-                                            <input type="password" name="password" class="form-control" placeholder="Nhập mật khẩu mới...">
+                                            <label class="form-label fw-semibold small text-secondary">Họ và tên:</label>
+                                            <input type="text" name="ho_ten" class="form-control form-control-sm" value="{{ u.ho_ten or '' }}">
                                         </div>
                                         <div class="mb-3">
-                                            <label class="form-label fw-semibold">Bộ phận làm việc:</label>
-                                            <input type="text" name="bo_phan" class="form-control" value="{{ u.bo_phan or '' }}">
+                                            <label class="form-label fw-semibold small text-secondary">Mật khẩu mới (bỏ trống nếu không đổi):</label>
+                                            <input type="password" name="password" class="form-control form-control-sm" placeholder="Nhập mật khẩu mới...">
                                         </div>
                                         <div class="mb-3">
-                                            <label class="form-label fw-semibold">Khu vực làm việc:</label>
-                                            <select name="khu_vuc" class="form-select" required>
+                                            <label class="form-label fw-semibold small text-secondary">Bộ phận làm việc:</label>
+                                            <input type="text" name="bo_phan" class="form-control form-control-sm" value="{{ u.bo_phan or '' }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold small text-secondary">Khu vực làm việc:</label>
+                                            <select name="khu_vuc" class="form-select form-select-sm" required>
                                                 <option value="Cà Mau" {% if u.khu_vuc == 'Cà Mau' %}selected{% endif %}>Cà Mau</option>
                                                 <option value="Bạc Liêu" {% if u.khu_vuc == 'Bạc Liêu' %}selected{% endif %}>Bạc Liêu</option>
                                             </select>
                                         </div>
-                                        <div class="mb-3 form-check">
+                                        <div class="mb-3 form-check bg-light p-2 rounded border ps-4">
                                             <input type="checkbox" name="is_admin" value="yes" class="form-check-input" id="adminCheck{{ u.id }}" {% if u.role == 'admin' %}checked{% endif %}>
-                                            <label class="form-check-label text-danger fw-bold" for="adminCheck{{ u.id }}">
+                                            <label class="form-check-label text-danger fw-bold small" for="adminCheck{{ u.id }}">
                                                 Cấp quyền Quản trị viên (Admin)
                                             </label>
                                         </div>
                                     </div>
-                                    <div class="modal-footer">
+                                    <div class="modal-footer bg-light">
                                         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
-                                        <button type="submit" class="btn btn-primary btn-sm">Lưu thay đổi</button>
+                                        <button type="submit" class="btn btn-danger btn-sm px-3" style="background-color: #dc3545; border: none;">Lưu thay đổi</button>
                                     </div>
                                 </form>
                             </div>
@@ -144,7 +150,7 @@
                     <!-- End Modal -->
                     {% else %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">Chưa có tài khoản nào trong hệ thống.</td>
+                        <td colspan="7" class="text-center text-muted py-4">Chưa có tài khoản nào trong hệ thống.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -152,7 +158,4 @@
         </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+{% endblock %}

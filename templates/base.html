@@ -8,28 +8,138 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            background-color: #f4f6ef;
+            background-color: #f8f9fa;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .navbar-brand {
-            font-weight: 700;
-            letter-spacing: 0.5px;
+        
+        /* --- NAVBAR HIỆN ĐẠI --- */
+        .custom-navbar {
+            background-color: #ffffff !important;
+            border-bottom: 1px solid #e9ecef;
+            padding-top: 8px;
+            padding-bottom: 8px;
         }
+
+        .navbar-brand-custom {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .brand-text {
+            color: #dc3545;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* --- MENU DẠNG PILL HIỆN ĐẠI --- */
+        .admin-nav-pills {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background-color: #f1f3f5;
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .nav-pill-btn {
+            color: #495057;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        .nav-pill-btn:hover {
+            color: #dc3545;
+            background-color: #e9ecef;
+        }
+
+        .nav-pill-btn.active {
+            color: #ffffff;
+            background-color: #dc3545;
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+        }
+
+        /* --- USER STATUS PILL --- */
+        .user-status-pill {
+            background-color: #ffffff;
+            border: 1px solid #ced4da;
+            border-radius: 50rem;
+            padding: 5px 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .update-timestamp {
+            font-size: 11px;
+            color: #6c757d;
+            text-align: right;
+            margin-top: 3px;
+            margin-right: 5px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .btn-logout {
+            background-color: #dc3545;
+            color: white;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 14px;
+            font-size: 13px;
+        }
+        .btn-logout:hover { background-color: #bb2d3b; color: white; }
+
+        /* --- THANH TIÊU ĐỀ TRANG THAY CHO BANNER LỚN --- */
+        .admin-page-header {
+            background: #ffffff;
+            border-left: 4px solid #dc3545;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-page-header h1 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #343a40;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .admin-page-header p {
+            font-size: 12px;
+            color: #6c757d;
+            margin: 0;
+        }
+
+        @media (max-width: 991px) {
+            .custom-navbar .container-fluid {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .admin-nav-pills { width: 100%; justify-content: center; flex-wrap: wrap; }
+            .user-status-pill { width: 100%; justify-content: center; border-radius: 8px; }
+            .admin-page-header { flex-direction: column; align-items: flex-start; gap: 5px; }
+        }
+
         .card {
             border: none;
-            border-radius: 10px;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        }
-        .btn {
-            border-radius: 6px;
-        }
-        @media (max-width: 991px) {
-            .navbar .container-fluid {
-                flex-direction: column;
-                gap: 12px;
-            }
-            .navbar-brand { margin: 0 auto; }
-            .navbar .d-flex { width: 100%; justify-content: center; flex-wrap: wrap; gap: 5px; }
+            border-radius: 8px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
         }
     </style>
     {% block extra_css %}{% endblock %}
@@ -37,31 +147,70 @@
 <body>
 
     <!-- Header / Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm px-3">
-        <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="/admin">
-                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Nam Sương" style="height: 38px; width: auto; object-fit: contain;" class="me-2">
-                <div>
-                    <span class="text-warning fs-5">NAM SƯƠNG</span>
-                    <span class="d-block text-muted" style="font-size: 10px; letter-spacing: 1px;">QUẢN LÝ KHO & GIÁ XE</span>
-                </div>
+    <nav class="navbar custom-navbar shadow-sm">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            
+            <!-- Cột trái: Logo & Brand -->
+            <a class="navbar-brand-custom" href="/admin">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Nam Sương" style="height: 34px; width: auto; object-fit: contain;" class="me-2">
+                <span class="brand-text">NAM SƯƠNG MOTOR</span>
             </a>
-            <div class="d-flex mt-lg-0 mt-2 align-items-center">
-                <a href="/home" class="btn btn-outline-light btn-sm me-2">
+
+            <!-- Cột giữa: Menu dạng Pill hiện đại -->
+            <div class="admin-nav-pills">
+                <a href="/home" class="nav-pill-btn">
                     <i class="fa-solid fa-house me-1"></i> Trang chủ
                 </a>
-                <a href="/register" class="btn btn-warning btn-sm me-2 fw-semibold text-dark">
+                <a href="{{ url_for('manage_users') }}" class="nav-pill-btn {% if request.endpoint == 'manage_users' %}active{% endif %}">
+                    <i class="fa-solid fa-users-gear me-1"></i> Quản lý tài khoản
+                </a>
+                <a href="/register" class="nav-pill-btn">
                     <i class="fa-solid fa-user-plus me-1"></i> Đăng ký TK
                 </a>
-                <a href="{{ url_for('manage_users') }}" class="btn btn-outline-warning btn-sm me-2">
-                    <i class="fas fa-users-cog me-1"></i> Quản lý tài khoản
-                </a>
-                <a href="/logout" class="btn btn-danger btn-sm">
-                    <i class="fa-solid fa-right-from-bracket me-1"></i> Đăng xuất
-                </a>
             </div>
+
+            <!-- Cột phải: Thông tin User & Đăng xuất -->
+            <div class="d-flex flex-column align-items-end">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="user-status-pill shadow-sm">
+                        <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-circle text-success" style="font-size: 8px; margin-right: 6px;"></i>
+                            <span style="font-size: 12px;">Xin chào, <strong>{{ session.get('ho_ten', session.get('username', 'Thành viên')) }}</strong></span>
+                        </div>
+                    </div>
+                    <a href="/logout" class="btn-logout text-decoration-none">
+                        <i class="fa-solid fa-right-from-bracket me-1"></i> Thoát
+                    </a>
+                </div>
+                
+                <!-- Khu vực hiển thị thông tin cập nhật động cho Cà Mau & Bạc Liêu -->
+                <div class="update-timestamp">
+                    <div>
+                        <i class="fa-solid fa-clock me-1 text-danger" style="font-size: 9px;"></i> <strong>Cà Mau:</strong> Cập nhật lần cuối: 
+                        <strong class="text-danger" id="adminTimeCamau">{{ thoi_gian_camau|default('Chưa cập nhật') }}</strong> | Bởi: <strong id="adminUserCamau">{{ nguoi_camau|default('Admin') }}</strong>
+                    </div>
+                    <div>
+                        <i class="fa-solid fa-clock me-1 text-primary" style="font-size: 9px;"></i> <strong>Bạc Liêu:</strong> Cập nhật lần cuối: 
+                        <strong class="text-primary" id="adminTimeBaclieu">{{ thoi_gian_baclieu|default('Chưa cập nhật') }}</strong> | Bởi: <strong id="adminUserBaclieu">{{ nguoi_baclieu|default('Admin') }}</strong>
+                    </div>
+                </div>
+            </div>
+            
         </div>
     </nav>
+
+    <!-- Thanh tiêu đề trang gọn gàng thay cho banner lớn -->
+    {% block hero_section %}
+    <div class="container-fluid px-lg-4 px-2 mt-3">
+        <div class="admin-page-header">
+            <div>
+                <h1>Hệ thống quản lý kho & giá xe lăn bánh</h1>
+                <p>Cập nhật số liệu trực tuyến toàn hệ thống các chi nhánh Nam Sương</p>
+            </div>
+            <span class="badge bg-danger text-white px-2 py-1" style="font-size: 11px;">Khu vực quản trị cấp cao</span>
+        </div>
+    </div>
+    {% endblock %}
 
     <!-- NỘI DUNG CHÍNH -->
     <div class="container-fluid px-lg-4 px-2">

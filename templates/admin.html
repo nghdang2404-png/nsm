@@ -2,11 +2,21 @@
 
 {% block title %}Quản trị - Hệ thống Nam Sương{% endblock %}
 
+<!-- ẨN DẢI BANNER LỚN Ở TRANG ADMIN -->
+{% block hero_section %}{% endblock %}
+
 {% block extra_css %}
 <style>
+    .brand-card {
+        border: none;
+        border-top: 4px solid #dc3545;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+        border-radius: 8px;
+    }
+
     .table th {
         vertical-align: middle;
-        background-color: #212529 !important;
+        background-color: #1a56db !important;
         color: #fff;
         text-transform: uppercase;
         font-size: 11px;
@@ -14,7 +24,6 @@
         text-align: center;
     }
 
-    /* ĐỊNH DẠNG MÀU SẮC KHU VỰC CÀ MAU (XANH DƯƠNG) */
     .col-cm { background-color: #edf5ff !important; }
     .box-cm {
         background-color: #f8fbff;
@@ -33,7 +42,6 @@
         display: inline-block;
     }
 
-    /* ĐỊNH DẠNG MÀU SẮC KHU VỰC BẠC LIÊU (XANH LÁ) */
     .col-bl { background-color: #f0fdf4 !important; }
     .box-bl {
         background-color: #f4fdf6;
@@ -86,7 +94,7 @@
     .tonkho-badge {
         font-size: 10px;
         font-weight: 500;
-        padding: 2px 5px;
+        padding: 3px 6px;
         background: #f1f3f5;
         border: 1px solid #dee2e6;
         color: #adb5bd;
@@ -126,34 +134,88 @@
         transform: rotate(180deg);
     }
 
+    /* Nút LƯU TẤT CẢ nổi ở góc dưới phải màn hình */
+    .floating-save-container {
+        position: fixed;
+        bottom: 25px;
+        right: 25px;
+        z-index: 9998;
+    }
+    .btn-floating-save {
+        background: linear-gradient(135deg, #198754, #157347);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 14px 28px;
+        font-size: 15px;
+        font-weight: bold;
+        box-shadow: 0 6px 20px rgba(25, 135, 84, 0.4);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+    }
+    .btn-floating-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(25, 135, 84, 0.6);
+        background: linear-gradient(135deg, #157347, #146c43);
+        color: white;
+    }
+
+    /* Toast thông báo nổi góc phải màn hình */
+    #toast-container {
+        position: fixed;
+        bottom: 90px;
+        right: 25px;
+        z-index: 9999;
+    }
+    .custom-toast {
+        background: #198754;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+    }
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes fadeOut {
+        to { opacity: 0; transform: translateY(10px); }
+    }
+
     @media (max-width: 768px) {
-        .table-responsive {
-            border: 0;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        .form-control, .form-control-sm, .form-select-sm {
-            font-size: 14px !important;
-            padding: 8px 10px !important;
-            height: auto !important;
-        }
-        .btn-sm {
-            font-size: 13px !important;
-            padding: 8px 12px !important;
-        }
-        .box-cm, .box-bl {
-            padding: 10px !important;
-        }
-        .table {
-            min-width: 850px; 
-        }
+        body { font-size: 14px; }
+        .container { padding-left: 10px; padding-right: 10px; }
+        .card-body { padding: 12px !important; }
+        .table-responsive { border: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .form-control, .form-control-sm, .form-select-sm { font-size: 14px !important; padding: 8px 10px !important; height: auto !important; }
+        .btn-sm { font-size: 13px !important; padding: 8px 12px !important; }
+        .box-cm, .box-bl { padding: 10px !important; margin-bottom: 10px !important; }
+        .table { min-width: 780px; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- Container chứa thông báo nổi -->
+<div id="toast-container"></div>
+
+<!-- NÚT LƯU TẤT CẢ NỔI GÓC DƯỚI BÊN PHẢI -->
+<div class="floating-save-container">
+    <button type="button" id="btn-save-all" class="btn-floating-save">
+        <i class="fa-solid fa-floppy-disk fs-5"></i> Lưu
+    </button>
+</div>
+
 <!-- Thanh tìm kiếm và Bộ lọc -->
-<div class="card mb-3 shadow-sm">
+<div class="card mb-3 brand-card">
     <div class="card-body py-3">
         <form method="GET" action="/admin" class="row g-2 align-items-center">
             <div class="col-md-4 col-12">
@@ -179,58 +241,71 @@
 </div>
 
 <!-- Form Import Excel -->
-<div class="card mb-3 shadow-sm">
-    <div class="card-body py-3">
-        <h6 class="text-primary mb-2 fw-bold"><i class="fa-solid fa-file-excel me-1 text-success"></i> Cập nhật dữ liệu nhanh từ Excel</h6>
-        <form action="/admin/import" method="POST" enctype="multipart/form-data" class="row g-2 align-items-center">
-            <div class="col-md-4 col-12">
-                <input type="file" name="file_excel" class="form-control form-control-sm" accept=".xlsx, .xls" required>
-            </div>
-            <div class="col-md-auto col-12 mt-2 mt-md-0">
-                <button type="submit" class="btn btn-warning btn-sm w-100 fw-semibold text-dark"><i class="fa-solid fa-cloud-arrow-up me-1"></i> Tải lên Excel</button>
-            </div>
-        </form>
+<div class="card mb-3 brand-card">
+    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseExcel" aria-expanded="false" style="cursor: pointer; border-bottom: none;">
+        <h6 class="text-danger mb-0 fw-bold" style="font-size: 14px;"><i class="fa-solid fa-file-excel me-1 text-success"></i> Cập nhật dữ liệu nhanh từ Excel</h6>
+        <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 10px;">
+            Mở rộng <i class="fa-solid fa-chevron-down transition-icon ms-1"></i>
+        </span>
+    </div>
+    <div class="collapse" id="collapseExcel">
+        <div class="card-body py-2 pt-0">
+            <form action="/admin/import" method="POST" enctype="multipart/form-data" class="row g-2 align-items-center">
+                <div class="col-md-4 col-12">
+                    <input type="file" name="file_excel" class="form-control form-control-sm" accept=".xlsx, .xls" required>
+                </div>
+                <div class="col-md-auto col-12 mt-2 mt-md-0">
+                    <button type="submit" class="btn btn-warning btn-sm w-100 fw-semibold text-dark"><i class="fa-solid fa-cloud-arrow-up me-1"></i> Tải lên Excel</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 <!-- Form Cấu hình Link Google Sheets -->
-<div class="card mb-4 shadow-sm border-primary">
-    <div class="card-body py-3">
-        <h6 class="text-primary mb-2 fw-bold"><i class="fa-solid fa-link me-1"></i> Đồng bộ Google Sheets (Cập nhật link khi qua tháng)</h6>
-        <div class="row g-2 align-items-center">
-            <div class="col-md-9 col-12">
-                <form action="/admin/settings" method="POST" class="d-flex gap-2">
-                    <input type="url" name="csv_url" value="{{ csv_url }}" class="form-control form-control-sm" placeholder="Dán link Publish to web (CSV) của tháng này vào đây..." required>
-                    <button type="submit" class="btn btn-outline-primary btn-sm fw-semibold text-nowrap"><i class="fa-solid fa-save me-1"></i> Lưu link</button>
-                </form>
-            </div>
-            <div class="col-md-3 col-12">
-                <form action="/admin/sync-sheet" method="POST">
-                    <button type="submit" class="btn btn-success btn-sm w-100 fw-semibold" {% if not csv_url %}disabled{% endif %}>
-                        <i class="fa-solid fa-rotate me-1"></i> Kéo dữ liệu ngay
-                    </button>
-                </form>
+<div class="card mb-4 brand-card">
+    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseSheets" aria-expanded="false" style="cursor: pointer; border-bottom: none;">
+        <h6 class="text-danger mb-0 fw-bold" style="font-size: 14px;"><i class="fa-solid fa-link me-1"></i> Đồng bộ Google Sheets (Cập nhật link khi qua tháng)</h6>
+        <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 10px;">
+            Mở rộng <i class="fa-solid fa-chevron-down transition-icon ms-1"></i>
+        </span>
+    </div>
+    <div class="collapse" id="collapseSheets">
+        <div class="card-body py-2 pt-0">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-9 col-12">
+                    <form action="/admin/settings" method="POST" class="d-flex gap-2">
+                        <input type="url" name="csv_url" value="{{ csv_url }}" class="form-control form-control-sm" placeholder="Dán link Publish to web (CSV)..." required>
+                        <button type="submit" class="btn btn-outline-danger btn-sm fw-semibold text-nowrap"><i class="fa-solid fa-save me-1"></i> Lưu</button>
+                    </form>
+                </div>
+                <div class="col-md-3 col-12 mt-2 mt-md-0">
+                    <form action="/admin/sync-sheet" method="POST">
+                        <button type="submit" class="btn btn-success btn-sm w-100 fw-semibold" {% if not csv_url %}disabled{% endif %}>
+                            <i class="fa-solid fa-rotate me-1"></i> Kéo dữ liệu ngay
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Bảng dữ liệu -->
-<div class="card shadow-sm mb-5">
+<!-- Bảng dữ liệu quản lý -->
+<div class="card mb-5 brand-card" style="border-top-color: #1a56db;">
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-bordered align-middle text-center mb-0">
                 <thead>
                     <tr>
                         <th style="min-width: 90px;">Loại</th>
-                        <th style="min-width: 380px;">Bảng Giá & Giấy tờ (Cà Mau / Bạc Liêu)</th>
-                        <th style="min-width: 380px;">Hình ảnh, Tồn kho & Màu sắc</th>
-                        <th style="min-width: 90px;">Hành động</th>
+                        <th style="min-width: 420px;">Bảng Giá & Giấy tờ (Cà Mau / Bạc Liêu)</th>
+                        <th style="min-width: 420px;">Hình ảnh, Tồn kho & Màu sắc</th>
                     </tr>
                 </thead>
                 <tbody style="font-size: 13px;">
                     {% for xe in danh_sach_xe %}
-                    <form action="/admin/edit/{{ xe.id }}" method="POST" enctype="multipart/form-data" id="form_edit_{{ xe.id }}" class="edit-xe-form"></form>
+                    <form action="/admin/edit/{{ xe.id }}" method="POST" enctype="multipart/form-data" id="form_edit_{{ xe.id }}" class="edit-xe-form" data-id="{{ xe.id }}"></form>
                     <input type="hidden" name="loai_xe" id="loai_xe_input_{{ xe.id }}" value="{{ xe.loai_xe }}" form="form_edit_{{ xe.id }}">
                     <input type="hidden" name="ten_xe" id="ten_xe_input_{{ xe.id }}" value="{{ xe.ten_xe }}" form="form_edit_{{ xe.id }}">
 
@@ -239,15 +314,14 @@
                             <span class="fw-bold text-primary" id="loai_xe_{{ xe.id }}" style="font-size: 12px;">{{ xe.loai_xe }}</span>
                         </td>
                         <td colspan="2" class="bg-white text-start">
-                            <div class="p-1">
-                                <div class="fw-bold text-dark p-2 bg-light rounded border" style="font-size: 13px;">
+                            <div class="p-1 d-flex justify-content-between align-items-center">
+                                <div class="fw-bold text-dark p-2 bg-light rounded border flex-grow-1 me-2 mb-0" style="font-size: 13px;">
                                     <i class="fa-solid fa-car me-1 text-primary"></i><span id="ten_xe_text_{{ xe.id }}">{{ xe.ten_xe }}</span>
                                 </div>
+                                <a href="/admin/delete/{{ xe.id }}" class="btn btn-outline-danger btn-sm px-2 text-nowrap" onclick="return confirm('Bạn có chắc muốn xóa xe này cùng toàn bộ thông tin màu sắc liên quan?')" title="Xóa xe này">
+                                    <i class="fa-solid fa-trash me-1"></i> Xóa xe
+                                </a>
                             </div>
-                        </td>
-                        <td rowspan="2" class="align-middle text-center">
-                            <button type="submit" form="form_edit_{{ xe.id }}" class="btn btn-primary btn-sm px-2 mb-1 w-100 shadow-sm btn-save-xe" title="Lưu thay đổi"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu</button>
-                            <a href="/admin/delete/{{ xe.id }}" class="btn btn-danger btn-sm px-2 mb-1 w-100 shadow-sm" onclick="return confirm('Bạn có chắc muốn xóa xe này cùng toàn bộ thông tin màu sắc liên quan?')" title="Xóa"><i class="fa-solid fa-trash me-1"></i> Xóa</a>
                         </td>
                     </tr>
 
@@ -344,7 +418,7 @@
                                         <div>
                                             <span class="fw-bold text-danger" style="font-size: 11px;"><i class="fa-solid fa-palette me-1"></i>{{ mau.ten_mau }}</span>
                                             <span class="text-muted ms-1" style="font-size: 9px;">
-                                                (Chênh lệch: Cà Mau = {{ "{:,.0f}".format(mau.chenh_lech_cm|float|default(0)).replace(',', '.') }}, Bạc Liêu = {{ "{:,.0f}".format(mau.chenh_lech_bl|float|default(0)).replace(',', '.') }})
+                                                (CL: CM={{ "{:,.0f}".format(mau.chenh_lech_cm|float|default(0)).replace(',', '.') }}, BL={{ "{:,.0f}".format(mau.chenh_lech_bl|float|default(0)).replace(',', '.') }})
                                             </span>
                                         </div>
                                         <span class="badge bg-white text-dark border px-2 py-1" style="font-size: 9px;">
@@ -386,7 +460,6 @@
                                                 </div>
                                             </div>
                                             <div>
-                                                <!-- ĐÃ SỬA: Dùng mau.hinh_anh_mau thay vì mau.hinh_anh để hiển thị đúng tên file ảnh màu -->
                                                 <span class="small text-muted d-block mb-1">Ảnh màu: <strong class="text-dark">{{ mau.hinh_anh_mau if mau.hinh_anh_mau else 'Chưa có' }}</strong></span>
                                                 <input type="file" name="edit_hinh_anh_mau_{{ mau.id }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm" accept="image/*">
                                             </div>
@@ -406,40 +479,226 @@
 </div>
 
 <script>
-    // --- GHI NHỚ VÀ KHÔI PHỤC VỊ TRÍ CUỘN TRANG KHI BẤM LƯU ---
-    document.addEventListener("DOMContentLoaded", function () {
-        // Khôi phục lại vị trí cuộn cũ nếu có lưu lại trước đó
-        let scrollPos = sessionStorage.getItem("admin_scroll_pos");
-        if (scrollPos) {
-            window.scrollTo(0, parseInt(scrollPos));
-            sessionStorage.removeItem("admin_scroll_pos");
-        }
+    // Hàm hiển thị thông báo nổi Toast
+    function showToast(message) {
+        let container = document.getElementById("toast-container");
+        let toast = document.createElement("div");
+        toast.className = "custom-toast";
+        toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+    }
 
-        // Bắt sự kiện khi bấm nút Lưu để lưu lại vị trí cuộn hiện tại
-        document.querySelectorAll(".btn-save-xe").forEach(function(btn) {
-            btn.addEventListener("click", function() {
-                sessionStorage.setItem("admin_scroll_pos", window.scrollY);
-            });
-        });
+    // Kiểm tra xem Admin có đang bấm vào ô nhập liệu nào không
+    function isAdminEditing() {
+        const activeEl = document.activeElement;
+        return activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
+    }
 
-        // 1. XỬ LÝ DỮ LIỆU KHI VỪA TẢI TRANG
-        document.querySelectorAll(".currency-input").forEach(function (input) {
-            if (input.value) {
-                let num = Number(input.value);
-                if (!isNaN(num) && num !== 0) {
-                    input.value = new Intl.NumberFormat("vi-VN").format(num);
-                } else if (isNaN(num)) {
-                    let isNegative = input.value.trim().startsWith("-");
-                    let rawVal = input.value.replace(/\D/g, "");
-                    if (rawVal) {
-                        let formatted = new Intl.NumberFormat("vi-VN").format(rawVal);
-                        input.value = isNegative ? "-" + formatted : formatted;
+    // --- HÀM CẬP NHẬT THỜI GIAN & NGƯỜI SỬA BÊN TRÊN NAVBAR ---
+    function pollAndUpdateAdminData() {
+        fetch('/api/get-home-data')
+            .then(response => {
+                if (!response.ok) return;
+                return response.json();
+            })
+            .then(res => {
+                if (res && res.success) {
+                    if (res.vungs && Array.isArray(res.vungs)) {
+                        // Tách riêng Bạc Liêu & Cà Mau
+                        res.vungs.forEach(v => {
+                            let vungStr = (v.vung || "").toLowerCase();
+                            let timeVal = v.last_updated || '';
+                            let userVal = v.last_updated_by || v.updated_by || '';
+
+                            if (vungStr.includes("bạc liêu") || vungStr.includes("bac lieu")) {
+                                let elTime = document.getElementById('adminTimeBaclieu');
+                                let elUser = document.getElementById('adminUserBaclieu');
+                                if (elTime && timeVal) elTime.innerText = timeVal;
+                                if (elUser && userVal) elUser.innerText = userVal;
+                            } else {
+                                let elTime = document.getElementById('adminTimeCamau');
+                                let elUser = document.getElementById('adminUserCamau');
+                                if (elTime && timeVal) elTime.innerText = timeVal;
+                                if (elUser && userVal) elUser.innerText = userVal;
+                            }
+                        });
+                    } else {
+                        // Cập nhật chung nếu không tách vùng
+                        const timeVal = res.last_updated || '';
+                        const userVal = res.updated_by || res.last_updated_by || '';
+                        
+                        if (document.getElementById('adminTimeCamau')) document.getElementById('adminTimeCamau').innerText = timeVal;
+                        if (document.getElementById('adminUserCamau')) document.getElementById('adminUserCamau').innerText = userVal;
+                        if (document.getElementById('adminTimeBaclieu')) document.getElementById('adminTimeBaclieu').innerText = timeVal;
+                        if (document.getElementById('adminUserBaclieu')) document.getElementById('adminUserBaclieu').innerText = userVal;
                     }
                 }
+            })
+            .catch(error => console.error("Lỗi đồng bộ giờ Admin:", error));
+    }
+
+document.addEventListener("DOMContentLoaded", function () {
+        
+        // Cập nhật giờ lúc load trang lần đầu
+        pollAndUpdateAdminData();
+
+        // --- BƯỚC 1: ĐỊNH DẠNG TIỀN TỆ KHI TẢI TRANG LẦN ĐẦU (PHẢI CHẠY TRƯỚC) ---
+        document.querySelectorAll(".currency-input").forEach(function (input) {
+            let val = input.value.trim();
+            if (val && val !== '0' && val !== 'None') {
+                let integerPart = val.split('.')[0];
+                let rawVal = integerPart.replace(/\D/g, "");
+                
+                if (rawVal) {
+                    let num = parseInt(rawVal, 10);
+                    input.value = new Intl.NumberFormat("vi-VN").format(num);
+                } else {
+                    input.value = "";
+                }
+            } else {
+                input.value = "";
             }
         });
 
-        // 2. XỬ LÝ KHI NGƯỜI DÙNG GÕ PHÍM
+        // --- BƯỚC 2: LƯU LẠI TRẠNG THÁI BAN ĐẦU SAU KHI ĐÃ ĐỊNH DẠNG XONG ---
+        document.querySelectorAll("input[form^='form_edit_'], select[form^='form_edit_'], textarea[form^='form_edit_']").forEach(input => {
+            if (input.type === 'file') {
+                // File ban đầu chưa chọn gì
+            } else if (input.type === 'checkbox' || input.type === 'radio') {
+                input.dataset.initial = input.checked ? "1" : "0";
+            } else {
+                input.dataset.initial = input.value;
+            }
+        });
+
+        // --- BƯỚC 3: LƯU TOÀN BỘ THAY ĐỔI SONG SONG (CHỈ LƯU Ô THỰC SỬ SỬA) ---
+        document.getElementById("btn-save-all").addEventListener("click", async function () {
+            let forms = document.querySelectorAll(".edit-xe-form");
+            if (forms.length === 0) return;
+
+            let btnAll = this;
+            let oldHtml = btnAll.innerHTML;
+            
+            let changedForms = [];
+
+            forms.forEach(function (form) {
+                let xeId = form.getAttribute("data-id");
+                let formId = `form_edit_${xeId}`;
+                let elements = document.querySelectorAll(`[form="${formId}"]`);
+                let hasChanged = false;
+
+                elements.forEach(function (input) {
+                    if (!input.name) return;
+
+                    if (input.type === 'file') {
+                        if (input.files && input.files.length > 0) {
+                            hasChanged = true;
+                        }
+                    } else if (input.type === 'checkbox' || input.type === 'radio') {
+                        let init = input.dataset.initial === "1";
+                        if (input.checked !== init) {
+                            hasChanged = true;
+                        }
+                    } else {
+                        let init = input.dataset.initial || "";
+                        if (input.value !== init) {
+                            hasChanged = true;
+                        }
+                    }
+                });
+
+                if (hasChanged) {
+                    changedForms.push({ form, xeId, formId, elements });
+                }
+            });
+
+            if (changedForms.length === 0) {
+                showToast("Không có thay đổi nào mới để lưu!");
+                return;
+            }
+
+            btnAll.disabled = true;
+            btnAll.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> Đang lưu...`;
+
+            let successCount = 0;
+            let failCount = 0;
+
+            async function saveItem(item) {
+                let formData = new FormData();
+                item.elements.forEach(function (input) {
+                    if (!input.name) return;
+
+                    if (input.type === 'file') {
+                        if (input.files && input.files.length > 0) {
+                            formData.set(input.name, input.files[0]);
+                        }
+                    } else if (input.type === 'checkbox' || input.type === 'radio') {
+                        if (input.checked) {
+                            formData.set(input.name, input.value);
+                        }
+                    } else {
+                        let val = input.value;
+                        if (input.classList.contains("currency-input")) {
+                            val = val.replace(/\D/g, ""); 
+                        }
+                        formData.set(input.name, val);
+                    }
+                });
+
+                try {
+                    let response = await fetch(item.form.action, {
+                        method: "POST",
+                        headers: { "X-Requested-With": "XMLHttpRequest" },
+                        body: formData
+                    });
+
+                    let text = await response.text();
+                    let resData;
+                    try {
+                        resData = JSON.parse(text);
+                    } catch (e) {
+                        resData = { success: response.ok };
+                    }
+
+                    if (response.ok && (resData.success !== false)) {
+                        successCount++;
+                        item.elements.forEach(input => {
+                            if (input.type === 'checkbox' || input.type === 'radio') {
+                                input.dataset.initial = input.checked ? "1" : "0";
+                            } else if (input.type !== 'file') {
+                                input.dataset.initial = input.value;
+                            }
+                        });
+                    } else {
+                        failCount++;
+                    }
+                } catch (err) {
+                    console.error(`Lỗi khi lưu xe ID ${item.xeId}:`, err);
+                    failCount++;
+                }
+            }
+
+            let chunkSize = 10;
+            for (let i = 0; i < changedForms.length; i += chunkSize) {
+                let chunk = changedForms.slice(i, i + chunkSize);
+                let promises = chunk.map(item => saveItem(item));
+                await Promise.all(promises);
+            }
+
+            btnAll.innerHTML = oldHtml;
+            btnAll.disabled = false;
+
+            if (failCount === 0) {
+                showToast(`Đã lưu thành công ${successCount} thay đổi!`);
+            } else {
+                showToast(`Đã lưu hoàn tất (${successCount} thành công, ${failCount} lỗi).`);
+            }
+            
+            setTimeout(pollAndUpdateAdminData, 500);
+        });
+
+        // --- ĐỊNH DẠNG TIỀN TỆ KHI ĐANG GÕ ---
         document.addEventListener("input", function (e) {
             if (e.target.classList.contains("currency-input")) {
                 let input = e.target;
@@ -463,27 +722,9 @@
             }
         });
 
-        // 3. XỬ LÝ KHI BẤM LƯU
-        document.addEventListener("submit", function (e) {
-            let form = e.target;
-            let formId = form.id;
-            
-            document.querySelectorAll(".currency-input").forEach(function (input) {
-                if (input.form === form || input.getAttribute("form") === formId) {
-                    input.value = input.value.replace(/\./g, "");
-                }
-            });
-        });
-    });
-</script>
-
-<script>
-    // --- 4. TỰ ĐỘNG CẬP NHẬT DỮ LIỆU NGẦM (REAL-TIME POLLING) ---
-    document.addEventListener("DOMContentLoaded", function () {
+        // --- TỰ ĐỘNG CẬP NHẬT DỮ LIỆU BẢNG NGẦM ---
         function fetchLatestData() {
-            if (document.activeElement && document.activeElement.tagName === "INPUT") {
-                return; 
-            }
+            if (isAdminEditing()) return; 
 
             fetch('/admin/api/data')
                 .then(response => response.json())
@@ -525,7 +766,7 @@
                         });
                     });
                 })
-                .catch(err => console.error("Lỗi đồng bộ ngầm dữ liệu:", err));
+                .catch(err => console.error("Lỗi đồng bộ ngầm dữ liệu bảng:", err));
         }
 
         function updateBadge(badgeElement, label, value) {
@@ -541,7 +782,8 @@
             }
         }
 
-        setInterval(fetchLatestData, 10000);
+        setInterval(fetchLatestData, 10000); 
+        setInterval(pollAndUpdateAdminData, 3000); 
     });
 </script>
 {% endblock %}

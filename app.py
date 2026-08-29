@@ -8,7 +8,7 @@ import traceback
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 from functools import wraps
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, has_request_context
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import case
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -62,6 +62,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
+    ho_ten = db.Column(db.String(150))
     role = db.Column(db.String(50), default='user')
     bo_phan = db.Column(db.String(100))
     khu_vuc = db.Column(db.String(100))
@@ -204,19 +205,41 @@ def get_order_priority():
         else_=4
     )
 
-def cap_nhat_thoi_gian_dong_bo(vung='Cà Mau'):
+def cap_nhat_thoi_gian_dong_bo(vung='Cà Mau', username=None):
+    """Cập nhật thời gian và tên người thực hiện thay đổi dữ liệu/giá xe gần nhất"""
     vn_time = datetime.now(timezone(timedelta(hours=7)))
     time_str = vn_time.strftime("%H:%M' %d/%m/%Y")
     
     is_bl = 'bạc liêu' in (vung or '').lower()
-    key_name = 'last_updated_bl' if is_bl else 'last_updated_cm'
+    key_time = 'last_updated_bl' if is_bl else 'last_updated_cm'
+    key_user = 'last_user_bl' if is_bl else 'last_user_cm'
     
-    setting = Setting.query.filter_by(key=key_name).first()
-    if not setting:
-        db.session.add(Setting(key=key_name, value=time_str))
+    # Lưu mốc thời gian cập nhật
+    setting_time = Setting.query.filter_by(key=key_time).first()
+    if not setting_time:
+        db.session.add(Setting(key=key_time, value=time_str))
     else:
-        setting.value = time_str
-    
+        setting_time.value = time_str
+        
+    # Xác định tên hiển thị người cập nhật
+    curr_user = username
+    if not curr_user and has_request_context() and 'username' in session:
+        curr_user = session.get('username')
+        
+    ten_hien_thi = "Hệ thống"
+    if curr_user:
+        user_obj = User.query.filter_by(username=curr_user).first()
+        if user_obj and user_obj.ho_ten:
+            ten_hien_thi = user_obj.ho_ten
+        else:
+            ten_hien_thi = curr_user
+            
+    setting_user = Setting.query.filter_by(key=key_user).first()
+    if not setting_user:
+        db.session.add(Setting(key=key_user, value=ten_hien_thi))
+    else:
+        setting_user.value = ten_hien_thi
+            
     db.session.commit()
 
 # --- ROUTES AUTH & USER ---
@@ -230,6 +253,10 @@ def login():
             session['username'] = user.username
             session['role'] = user.role
             session['vung'] = user.khu_vuc or 'Cà Mau'
+            
+            # --- THÊM DÒNG NÀY ĐỂ LƯU HỌ TÊN VÀO SESSION ---
+            session['ho_ten'] = user.ho_ten or user.username
+            
             return redirect(url_for('home'))
         flash("Sai thông tin đăng nhập!", "danger")
     return render_template("login.html")
@@ -246,7 +273,6 @@ def set_vung():
     vung_moi = request.form.get("vung", "").strip()
     if vung_moi:
         session['vung'] = vung_moi
-        flash(f"Đã chuyển khu vực hiển thị sang: {vung_moi}", "success")
     return redirect(url_for('home'))
 
 @app.route("/home")
@@ -258,13 +284,14 @@ def home():
     khu_vuc_user = (session.get('vung') or (current_user.khu_vuc if current_user else 'Cà Mau')).strip()
     
     is_bl = 'bạc liêu' in khu_vuc_user.lower()
-    key_name = 'last_updated_bl' if is_bl else 'last_updated_cm'
-    setting_time = Setting.query.filter_by(key=key_name).first()
+    key_time = 'last_updated_bl' if is_bl else 'last_updated_cm'
+    key_user = 'last_user_bl' if is_bl else 'last_user_cm'
     
-    if setting_time and setting_time.value:
-        last_updated_str = setting_time.value
-    else:
-        last_updated_str = "Chưa cập nhật"
+    setting_time = Setting.query.filter_by(key=key_time).first()
+    setting_user = Setting.query.filter_by(key=key_user).first()
+    
+    last_updated_str = setting_time.value if (setting_time and setting_time.value) else "Chưa cập nhật"
+    last_user_str = setting_user.value if (setting_user and setting_user.value) else "Hệ thống"
     
     search_query = request.args.get('search', '')
     loai_filter = request.args.get('loai', '')
@@ -286,8 +313,10 @@ def home():
         loai_filter=loai_filter, 
         danh_sach_loai=danh_sach_loai, 
         username=session.get('username'),
+        current_user=current_user,
         user_vung=khu_vuc_user,
-        last_updated=last_updated_str  
+        last_updated=last_updated_str,
+        last_updated_by=last_user_str
     )
 
 # --- ADMIN ROUTES ---
@@ -318,7 +347,21 @@ def admin_panel():
         username=session.get('username'),
         csv_url=csv_url
     )
+@app.context_processor
+def inject_update_info():
+    """Tự động truyền thông tin cập nhật của Cà Mau & Bạc Liêu cho tất cả các trang (Home, Admin,...)"""
+    t_cm = Setting.query.filter_by(key='last_updated_cm').first()
+    u_cm = Setting.query.filter_by(key='last_user_cm').first()
+    
+    t_bl = Setting.query.filter_by(key='last_updated_bl').first()
+    u_bl = Setting.query.filter_by(key='last_user_bl').first()
 
+    return {
+        'thoi_gian_camau': t_cm.value if t_cm else 'Chưa cập nhật',
+        'nguoi_camau': u_cm.value if u_cm else 'Admin',
+        'thoi_gian_baclieu': t_bl.value if t_bl else 'Chưa cập nhật',
+        'nguoi_baclieu': u_bl.value if u_bl else 'Admin'
+    }
 @app.route("/admin/settings", methods=["POST"])
 @admin_required
 def save_settings():
@@ -333,7 +376,7 @@ def save_settings():
     flash("Lưu link Google Sheets thành công!", "success")
     return redirect(url_for('admin_panel'))
 
-def run_sync_process():
+def run_sync_process(username=None):
     setting = Setting.query.filter_by(key='csv_url').first()
     csv_url = setting.value if setting else None
     
@@ -531,9 +574,9 @@ def run_sync_process():
         db.session.commit()
         
         if has_price_changed_cm:
-            cap_nhat_thoi_gian_dong_bo("Cà Mau")
+            cap_nhat_thoi_gian_dong_bo("Cà Mau", username)
         if has_price_changed_bl:
-            cap_nhat_thoi_gian_dong_bo("Bạc Liêu")
+            cap_nhat_thoi_gian_dong_bo("Bạc Liêu", username)
             
         return True, f"Thêm mới {so_luong_them} xe, Cập nhật {so_luong_cap_nhat} xe."
         
@@ -549,7 +592,7 @@ def start_background_sync():
             try:
                 time.sleep(6)
                 with app.app_context():
-                    success, msg = run_sync_process()
+                    success, msg = run_sync_process(username=None)
                     print(f"--- [BACKGROUND SYNC] {msg} ---")
             except Exception as e:
                 print(f"[BACKGROUND] Lỗi tự động đồng bộ nền: {e}")
@@ -560,43 +603,66 @@ def start_background_sync():
 @app.route("/admin/sync-sheet", methods=["POST"])
 @admin_required
 def sync_sheet():
-    success, message = run_sync_process()
+    success, message = run_sync_process(username=session.get('username'))
     if success:
         flash(f"Đồng bộ Google Sheets thành công! {message}", "success")
     else:
         flash(f"Lỗi khi đồng bộ từ Google Sheets: {message}", "danger")
     return redirect(url_for('admin_panel'))
 
-
 @app.route("/api/get-home-data")
 def get_home_data():
     vung = session.get('vung', 'Cà Mau')
-    is_bl = 'bạc liêu' in vung.lower()
     
-    key_name = 'last_updated_bl' if is_bl else 'last_updated_cm'
-    st = Setting.query.filter_by(key=key_name).first()
-    last_updated_str = st.value if st else "Chưa cập nhật"
+    # Lấy thời gian riêng biệt của từng vùng từ bảng Setting
+    st_cm = Setting.query.filter_by(key='last_updated_cm').first()
+    su_cm = Setting.query.filter_by(key='last_user_cm').first()
+    
+    st_bl = Setting.query.filter_by(key='last_updated_bl').first()
+    su_bl = Setting.query.filter_by(key='last_user_bl').first()
+
+    # Xác định thời gian cho vùng hiện tại của session
+    if vung == 'Bạc Liêu':
+        current_time = st_bl.value if st_bl else "Chưa cập nhật"
+        current_user = su_bl.value if su_bl else "Hệ thống"
+    else:
+        current_time = st_cm.value if st_cm else "Chưa cập nhật"
+        current_user = su_cm.value if su_cm else "Hệ thống"
 
     danh_sach_xe = Xe.query.all()
     data = []
     for xe in danh_sach_xe:
+        gia_info = lay_gia_theo_vung(xe, vung)
         data.append({
             "id": xe.id,
             "ten_xe": xe.ten_xe,
             "loai_xe": xe.loai_xe,
-            "gia_cao": xe.gia_bl_cao if is_bl else xe.gia_cm_cao,
-            "gia_trung": xe.gia_bl_trung if is_bl else xe.gia_cm_trung,
-            "gia_thap": xe.gia_bl_thap if is_bl else xe.gia_cm_thap,
-            # Sửa lại gọi đúng cột trong database tương ứng với khu vực
-            "gia_giay_to_phuong": xe.gia_gt_phuong_bl if is_bl else xe.gia_gt_phuong_cm,
-            "gia_giay_to_xa": xe.gia_gt_xa_bl if is_bl else xe.gia_gt_xa_cm,
+            "gia_hien_thi": gia_info['gia_hien_thi'],
+            "gia_cao": gia_info['gia_cao'],
+            "gia_trung": gia_info['gia_trung'],
+            "gia_thap": gia_info['gia_thap'],
+            "gia_giay_to_phuong": gia_info['gia_gt_phuong'],
+            "gia_giay_to_xa": gia_info['gia_gt_xa'],
             "mau_xe": [mau.to_dict(vung) for mau in xe.mau_xe]
         })
         
     return jsonify({
         "success": True, 
         "vung": vung,
-        "last_updated": last_updated_str,
+        "last_updated": current_time,
+        "last_updated_by": current_user,
+        "vungs": [
+            {
+                "vung": "Cà Mau",
+                "last_updated": st_cm.value if st_cm else "Chưa cập nhật",
+                "last_updated_by": su_cm.value if su_cm else "Hệ thống"
+            },
+            {
+                "vung": "Bạc Liêu",
+                "last_updated": st_bl.value if st_bl else "Chưa cập nhật",
+                "last_updated_by": su_bl.value if su_bl else "Hệ thống"
+            }
+        ],
         "data": data
     })
 @app.route("/admin/api/data", methods=["GET"])
@@ -626,8 +692,8 @@ def get_admin_data():
 @app.route("/admin/users")
 @admin_required
 def manage_users():
-    users = User.query.all()
-    return render_template("manage_users.html", users=users, username=session.get('username'))
+    users = User.query.order_by(User.id.asc()).all()
+    return render_template('manage_users.html', users=users, username=session.get('username'))
 
 @app.route("/register", methods=["GET", "POST"])
 @app.route("/admin/register", methods=["GET", "POST"])
@@ -637,7 +703,8 @@ def register():
         username = request.form.get("username", "").strip()
         password = request.form.get("password")
         confirm_password = request.form.get("confirm_password")
-        bo_phan = request.form.get("bo_phan", "")
+        ho_ten = request.form.get("ho_ten", "").strip()
+        bo_phan = request.form.get("bo_phan", "").strip()
         khu_vuc = request.form.get("khu_vuc", "Cà Mau")
         
         is_admin = request.form.get("is_admin")
@@ -654,6 +721,7 @@ def register():
         new_user = User(
             username=username, 
             password=generate_password_hash(password), 
+            ho_ten=ho_ten,
             role=role, 
             bo_phan=bo_phan, 
             khu_vuc=khu_vuc
@@ -674,6 +742,7 @@ def edit_user(id):
     if new_password:
         user.password = generate_password_hash(new_password)
         
+    user.ho_ten = request.form.get("ho_ten", "").strip()
     user.bo_phan = request.form.get("bo_phan")
     user.khu_vuc = request.form.get("khu_vuc")
     user.role = 'admin' if request.form.get("is_admin") == 'yes' else 'user'
@@ -747,11 +816,10 @@ def add_xe():
                 
         db.session.commit()
         
-        # Nếu thêm xe mới mà có nhập giá cao > 0, cập nhật thời gian tương ứng
         if new_xe.gia_cm_cao > 0:
-            cap_nhat_thoi_gian_dong_bo("Cà Mau")
+            cap_nhat_thoi_gian_dong_bo("Cà Mau", session.get('username'))
         if new_xe.gia_bl_cao > 0:
-            cap_nhat_thoi_gian_dong_bo("Bạc Liêu")
+            cap_nhat_thoi_gian_dong_bo("Bạc Liêu", session.get('username'))
 
         flash("Thêm xe mới thành công!", "success")
     except Exception as e:
@@ -773,7 +841,6 @@ def edit_xe(id):
     if not loai_xe_nhap or loai_xe_nhap == "Chưa phân loại":
         loai_xe_nhap = tu_dong_phan_loai(ten_xe_moi if ten_xe_moi else xe.ten_xe)
 
-    # Lưu lại giá trị cũ để kiểm tra thay đổi
     old_cm_cao = xe.gia_cm_cao
     old_bl_cao = xe.gia_bl_cao
     old_cm_trung = xe.gia_cm_trung
@@ -826,11 +893,10 @@ def edit_xe(id):
 
         db.session.commit()
 
-        # TỰ ĐỘNG CẬP NHẬT THỜI GIAN NẾU GIÁ THAY ĐỔI
         if xe.gia_cm_cao != old_cm_cao or xe.gia_cm_trung != old_cm_trung or xe.gia_cm_thap != old_cm_thap:
-            cap_nhat_thoi_gian_dong_bo("Cà Mau")
+            cap_nhat_thoi_gian_dong_bo("Cà Mau", session.get('username'))
         if xe.gia_bl_cao != old_bl_cao or xe.gia_bl_trung != old_bl_trung or xe.gia_bl_thap != old_bl_thap:
-            cap_nhat_thoi_gian_dong_bo("Bạc Liêu")
+            cap_nhat_thoi_gian_dong_bo("Bạc Liêu", session.get('username'))
 
         flash("Cập nhật thông tin xe thành công!", "success")
     except Exception as e:
@@ -972,9 +1038,9 @@ def import_excel():
         db.session.commit()
         
         if has_price_changed_cm:
-            cap_nhat_thoi_gian_dong_bo("Cà Mau")
+            cap_nhat_thoi_gian_dong_bo("Cà Mau", session.get('username'))
         if has_price_changed_bl:
-            cap_nhat_thoi_gian_dong_bo("Bạc Liêu")
+            cap_nhat_thoi_gian_dong_bo("Bạc Liêu", session.get('username'))
 
         flash(f"Thao tác thành công! Thêm mới: {so_luong_them} xe, Cập nhật: {so_luong_cap_nhat} xe.", "success")
     except Exception as e:
@@ -1035,7 +1101,31 @@ def sync_inventory_api():
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
+def is_bac_lieu(khu_vuc):
 
+    kv = (khu_vuc or '').lower()
+    return 'bạc liêu' in kv or 'bac lieu' in kv
+
+def lay_gia_theo_vung(xe, khu_vuc_user):
+
+    if is_bac_lieu(khu_vuc_user):
+        return {
+            'gia_hien_thi': getattr(xe, 'gia_bl_cao', 0) or 0,
+            'gia_gt_phuong': getattr(xe, 'gia_gt_phuong_bl', 0) or 0,
+            'gia_gt_xa': getattr(xe, 'gia_gt_xa_bl', 0) or 0,
+            'gia_thap': getattr(xe, 'gia_bl_thap', 0) or 0,
+            'gia_trung': getattr(xe, 'gia_bl_trung', 0) or 0,
+            'gia_cao': getattr(xe, 'gia_bl_cao', 0) or 0
+        }
+    else:
+        return {
+            'gia_hien_thi': getattr(xe, 'gia_cm_cao', 0) or 0,
+            'gia_gt_phuong': getattr(xe, 'gia_gt_phuong_cm', 0) or 0,
+            'gia_gt_xa': getattr(xe, 'gia_gt_xa_cm', 0) or 0,
+            'gia_thap': getattr(xe, 'gia_cm_thap', 0) or 0,
+            'gia_trung': getattr(xe, 'gia_cm_trung', 0) or 0,
+            'gia_cao': getattr(xe, 'gia_cm_cao', 0) or 0
+        }
 def format_xe_data_home(xe, khu_vuc_user):
     is_bl = 'bạc liêu' in (khu_vuc_user or '').lower()
     gia_thap = xe.gia_bl_thap if is_bl else xe.gia_cm_thap
@@ -1105,7 +1195,7 @@ def update_regional_price(xe_id):
         gia_thap_moi = safe_float(data.get('gia_bl_thap') or data.get('gia_thap'), xe.gia_bl_thap)
     else:
         gia_cao_moi = safe_float(data.get('gia_cm_cao') or data.get('gia_cao'), xe.gia_cm_cao)
-        gia_trung_moi = safe_float(data.get('gia_cm_trung') or data.get('gia_trung'), xe.gia_cm_trung)
+        gia_trung_moi = safe_float(data.get('gia_cm_trung') or data.get('gia_cm_trung'), xe.gia_cm_trung)
         gia_thap_moi = safe_float(data.get('gia_cm_thap') or data.get('gia_thap'), xe.gia_cm_thap)
     
     has_changes = False
@@ -1126,20 +1216,20 @@ def update_regional_price(xe_id):
     db.session.commit()
     
     if has_changes:
-        cap_nhat_thoi_gian_dong_bo(vung)
+        cap_nhat_thoi_gian_dong_bo(vung, session.get('username'))
         
     if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or data:
         key_name = 'last_updated_bl' if is_bl else 'last_updated_cm'
+        user_name = 'last_user_bl' if is_bl else 'last_user_cm'
         st = Setting.query.filter_by(key=key_name).first()
+        su = Setting.query.filter_by(key=user_name).first()
         return jsonify({
             "success": True, 
             "message": f"Cập nhật giá {vung} thành công!", 
             "vung": vung,
-            "last_updated": st.value if st else "Chưa cập nhật"
+            "last_updated": st.value if st else "Chưa cập nhật",
+            "last_updated_by": su.value if su else "Admin"
         })
-    
-    flash(f"Cập nhật giá {vung} thành công!", "success")
-    return redirect(url_for('admin_panel'))
 
 if __name__ == "__main__":
     with app.app_context(): 

@@ -1,128 +1,90 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng ký tài khoản mới - Hệ thống Nam Sương</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body {
-            background-color: #f4f6ef;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-dark bg-dark mb-4 shadow-sm px-3">
-        <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('admin_panel') if 'admin_panel' in endpoints else '/admin' }}">
-                <span class="text-warning fs-5 me-2 fw-bold">NAM SƯƠNG</span> 
-                <span class="text-muted fs-6">| Quản trị hệ thống</span>
-            </a>
-            <div>
-                <a href="/admin" class="btn btn-outline-light btn-sm">
-                    <i class="fa-solid fa-arrow-left me-1"></i> Quay lại trang Quản trị
-                </a>
-            </div>
-        </div>
-    </nav>
+{% block title %}Đăng ký tài khoản mới - Hệ thống Nam Sương{% endblock %}
 
-    <div class="container" style="max-width: 550px;">
-        
-        <!-- HIỂN THỊ THÔNG BÁO FLASH -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category if category != 'danger' else 'danger' }} alert-dismissible fade show shadow-sm mb-3" role="alert">
-                        <i class="fa-solid fa-circle-exclamation me-2"></i> {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <div class="card p-4 bg-white">
-            <h4 class="text-primary fw-bold mb-2 text-center">
+{% block content %}
+<div class="container py-3" style="max-width: 550px;">
+    <div class="card p-4 bg-white shadow-sm border-0" style="border-radius: 10px;">
+        <div class="text-center mb-4">
+            <h4 class="fw-bold text-danger mb-1">
                 <i class="fa-solid fa-user-plus me-2"></i> Đăng Ký Tài Khoản
             </h4>
-            <p class="text-muted text-center small mb-4">
+            <p class="text-muted small m-0">
                 Tạo tài khoản truy cập hệ thống cho nhân viên các bộ phận.
             </p>
-
-            <form action="{{ url_for('register') }}" method="POST" id="registerForm">
-                
-                <div class="mb-3">
-                    <label class="form-label fw-semibold small">Tên đăng nhập:</label>
-                    <input type="text" name="username" class="form-control form-control-sm" placeholder="Nhập tên đăng nhập..." required autocomplete="off">
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-semibold small">Mật khẩu:</label>
-                        <input type="password" id="password" name="password" class="form-control form-control-sm" placeholder="Nhập mật khẩu..." required>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-semibold small">Nhập lại mật khẩu:</label>
-                        <input type="password" id="confirm_password" name="confirm_password" class="form-control form-control-sm" placeholder="Xác nhận mật khẩu..." required>
-                    </div>
-                </div>
-
-                <div id="passwordError" class="text-danger small mb-3 d-none">
-                    <i class="fa-solid fa-triangle-exclamation me-1"></i> Mật khẩu xác nhận không trùng khớp!
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold small">Bộ phận làm việc:</label>
-                    <input type="text" name="bo_phan" class="form-control form-control-sm" placeholder="VD: Kế toán dịch vụ, Phụ tùng...">
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold small">Khu vực làm việc:</label>
-                    <select name="khu_vuc" class="form-select form-select-sm" required>
-                        <option value="" disabled selected>-- Chọn khu vực --</option>
-                        <option value="Cà Mau">Cà Mau</option>
-                        <option value="Bạc Liêu">Bạc Liêu</option>
-                    </select>
-                </div>
-
-                <div class="mb-4 form-check bg-light p-2 rounded border ms-1">
-                    <input type="checkbox" name="is_admin" value="yes" class="form-check-input ms-1" id="adminCheck">
-                    <label class="form-check-label small fw-semibold text-danger ms-2" for="adminCheck">
-                        Cấp quyền Quản trị viên (Admin)
-                    </label>
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100 fw-semibold py-2">
-                    <i class="fa-solid fa-check me-1"></i> Tạo tài khoản
-                </button>
-            </form>
         </div>
+
+        <form action="{{ url_for('register') }}" method="POST" id="registerForm">
+            
+            <!-- Trường Họ và tên -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold small text-secondary">Họ và tên:</label>
+                <input type="text" name="ho_ten" class="form-control form-control-sm" placeholder="Nhập họ và tên nhân viên..." autocomplete="off">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold small text-secondary">Tên đăng nhập:</label>
+                <input type="text" name="username" class="form-control form-control-sm" placeholder="Nhập tên đăng nhập..." required autocomplete="off">
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold small text-secondary">Mật khẩu:</label>
+                    <input type="password" id="password" name="password" class="form-control form-control-sm" placeholder="Nhập mật khẩu..." required>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold small text-secondary">Nhập lại mật khẩu:</label>
+                    <input type="password" id="confirm_password" name="confirm_password" class="form-control form-control-sm" placeholder="Xác nhận mật khẩu..." required>
+                </div>
+            </div>
+
+            <div id="passwordError" class="text-danger small mb-3 d-none">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i> Mật khẩu xác nhận không trùng khớp!
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold small text-secondary">Bộ phận làm việc:</label>
+                <input type="text" name="bo_phan" class="form-control form-control-sm" placeholder="VD: Kế toán dịch vụ, Phụ tùng...">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold small text-secondary">Khu vực làm việc:</label>
+                <select name="khu_vuc" class="form-select form-select-sm" required>
+                    <option value="" disabled selected>-- Chọn khu vực --</option>
+                    <option value="Cà Mau">Cà Mau</option>
+                    <option value="Bạc Liêu">Bạc Liêu</option>
+                </select>
+            </div>
+
+            <div class="mb-4 form-check bg-light p-2 rounded border ms-0 ps-4">
+                <input type="checkbox" name="is_admin" value="yes" class="form-check-input" id="adminCheck">
+                <label class="form-check-label small fw-semibold text-danger ms-2" for="adminCheck">
+                    Cấp quyền Quản trị viên (Admin)
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-danger w-100 fw-semibold py-2" style="background-color: #dc3545; border: none;">
+                <i class="fa-solid fa-check me-1"></i> Tạo tài khoản
+            </button>
+        </form>
     </div>
+</div>
+{% endblock %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Kiểm tra khớp mật khẩu trước khi submit
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
-            const pass = document.getElementById('password').value;
-            const confirmPass = document.getElementById('confirm_password').value;
-            const errorDiv = document.getElementById('passwordError');
+{% block scripts %}
+<script>
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        const pass = document.getElementById('password').value;
+        const confirmPass = document.getElementById('confirm_password').value;
+        const errorDiv = document.getElementById('passwordError');
 
-            if (pass !== confirmPass) {
-                e.preventDefault();
-                errorDiv.classList.remove('d-none');
-            } else {
-                errorDiv.classList.add('d-none');
-            }
-        });
-    </script>
-</body>
-</html>
+        if (pass !== confirmPass) {
+            e.preventDefault();
+            errorDiv.classList.remove('d-none');
+        } else {
+            errorDiv.classList.add('d-none');
+        }
+    });
+</script>
+{% endblock %}
