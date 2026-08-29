@@ -16,8 +16,8 @@
         .custom-navbar {
             background-color: #ffffff !important;
             border-bottom: 1px solid #e9ecef;
-            padding-top: 8px;
-            padding-bottom: 8px;
+            padding-top: 10px;
+            padding-bottom: 10px;
         }
 
         .navbar-brand-custom {
@@ -126,10 +126,10 @@
             margin: 0;
         }
 
-        @media (max-width: 991px) {
+        @media (max-width: 1199px) {
             .custom-navbar .container-fluid {
                 flex-direction: column;
-                gap: 10px;
+                gap: 12px;
             }
             .admin-nav-pills { width: 100%; justify-content: center; flex-wrap: wrap; }
             .user-status-pill { width: 100%; justify-content: center; border-radius: 8px; }
@@ -156,7 +156,7 @@
                 <span class="brand-text">NAM SƯƠNG MOTOR</span>
             </a>
 
-            <!-- Cột giữa: Menu dạng Pill hiện đại -->
+            <!-- Cột giữa: Menu chính dạng Pill hiện đại (Đã tích hợp nút Lịch sử vào đây cho cân đối) -->
             <div class="admin-nav-pills">
                 <a href="/home" class="nav-pill-btn">
                     <i class="fa-solid fa-house me-1"></i> Trang chủ
@@ -166,6 +166,9 @@
                 </a>
                 <a href="/register" class="nav-pill-btn">
                     <i class="fa-solid fa-user-plus me-1"></i> Đăng ký TK
+                </a>
+                <a href="/admin/history" class="nav-pill-btn {% if request.endpoint == 'view_audit_history' %}active{% endif %} text-primary fw-bold">
+                    <i class="fa-solid fa-clock-rotate-left me-1"></i> Lịch sử hệ thống
                 </a>
             </div>
 

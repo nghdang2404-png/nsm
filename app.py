@@ -250,11 +250,12 @@ def login():
         if user and check_password_hash(user.password, request.form.get("password")):
             session.clear()
             session.permanent = True 
-            session['username'] = user.username
-            session['role'] = user.role
-            session['vung'] = user.khu_vuc or 'Cà Mau'
             
-            # --- THÊM DÒNG NÀY ĐỂ LƯU HỌ TÊN VÀO SESSION ---
+            # --- BỔ SUNG CÁC DÒNG NÀY ---
+            session['is_logged_in'] = True  # Đánh dấu đã đăng nhập thành công
+            session['username'] = user.username
+            session['role'] = str(user.role or '').strip().lower()  # Ép về chữ thường ('admin') để khớp tuyệt đối
+            session['vung'] = user.khu_vuc or 'Cà Mau'
             session['ho_ten'] = user.ho_ten or user.username
             
             return redirect(url_for('home'))
@@ -841,6 +842,7 @@ def edit_xe(id):
     if not loai_xe_nhap or loai_xe_nhap == "Chưa phân loại":
         loai_xe_nhap = tu_dong_phan_loai(ten_xe_moi if ten_xe_moi else xe.ten_xe)
 
+    # --- LƯU LẠI GIÁ TRỊ CŨ TRƯỚC KHI CẬP NHẬT ---
     old_cm_cao = xe.gia_cm_cao
     old_bl_cao = xe.gia_bl_cao
     old_cm_trung = xe.gia_cm_trung
@@ -893,18 +895,42 @@ def edit_xe(id):
 
         db.session.commit()
 
+        # --- KIỂM TRA VÀ GHI VÀO BẢNG LỊCH SỬ NẾU GIÁ THAY ĐỔI ---
+        has_price_change = (
+            xe.gia_cm_cao != old_cm_cao or xe.gia_cm_trung != old_cm_trung or xe.gia_cm_thap != old_cm_thap or
+            xe.gia_bl_cao != old_bl_cao or xe.gia_bl_trung != old_bl_trung or xe.gia_bl_thap != old_bl_thap
+        )
+
+        if has_price_change:
+            try:
+                from sqlalchemy import text
+                sql_log = text("""
+                    INSERT INTO history_logs (username, action, target_id, old_value, new_value) 
+                    VALUES (:username, :action, :target_id, :old_val, :new_val)
+                """)
+                db.session.execute(sql_log, {
+                    'username': session.get('username', 'Admin'),
+                    'action': 'Cập nhật giá qua Form Sửa',
+                    'target_id': f"{xe.ten_xe} (ID: {xe.id})",
+                    'old_val': f"CM [Cao: {old_cm_cao}, Trung: {old_cm_trung}, Thấp: {old_cm_thap}] | BL [Cao: {old_bl_cao}, Trung: {old_bl_trung}, Thấp: {old_bl_thap}]",
+                    'new_val': f"CM [Cao: {xe.gia_cm_cao}, Trung: {xe.gia_cm_trung}, Thấp: {xe.gia_cm_thap}] | BL [Cao: {xe.gia_bl_cao}, Trung: {xe.gia_bl_trung}, Thấp: {xe.gia_bl_thap}]"
+                })
+                db.session.commit()
+            except Exception as e:
+                print("Lỗi ghi log lịch sử:", e)
+        # --------------------------------------------------------
+
         if xe.gia_cm_cao != old_cm_cao or xe.gia_cm_trung != old_cm_trung or xe.gia_cm_thap != old_cm_thap:
             cap_nhat_thoi_gian_dong_bo("Cà Mau", session.get('username'))
         if xe.gia_bl_cao != old_bl_cao or xe.gia_bl_trung != old_bl_trung or xe.gia_bl_thap != old_bl_thap:
             cap_nhat_thoi_gian_dong_bo("Bạc Liêu", session.get('username'))
 
-        flash("Cập nhật thông tin xe thành công!", "success")
+        #flash("Cập nhật thông tin xe thành công!", "success")
     except Exception as e:
         db.session.rollback()
         flash(f"Có lỗi xảy ra: {str(e)}", "danger")
 
     return redirect(url_for('admin_panel'))
-
 @app.route("/admin/delete/<int:id>", methods=["GET"])
 @admin_required
 def delete_xe(id):
@@ -1189,6 +1215,11 @@ def update_regional_price(xe_id):
         
     is_bl = 'bạc liêu' in vung.lower()
     
+    # === LƯU LẠI GIÁ TRỊ CŨ TRƯỚC KHI CẬP NHẬT ===
+    old_gia_cao = xe.gia_bl_cao if is_bl else xe.gia_cm_cao
+    old_gia_trung = xe.gia_bl_trung if is_bl else xe.gia_cm_trung
+    old_gia_thap = xe.gia_bl_thap if is_bl else xe.gia_cm_thap
+
     if is_bl:
         gia_cao_moi = safe_float(data.get('gia_bl_cao') or data.get('gia_cao'), xe.gia_bl_cao)
         gia_trung_moi = safe_float(data.get('gia_bl_trung') or data.get('gia_trung'), xe.gia_bl_trung)
@@ -1218,6 +1249,25 @@ def update_regional_price(xe_id):
     if has_changes:
         cap_nhat_thoi_gian_dong_bo(vung, session.get('username'))
         
+        # --- BỔ SUNG ĐOẠN CODE NÀY ĐỂ GHI VÀO BẢNG LỊCH SỬ ---
+        try:
+            from sqlalchemy import text
+            sql_log = text("""
+                INSERT INTO history_logs (username, action, target_id, old_value, new_value) 
+                VALUES (:username, :action, :target_id, :old_val, :new_val)
+            """)
+            db.session.execute(sql_log, {
+                'username': session.get('username', 'Admin'),
+                'action': f'Cập nhật giá ({vung})',
+                'target_id': f"{xe.ten_xe} (ID: {xe.id})",
+                'old_val': f"Cao: {old_gia_cao}, Trung: {old_gia_trung}, Thấp: {old_gia_thap}",
+                'new_val': f"Cao: {gia_cao_moi}, Trung: {gia_trung_moi}, Thấp: {gia_thap_moi}"
+            })
+            db.session.commit()
+        except Exception as e:
+            print("Lỗi ghi log lịch sử:", e)
+        # ----------------------------------------------------
+
     if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or data:
         key_name = 'last_updated_bl' if is_bl else 'last_updated_cm'
         user_name = 'last_user_bl' if is_bl else 'last_user_cm'
@@ -1230,7 +1280,46 @@ def update_regional_price(xe_id):
             "last_updated": st.value if st else "Chưa cập nhật",
             "last_updated_by": su.value if su else "Admin"
         })
+# Ví dụ kiểm tra quyền Admin ở Backend
+from sqlalchemy import text
 
+from datetime import datetime, timedelta
+from sqlalchemy import text
+
+@app.route('/admin/history', methods=['GET'])
+@admin_required
+def admin_history():
+    # --- 1. TỰ ĐỘNG XÓA LỊCH SỬ CŨ HƠN 2 THÁNG (60 NGÀY) ---
+    try:
+        threshold_date = datetime.now() - timedelta(days=60)
+        db.session.execute(
+            text("DELETE FROM history_logs WHERE created_at < :threshold"),
+            {"threshold": threshold_date}
+        )
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print("Lỗi tự động xóa lịch sử cũ:", e)
+
+    # --- 2. TRUY VẤN DANH SÁCH LỊCH SỬ ĐỂ HIỂN THỊ ---
+    try:
+        sql = text("SELECT * FROM history_logs ORDER BY created_at DESC LIMIT 150")
+        result = db.session.execute(sql)
+        
+        # Chuyển đổi dữ liệu sang dạng danh sách từ điển để template dễ hiển thị
+        history_logs = [dict(row._mapping) for row in result]
+        
+    except Exception as e:
+        return f"""
+        <div style="padding: 20px; font-family: sans-serif; color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; margin: 20px;">
+            <h3>⚠️ Lỗi cơ sở dữ liệu</h3>
+            <p>Có thể bạn chưa chạy lệnh tạo bảng <code>history_logs</code> trong Database.</p>
+            <p><b>Chi tiết lỗi:</b> {e}</p>
+        </div>
+        """, 500
+
+    # Trả về template hiển thị (đảm bảo tên file html khớp với dự án của bạn)
+    return render_template('history.html', history_logs=history_logs)
 if __name__ == "__main__":
     with app.app_context(): 
         db.create_all()

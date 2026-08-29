@@ -834,6 +834,38 @@
                 showCarImage(carName, defaultImg, colors, basePrice, giaPhuong, giaXa, giaThap, giaTrung, userVung);
             });
         });
+        // --- KHỞI TẠO WATERMARK ĐỘNG CHỐNG RÒ RỈ DỮ LIỆU ---
+// --- KHỞI TẠO WATERMARK CHỐNG LỘ DỮ LIỆU ---
+function initSecurityWatermark() {
+    let overlay = document.getElementById("secure-watermark-overlay");
+    if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "secure-watermark-overlay";
+        document.body.appendChild(overlay);
+    } else {
+        // Luôn kéo thẻ này ra ngoài cùng của body để không bị modal che khuất
+        document.body.appendChild(overlay);
+    }
+
+    // Nội dung đóng dấu (có thể thay bằng thông tin tài khoản nhân viên thực tế)
+    let watermarkText = "NỘI BỘ - KHÔNG CHIA SẺ | " + new Date().toLocaleDateString("vi-VN");
+
+    // Chỉ tạo lại nội dung nếu chưa đủ số lượng
+    if (overlay.children.length === 0) {
+        for (let i = 0; i < 30; i++) {
+            let item = document.createElement("div");
+            item.className = "watermark-item";
+            item.innerText = watermarkText;
+            overlay.appendChild(item);
+        }
+    }
+}
+
+// Chạy ngay khi tải trang và lặp lại liên tục để chống bị các script khác xóa
+document.addEventListener("DOMContentLoaded", function() {
+    initSecurityWatermark();
+    setInterval(initSecurityWatermark, 2000);
+});
     });
 
     function showCarImage(carName, defaultImg, colors, basePrice, giaPhuong, giaXa, giaThap, giaTrung, userVung) {
@@ -1226,6 +1258,59 @@
 
     // Thiết lập polling vòng lặp kiểm tra thay đổi ngầm mỗi 3 giây
     setInterval(fetchAndUpdateHomeData, 3000);
+// =================================================================
+// TÍNH NĂNG BẢO VỆ DỮ LIỆU: CHỐNG CHỤP MÀN HÌNH & CHỐNG SAO CHÉP GIÁ
+// =================================================================
+
+(function () {
+    // 1. CHẶN CHUỘT PHẢI & CHẶN BÔI ĐEN SAO CHÉP
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('selectstart', e => e.preventDefault());
+
+    // 2. CHẶN CÁC PHÍM TẮT CHỤP MÀN HÌNH / IN / INSPECT CODE
+    document.addEventListener('keydown', function (e) {
+        // Chặn PrtScn (Print Screen)
+        if (e.key === "PrintScreen") {
+            copyToClipboard();
+            alert("Hành vi chụp màn hình bị cấm để bảo mật dữ liệu giá!");
+            e.preventDefault();
+        }
+
+        // Chặn Ctrl + P (In), Ctrl + S (Lưu trang), Ctrl + U (Xem nguồn)
+        if (e.ctrlKey && (e.key === 'p' || e.key === 'P' || e.key === 's' || e.key === 'S' || e.key === 'u' || e.key === 'U')) {
+            e.preventDefault();
+        }
+
+        // Chặn F12 và Ctrl + Shift + I / J / C (Developer Tools)
+        if (e.key === "F12" || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c'))) {
+            e.preventDefault();
+        }
+
+        // Chặn Windows + Shift + S (Snipping Tool trên Windows)
+        if (e.metaKey && e.shiftKey && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault();
+        }
+    });
+
+    // Xóa bộ nhớ tạm (Clipboard) nếu người dùng lỡ bấm PrintScreen
+    function copyToClipboard() {
+        let aux = document.createElement("input");
+        aux.setAttribute("value", "Dữ liệu được bảo mật!");
+        document.body.appendChild(aux);
+        aux.select();
+        document.execCommand("copy");
+        document.body.removeChild(aux);
+    }
+
+    // 3. LÀM MỜ MÀN HÌNH KHI RỜI TRÌNH DUYỆT (Chống dùng app chụp ngoài)
+    window.addEventListener('blur', function () {
+        document.body.style.filter = 'blur(12px)';
+    });
+
+    window.addEventListener('focus', function () {
+        document.body.style.filter = 'none';
+    });
+})();
 </script>
 </body>
 </html>
