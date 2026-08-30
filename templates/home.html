@@ -433,7 +433,7 @@
     </a>
         
     <div class="main-menu">
-        <a href="{{ url_for('home') }}">Tất cả xe</a>
+        
         
         {% if session.get('role') == 'admin' %}
         <a href="{{ url_for('admin_panel') }}" style="color: var(--primary-red); font-weight: bold; border-left: 1px solid #cbd5e1; padding-left: 15px; margin-left: 5px;">
