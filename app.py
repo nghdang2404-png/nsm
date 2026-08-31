@@ -1,5 +1,6 @@
 import os
 import re
+import io
 import unicodedata
 import ssl
 import threading
@@ -7,9 +8,11 @@ import time
 import traceback
 import pandas as pd
 import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.utils import get_column_letter
 from datetime import datetime, timedelta, timezone
 from functools import wraps
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, has_request_context
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, has_request_context, send_file
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import case, text
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -1570,6 +1573,91 @@ def admin_gia_giay_to_page():
     } for xe in danh_sach_xe_obj]
 
     return render_template('admin_gia_giay_to.html', khu_vuc_lon=khu_vuc_lon_data, danh_sach_xe=danh_sach_xe)
+
+
+@app.route('/admin/api/xuat-excel-gia-giay-to')
+@admin_required
+def admin_xuat_excel_gia_giay_to():
+    """
+    Xuất toàn bộ giá giấy tờ ra 1 file Excel nhiều sheet:
+    - Sheet 'Cà Mau': Tên xe, Phiên bản, Giá Giấy Tờ Phường, Giá Giấy Tờ Xã.
+    - Mỗi khu vực lớn Bạc Liêu (Nam Sương 4 / Nam Sương 2 / Nam Sương 5 - NSM1) là 1 sheet riêng,
+      cột là từng khu vực nhỏ thuộc khu vực lớn đó.
+    """
+    danh_sach_xe = Xe.query.order_by(get_order_priority(), Xe.ten_xe.asc()).all()
+    khu_vuc_lon = KhuVucLonBL.query.order_by(KhuVucLonBL.thu_tu).all()
+
+    gia_bl_theo_xe = {}
+    for g in GiaGiayToXeBL.query.all():
+        gia_bl_theo_xe.setdefault(g.xe_id, {})[g.khu_vuc_nho_id] = g.gia or 0
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='1A56DB', end_color='1A56DB', fill_type='solid')
+    header_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+
+    def ke_dong_tieu_de(ws, headers):
+        ws.append(headers)
+        for col_idx in range(1, len(headers) + 1):
+            cell = ws.cell(row=1, column=col_idx)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_align
+        ws.freeze_panes = 'C2' if len(headers) > 1 else 'A2'
+
+    wb = openpyxl.Workbook()
+
+    # --- Sheet Cà Mau ---
+    ws_cm = wb.active
+    ws_cm.title = 'Cà Mau'
+    ke_dong_tieu_de(ws_cm, ['Tên xe', 'Phiên bản', 'Giá Giấy Tờ Phường', 'Giá Giấy Tờ Xã'])
+    for xe in danh_sach_xe:
+        ws_cm.append([xe.ten_xe, xe.phien_ban or '', xe.gia_gt_phuong_cm or 0, xe.gia_gt_xa_cm or 0])
+    ws_cm.column_dimensions['A'].width = 34
+    ws_cm.column_dimensions['B'].width = 18
+    ws_cm.column_dimensions['C'].width = 20
+    ws_cm.column_dimensions['D'].width = 20
+    ws_cm.freeze_panes = 'A2'
+
+    # --- Mỗi khu vực lớn Bạc Liêu là 1 sheet ---
+    ten_sheet_da_dung = set()
+    for kvl in khu_vuc_lon:
+        ds_khu_vuc_nho = sorted(kvl.khu_vuc_nho, key=lambda x: x.thu_tu)
+
+        ten_sheet = re.sub(r'[\\/*?:\[\]]', ' ', kvl.ten_khu_vuc).strip()[:31] or f'KhuVuc{kvl.id}'
+        ten_goc = ten_sheet
+        dem = 1
+        while ten_sheet in ten_sheet_da_dung:
+            dem += 1
+            hau_to = f' ({dem})'
+            ten_sheet = ten_goc[:31 - len(hau_to)] + hau_to
+        ten_sheet_da_dung.add(ten_sheet)
+
+        ws = wb.create_sheet(title=ten_sheet)
+        headers = ['Tên xe', 'Phiên bản'] + [kvn.ten_khu_vuc_nho for kvn in ds_khu_vuc_nho]
+        ke_dong_tieu_de(ws, headers)
+
+        for xe in danh_sach_xe:
+            gia_map = gia_bl_theo_xe.get(xe.id, {})
+            ws.append([xe.ten_xe, xe.phien_ban or ''] + [gia_map.get(kvn.id, 0) or 0 for kvn in ds_khu_vuc_nho])
+
+        ws.column_dimensions['A'].width = 34
+        ws.column_dimensions['B'].width = 18
+        for idx in range(len(ds_khu_vuc_nho)):
+            ws.column_dimensions[get_column_letter(3 + idx)].width = 32
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    vn_time = datetime.now(timezone(timedelta(hours=7)))
+    ten_file = f"gia_giay_to_{vn_time.strftime('%Y%m%d_%H%M')}.xlsx"
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=ten_file
+    )
 
 
 @app.route('/admin/api/luu-gia-giay-to-cm', methods=['POST'])
