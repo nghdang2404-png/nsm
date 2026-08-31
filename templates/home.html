@@ -87,6 +87,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            
         }
         .user-badge {
             display: flex;
@@ -403,6 +404,18 @@
             .price-table thead {
                 display: none;
             }
+            user-actions {
+        flex-shrink: 1; /* Cho phép cụm nút co lại */
+        min-width: 0;   /* Ngăn chặn việc đẩy tràn màn hình */
+    }
+
+    .logout-btn {
+        flex-shrink: 1;
+        white-space: nowrap; /* Giữ chữ không bị rớt dòng */
+        overflow: hidden;
+        text-overflow: ellipsis; /* Tự động hiện dấu ... nếu quá chật */
+        padding: 6px 8px; /* Bo hẹp lề lại một chút cho gọn */
+    }
             .price-table, .price-table tbody, .price-table tr, .price-table td {
                 display: block;
                 width: 100%;
