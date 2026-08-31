@@ -31,8 +31,8 @@
             </div>
         </div>
 
-        <!-- Bảng giá cố định (Đã bỏ Tổng lăn bánh, đưa Giá cao xuống phần Mở rộng) -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 14px;">
+        <!-- KHỐI GIẤY TỜ CÀ MAU: giữ nguyên như cũ (hiển thị sẵn cả Phường và Xã) -->
+        <table id="cmGiayToBlock" style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 14px;">
             <tr><td style="padding: 5px 0; color: #555;">Phí ra biển (Phường):</td><td id="modalGiaPhuong" style="text-align: right; font-weight: bold;">0 VNĐ</td></tr>
             <tr><td style="padding: 5px 0; color: #555;">Phí ra biển (Xã):</td><td id="modalGiaXa" style="text-align: right; font-weight: bold;">0 VNĐ</td></tr>
             
@@ -40,6 +40,23 @@
             <tr style="display: none;"><td id="modalTongPhuong">0 VNĐ</td></tr>
             <tr style="display: none;"><td id="modalTongXa">0 VNĐ</td></tr>
         </table>
+
+        <!-- KHỐI GIẤY TỜ BẠC LIÊU: người dùng tự chọn Khu vực lớn -> Khu vực nhỏ -->
+        <div id="blGiayToBlock" style="display: none; margin-bottom: 15px;">
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; color: #666; display: block; margin-bottom: 3px;">Khu vực lớn:</label>
+                    <select id="blKhuVucLonSelect" onchange="onBLKhuVucLonChange()" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px;"></select>
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; color: #666; display: block; margin-bottom: 3px;">Khu vực nhỏ (phường/xã):</label>
+                    <select id="blKhuVucNhoSelect" onchange="onBLKhuVucNhoChange()" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px;"></select>
+                </div>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <tr><td style="padding: 5px 0; color: #555;">Phí ra biển (khu vực đã chọn):</td><td id="modalGiaBLZone" style="text-align: right; font-weight: bold;">0 VNĐ</td></tr>
+            </table>
+        </div>
 
         <!-- Khối tính giá nháp động (Mở rộng sẵn mặc định) -->
         <div style="background: #f1f8e9; border-radius: 8px; margin-bottom: 15px; border: 1px solid #c5e1a5; overflow: hidden;">
@@ -63,20 +80,15 @@
                             this.value = '';
                         }
                         
-                        // Lấy giá trị số thực để tính toán
-                        const val = Number(rawValue) || 0;
-                        const p = Number(this.getAttribute('data-phi-phuong')) || 0;
-                        const x = Number(this.getAttribute('data-phi-xa')) || 0;
-                        
-                        document.getElementById('draftTotalPhuong').innerText = formatCurrency(val + p);
-                        document.getElementById('draftTotalXa').innerText = formatCurrency(val + x);
+                        if (typeof capNhatDuToanGiayTo === 'function') { capNhatDuToanGiayTo(); }
                     ">
                 <div style="margin-top: 12px; font-size: 14px; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #e0e0e0;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                        <span style="color: #555;">Dự toán Phường:</span> 
+                    <!-- Cà Mau: hiển thị đồng thời Phường và Xã -->
+                    <div id="draftRowPhuong" style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span id="draftLabelPhuong" style="color: #555;">Dự toán Phường:</span> 
                         <strong id="draftTotalPhuong" style="color: #d32f2f;">0 VNĐ</strong>
                     </div>
-                    <div style="display: flex; justify-content: space-between;">
+                    <div id="draftRowXa" style="display: flex; justify-content: space-between;">
                         <span style="color: #555;">Dự toán Xã:</span> 
                         <strong id="draftTotalXa" style="color: #d32f2f;">0 VNĐ</strong>
                     </div>

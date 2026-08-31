@@ -1,13 +1,10 @@
 def is_bac_lieu(khu_vuc):
-    """Kiểm tra xem khu vực người dùng có thuộc Bạc Liêu hay không (hỗ trợ có dấu và không dấu)."""
+
     kv = (khu_vuc or '').lower()
     return 'bạc liêu' in kv or 'bac lieu' in kv
 
 def lay_gia_theo_vung(xe, khu_vuc_user):
-    """
-    Trích xuất giá hiển thị và giá làm giấy tờ (phường/xã) của xe
-    dựa theo khu vực làm việc của người dùng (Bạc Liêu hoặc Cà Mau).
-    """
+
     if is_bac_lieu(khu_vuc_user):
         return {
             'gia_hien_thi': getattr(xe, 'gia_bl_cao', 0) or 0,
@@ -27,20 +24,48 @@ def lay_gia_theo_vung(xe, khu_vuc_user):
             'gia_cao': getattr(xe, 'gia_cm_cao', 0) or 0
         }
 
+def lay_gia_giay_to_khu_vuc_nho_bl(xe_id):
+    """
+    Trả về giá giấy tờ của 1 xe theo TỪNG khu vực nhỏ Bạc Liêu, gom theo khu vực lớn
+    (Nam Sương 4 / Nam Sương 2 / Nam Sương 5 - NSM1). Dùng để người dùng tự chọn
+    khu vực giấy tờ ở tinh_gia_nhap.html (khác với giá xe, vốn cố định theo vùng của user).
+
+    Import các model bên trong hàm để tránh vòng lặp import với app.py.
+    """
+    from app import KhuVucLonBL, GiaGiayToXeBL
+
+    ds_gia = {g.khu_vuc_nho_id: (g.gia or 0) for g in GiaGiayToXeBL.query.filter_by(xe_id=xe_id).all()}
+    ds_khu_vuc_lon = KhuVucLonBL.query.order_by(KhuVucLonBL.thu_tu).all()
+
+    ket_qua = []
+    for kvl in ds_khu_vuc_lon:
+        ket_qua.append({
+            'khu_vuc_lon_id': kvl.id,
+            'ma_khu_vuc': kvl.ma_khu_vuc,
+            'ten_khu_vuc_lon': kvl.ten_khu_vuc,
+            'khu_vuc_nho': [
+                {
+                    'id': kvn.id,
+                    'ten_khu_vuc_nho': kvn.ten_khu_vuc_nho,
+                    'gia': ds_gia.get(kvn.id, 0)
+                } for kvn in sorted(kvl.khu_vuc_nho, key=lambda x: x.thu_tu)
+            ]
+        })
+    return ket_qua
+
 def format_xe_data_home(xe, khu_vuc_user):
-    """
-    Đóng gói dữ liệu đối tượng Xe thành Dictionary 
-    để chuẩn bị hiển thị ra giao diện home.html.
-    """
+
     gia_info = lay_gia_theo_vung(xe, khu_vuc_user)
-    
+    is_bl = is_bac_lieu(khu_vuc_user)
+
     return {
         'loai_xe': xe.loai_xe,
         'ten_xe': xe.ten_xe,
         'phien_ban': xe.phien_ban,
         'gia_hien_thi': gia_info['gia_hien_thi'],
-        'gia_giay_to_phuong': gia_info['gia_gt_phuong'],
-        'gia_giay_to_xa': gia_info['gia_gt_xa'], 
+        'gia_giay_to_phuong': gia_info['gia_gt_phuong'] if not is_bl else None,
+        'gia_giay_to_xa': gia_info['gia_gt_xa'] if not is_bl else None,
+        'gia_giay_to_khu_vuc_nho_bl': lay_gia_giay_to_khu_vuc_nho_bl(xe.id) if is_bl else [],
         'gia_thap': gia_info['gia_thap'],
         'gia_trung': gia_info['gia_trung'],
         'gia_cao': gia_info['gia_cao'],

@@ -6,6 +6,7 @@ import threading
 import time
 import traceback
 import pandas as pd
+import openpyxl
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, has_request_context
@@ -126,6 +127,96 @@ class XeMau(db.Model):
             'ns5': self.ns5 or 0,
             'nsm1': self.nsm1 or 0
         }
+
+class KhuVucLonBL(db.Model):
+    """Khu vực lớn về giấy tờ ở Bạc Liêu: Nam Sương 4, Nam Sương 2, Nam Sương 5 - NSM1."""
+    __tablename__ = 'khu_vuc_lon_bl'
+    id = db.Column(db.Integer, primary_key=True)
+    ma_khu_vuc = db.Column(db.String(20), unique=True, nullable=False)   # 'NS4', 'NS2', 'NSM1'
+    ten_khu_vuc = db.Column(db.String(100), nullable=False)              # 'Nam Sương 4'
+    thu_tu = db.Column(db.Integer, default=0)
+    khu_vuc_nho = db.relationship(
+        'KhuVucNhoBL', backref='khu_vuc_lon',
+        cascade='all, delete-orphan', order_by='KhuVucNhoBL.thu_tu'
+    )
+
+class KhuVucNhoBL(db.Model):
+    """Khu vực nhỏ (nhóm phường/xã đồng mức giá) bên trong 1 khu vực lớn Bạc Liêu."""
+    __tablename__ = 'khu_vuc_nho_bl'
+    id = db.Column(db.Integer, primary_key=True)
+    khu_vuc_lon_id = db.Column(db.Integer, db.ForeignKey('khu_vuc_lon_bl.id'), nullable=False)
+    ten_khu_vuc_nho = db.Column(db.String(255), nullable=False)          # "Phường Giá Rai, Phường Láng Tròn, Xã Phong Thạnh"
+    thu_tu = db.Column(db.Integer, default=0)
+
+class GiaGiayToXeBL(db.Model):
+    """Giá giấy tờ của 1 xe tại 1 khu vực nhỏ thuộc Bạc Liêu (mỗi xe có thể có giá giấy tờ khác nhau theo từng khu vực nhỏ)."""
+    __tablename__ = 'gia_giay_to_xe_bl'
+    id = db.Column(db.Integer, primary_key=True)
+    xe_id = db.Column(db.Integer, db.ForeignKey('xe.id'), nullable=False)
+    khu_vuc_nho_id = db.Column(db.Integer, db.ForeignKey('khu_vuc_nho_bl.id'), nullable=False)
+    gia = db.Column(db.Float, default=0)
+
+    khu_vuc_nho = db.relationship('KhuVucNhoBL')
+
+    __table_args__ = (db.UniqueConstraint('xe_id', 'khu_vuc_nho_id', name='uq_xe_khuvucnho_bl'),)
+
+# --- DỮ LIỆU MẶC ĐỊNH CÁC KHU VỰC GIẤY TỜ BẠC LIÊU ---
+DU_LIEU_KHU_VUC_GIAY_TO_BL = [
+    {
+        'ma_khu_vuc': 'NS4',
+        'ten_khu_vuc': 'Nam Sương 4',
+        'khu_vuc_nho': [
+            'Phường Giá Rai, Phường Láng Tròn, Xã Phong Thạnh',
+            'Xã Đông Hải, Xã Gành Hào, Xã Định Thành, Xã Long Điền',
+            'Xã Phước Long, Xã Vĩnh Phước, Xã Vĩnh Thanh',
+            'Xã An Trạch',
+            'Xã Phong Hiệp',
+        ]
+    },
+    {
+        'ma_khu_vuc': 'NS2',
+        'ten_khu_vuc': 'Nam Sương 2',
+        'khu_vuc_nho': [
+            'Phường Bạc Liêu, Phường Hiệp Thành, Phường Vĩnh Trạch',
+            'Vĩnh Lợi, Hoà Bình',
+            'Phước Long, Hồng Dân',
+            'Đông Hải',
+            'Sóc Trăng, Cần Thơ',
+        ]
+    },
+    {
+        'ma_khu_vuc': 'NSM1',
+        'ten_khu_vuc': 'Nam Sương 5 - NSM1',
+        'khu_vuc_nho': [
+            'Phường Bạc Liêu, Vĩnh Trạch, Hiệp Thành',
+            'Hoà Bình, Vĩnh Lợi',
+            'Phước Long',
+            'Đông Hải',
+            'Giá Rai',
+            'Hồng Dân',
+            'Sóc Trăng, Cần Thơ',
+        ]
+    },
+]
+
+def seed_khu_vuc_giay_to_bl():
+    """Tạo sẵn 3 khu vực lớn + các khu vực nhỏ Bạc Liêu nếu CSDL chưa có (idempotent)."""
+    for idx_lon, kvl_data in enumerate(DU_LIEU_KHU_VUC_GIAY_TO_BL):
+        kvl = KhuVucLonBL.query.filter_by(ma_khu_vuc=kvl_data['ma_khu_vuc']).first()
+        if not kvl:
+            kvl = KhuVucLonBL(
+                ma_khu_vuc=kvl_data['ma_khu_vuc'],
+                ten_khu_vuc=kvl_data['ten_khu_vuc'],
+                thu_tu=idx_lon
+            )
+            db.session.add(kvl)
+            db.session.flush()
+
+        ten_nho_hien_co = {n.ten_khu_vuc_nho for n in KhuVucNhoBL.query.filter_by(khu_vuc_lon_id=kvl.id).all()}
+        for idx_nho, ten_nho in enumerate(kvl_data['khu_vuc_nho']):
+            if ten_nho not in ten_nho_hien_co:
+                db.session.add(KhuVucNhoBL(khu_vuc_lon_id=kvl.id, ten_khu_vuc_nho=ten_nho, thu_tu=idx_nho))
+    db.session.commit()
 
 # --- HELPER FUNCTIONS & DECORATORS ---
 def admin_required(f):
@@ -696,6 +787,8 @@ def get_home_data():
             "gia_giay_to_xa_cm": xe.gia_gt_xa_cm or 0,
             "gia_giay_to_phuong_bl": xe.gia_gt_phuong_bl or 0,
             "gia_giay_to_xa_bl": xe.gia_gt_xa_bl or 0,
+            # MỚI: giá giấy tờ theo từng khu vực nhỏ Bạc Liêu (người dùng tự chọn ở FE)
+            "gia_giay_to_khu_vuc_nho_bl": lay_gia_giay_to_khu_vuc_nho_bl(xe.id) if vung == 'Bạc Liêu' else [],
             "mau_xe": [mau.to_dict(vung) for mau in xe.mau_xe]
         })
         
@@ -1257,14 +1350,43 @@ def lay_gia_theo_vung(xe, khu_vuc_user):
             'gia_cao': getattr(xe, 'gia_cm_cao', 0) or 0
         }
 
+def lay_gia_giay_to_khu_vuc_nho_bl(xe_id):
+    """
+    Trả về danh sách giá giấy tờ của 1 xe theo TỪNG khu vực nhỏ Bạc Liêu,
+    gom nhóm theo khu vực lớn (Nam Sương 4 / Nam Sương 2 / Nam Sương 5 - NSM1).
+    Dùng để người dùng tự chọn vùng giấy tờ ở tinh_gia_nhap.html.
+    """
+    ds_gia = {g.khu_vuc_nho_id: (g.gia or 0) for g in GiaGiayToXeBL.query.filter_by(xe_id=xe_id).all()}
+    ds_khu_vuc_lon = KhuVucLonBL.query.order_by(KhuVucLonBL.thu_tu).all()
+
+    ket_qua = []
+    for kvl in ds_khu_vuc_lon:
+        ket_qua.append({
+            'khu_vuc_lon_id': kvl.id,
+            'ma_khu_vuc': kvl.ma_khu_vuc,
+            'ten_khu_vuc_lon': kvl.ten_khu_vuc,
+            'khu_vuc_nho': [
+                {
+                    'id': kvn.id,
+                    'ten_khu_vuc_nho': kvn.ten_khu_vuc_nho,
+                    'gia': ds_gia.get(kvn.id, 0)
+                } for kvn in sorted(kvl.khu_vuc_nho, key=lambda x: x.thu_tu)
+            ]
+        })
+    return ket_qua
+
 def format_xe_data_home(xe, khu_vuc_user):
     is_bl = 'bạc liêu' in (khu_vuc_user or '').lower()
     gia_thap = xe.gia_bl_thap if is_bl else xe.gia_cm_thap
     gia_trung = xe.gia_bl_trung if is_bl else xe.gia_cm_trung
     gia_cao = xe.gia_bl_cao if is_bl else xe.gia_cm_cao
-    gia_giay_to_phuong = xe.gia_gt_phuong_bl if is_bl else xe.gia_gt_phuong_cm
-    gia_giay_to_xa = xe.gia_gt_xa_bl if is_bl else xe.gia_gt_xa_cm
-    
+    # Cà Mau: giữ nguyên logic phường/xã cố định như cũ.
+    # Bạc Liêu: giá giấy tờ không còn cố định 1 mức, người dùng sẽ tự chọn khu vực nhỏ
+    # trong 3 khu vực lớn (xem 'gia_giay_to_khu_vuc_nho_bl' bên dưới), nên các trường
+    # gia_giay_to_phuong/xa chỉ còn ý nghĩa với Cà Mau.
+    gia_giay_to_phuong = xe.gia_gt_phuong_cm if not is_bl else None
+    gia_giay_to_xa = xe.gia_gt_xa_cm if not is_bl else None
+
     return {
         'id': xe.id,
         'loai_xe': xe.loai_xe,
@@ -1277,8 +1399,11 @@ def format_xe_data_home(xe, khu_vuc_user):
         'gia_giay_to_xa': gia_giay_to_xa,
         'gia_giay_to_phuong_ca_mau': xe.gia_gt_phuong_cm,
         'gia_giay_to_xa_ca_mau': xe.gia_gt_xa_cm,
+        # Giữ 2 trường cũ này để không phá vỡ chỗ nào còn tham chiếu (không còn dùng cho tính giá BL nữa)
         'gia_giay_to_phuong_bac_lieu': xe.gia_gt_phuong_bl,
         'gia_giay_to_xa_bac_lieu': xe.gia_gt_xa_bl,
+        # MỚI: giá giấy tờ theo từng khu vực nhỏ Bạc Liêu, chỉ cần điền khi is_bl=True
+        'gia_giay_to_khu_vuc_nho_bl': lay_gia_giay_to_khu_vuc_nho_bl(xe.id) if is_bl else [],
         'hinh_anh': xe.hinh_anh,
         'mau_xe': [mau.to_dict(khu_vuc_user) for mau in xe.mau_xe],
         'ns1': xe.ns1, 'ns2': xe.ns2, 'ns3': xe.ns3,
@@ -1288,6 +1413,184 @@ def format_xe_data_home(xe, khu_vuc_user):
 @app.route('/cong-cu-tinh-gia')
 def cong_cu_tinh_gia():
     return render_template('tinh_gia_nhap.html')
+
+@app.route('/admin/gia-giay-to-bl')
+@admin_required
+def admin_gia_giay_to_bl_page():
+    """Trang quản trị: nhập giá giấy tờ theo từng khu vực nhỏ Bạc Liêu cho từng xe."""
+    danh_sach_xe = Xe.query.order_by(get_order_priority(), Xe.ten_xe.asc()).all()
+    khu_vuc_lon = KhuVucLonBL.query.order_by(KhuVucLonBL.thu_tu).all()
+    khu_vuc_lon_data = [{
+        'id': kvl.id, 'ma_khu_vuc': kvl.ma_khu_vuc, 'ten_khu_vuc': kvl.ten_khu_vuc,
+        'khu_vuc_nho': [{'id': n.id, 'ten_khu_vuc_nho': n.ten_khu_vuc_nho} for n in sorted(kvl.khu_vuc_nho, key=lambda x: x.thu_tu)]
+    } for kvl in khu_vuc_lon]
+    xe_data = [{
+        'id': xe.id, 'ten_xe': xe.ten_xe, 'phien_ban': xe.phien_ban,
+        'gia_theo_khu_vuc_nho': lay_gia_giay_to_khu_vuc_nho_bl(xe.id)
+    } for xe in danh_sach_xe]
+    return render_template('admin_gia_giay_to_bl.html', khu_vuc_lon=khu_vuc_lon_data, danh_sach_xe=xe_data)
+
+def _chuan_hoa_ten(s):
+    """Chuẩn hóa tên phường/xã để so khớp: bỏ khoảng trắng thừa, thường hóa, giữ dấu tiếng Việt."""
+    return unicodedata.normalize('NFC', str(s or '')).strip().lower()
+
+@app.route('/admin/api/import-gia-giay-to-bl', methods=['POST'])
+@admin_required
+def admin_import_gia_giay_to_bl():
+    """
+    Nhập giá giấy tờ Bạc Liêu từ file Excel dạng:
+    - Cột A: 'ten_xe' (phải khớp CHÍNH XÁC với Xe.ten_xe trong CSDL)
+    - Các cột B trở đi: mỗi cột là 1 phường/xã, tên phường/xã ở dòng tiêu đề (dòng 1).
+      Các cột thuộc cùng 1 khu vực nhỏ sẽ được nhận diện qua tên phường/xã khớp với
+      dữ liệu đã seed sẵn (không bắt buộc phải tô cùng màu, màu chỉ để người nhập liệu dễ nhìn).
+    Body form-data: file (bắt buộc), ma_khu_vuc (vd 'NS4', mặc định 'NS4')
+    """
+    file = request.files.get('file')
+    if not file or not file.filename.lower().endswith(('.xlsx', '.xls')):
+        return jsonify({'success': False, 'message': 'Vui lòng chọn tập tin Excel hợp lệ (.xlsx, .xls)!'}), 400
+
+    ma_khu_vuc = (request.form.get('ma_khu_vuc') or 'NS4').strip()
+    kvl = KhuVucLonBL.query.filter_by(ma_khu_vuc=ma_khu_vuc).first()
+    if not kvl:
+        return jsonify({'success': False, 'message': f'Không tìm thấy khu vực lớn có mã "{ma_khu_vuc}".'}), 400
+
+    try:
+        wb = openpyxl.load_workbook(file, data_only=True)
+        ws = wb.active
+
+        # Đọc dòng tiêu đề (dòng 1): cột B trở đi = tên phường/xã
+        header_cols = []  # [(col_index, ten_phuong_xa)]
+        for col_idx in range(2, ws.max_column + 1):
+            ten_header = ws.cell(row=1, column=col_idx).value
+            if ten_header and str(ten_header).strip():
+                header_cols.append((col_idx, str(ten_header).strip()))
+
+        # Khớp từng cột với 1 khu vực nhỏ đã seed (dựa trên tên phường/xã có chứa trong ten_khu_vuc_nho)
+        ds_khu_vuc_nho = sorted(kvl.khu_vuc_nho, key=lambda x: x.thu_tu)
+        col_to_khuvucnho = {}
+        headers_khong_khop = []
+        for col_idx, ten_header in header_cols:
+            ten_header_norm = _chuan_hoa_ten(ten_header)
+            khop = None
+            for kvn in ds_khu_vuc_nho:
+                if ten_header_norm in _chuan_hoa_ten(kvn.ten_khu_vuc_nho):
+                    khop = kvn
+                    break
+            if khop:
+                col_to_khuvucnho[col_idx] = khop
+            else:
+                headers_khong_khop.append(ten_header)
+
+        # Đọc từng dòng dữ liệu (từ dòng 2)
+        so_xe_cap_nhat = 0
+        so_gia_cap_nhat = 0
+        xe_khong_tim_thay = []
+        for row_idx in range(2, ws.max_row + 1):
+            ten_xe_excel = ws.cell(row=row_idx, column=1).value
+            ten_xe_excel = str(ten_xe_excel).strip() if ten_xe_excel is not None else ''
+            if not ten_xe_excel:
+                continue
+
+            xe = Xe.query.filter_by(ten_xe=ten_xe_excel).first()
+            if not xe:
+                xe_khong_tim_thay.append(ten_xe_excel)
+                continue
+
+            co_cap_nhat_xe_nay = False
+            for col_idx, kvn in col_to_khuvucnho.items():
+                gia_moi = safe_float(ws.cell(row=row_idx, column=col_idx).value, None)
+                if gia_moi is None:
+                    continue
+                row_db = GiaGiayToXeBL.query.filter_by(xe_id=xe.id, khu_vuc_nho_id=kvn.id).first()
+                if row_db:
+                    if row_db.gia != gia_moi:
+                        row_db.gia = gia_moi
+                        so_gia_cap_nhat += 1
+                        co_cap_nhat_xe_nay = True
+                else:
+                    db.session.add(GiaGiayToXeBL(xe_id=xe.id, khu_vuc_nho_id=kvn.id, gia=gia_moi))
+                    so_gia_cap_nhat += 1
+                    co_cap_nhat_xe_nay = True
+
+            if co_cap_nhat_xe_nay:
+                so_xe_cap_nhat += 1
+
+        db.session.commit()
+
+        if so_gia_cap_nhat:
+            cap_nhat_thoi_gian_dong_bo('Bạc Liêu', session.get('username'))
+
+        return jsonify({
+            'success': True,
+            'message': f'Đã cập nhật {so_gia_cap_nhat} mức giá cho {so_xe_cap_nhat} xe, khu vực {kvl.ten_khu_vuc}.',
+            'khu_vuc_lon': kvl.ten_khu_vuc,
+            'cot_da_khop': [{'cot': h, 'khu_vuc_nho': col_to_khuvucnho[c].ten_khu_vuc_nho} for c, h in header_cols if c in col_to_khuvucnho],
+            'cot_khong_khop': headers_khong_khop,
+            'xe_khong_tim_thay': xe_khong_tim_thay
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Lỗi khi xử lý file Excel: {str(e)}'}), 500
+
+@app.route('/api/khu-vuc-giay-to-bl')
+def api_khu_vuc_giay_to_bl():
+    """Danh sách khu vực lớn + khu vực nhỏ giấy tờ Bạc Liêu (không kèm giá, dùng dựng dropdown)."""
+    ds = KhuVucLonBL.query.order_by(KhuVucLonBL.thu_tu).all()
+    return jsonify({
+        'success': True,
+        'khu_vuc_lon': [{
+            'id': kvl.id,
+            'ma_khu_vuc': kvl.ma_khu_vuc,
+            'ten_khu_vuc': kvl.ten_khu_vuc,
+            'khu_vuc_nho': [
+                {'id': n.id, 'ten_khu_vuc_nho': n.ten_khu_vuc_nho}
+                for n in sorted(kvl.khu_vuc_nho, key=lambda x: x.thu_tu)
+            ]
+        } for kvl in ds]
+    })
+
+@app.route('/admin/api/gia-giay-to-bl/<int:xe_id>', methods=['GET'])
+@admin_required
+def admin_get_gia_giay_to_bl(xe_id):
+    """Lấy giá giấy tờ hiện tại của 1 xe theo từng khu vực nhỏ Bạc Liêu (cho form admin)."""
+    xe = db.get_or_404(Xe, xe_id)
+    return jsonify({'success': True, 'xe_id': xe.id, 'ten_xe': xe.ten_xe,
+                     'khu_vuc_lon': lay_gia_giay_to_khu_vuc_nho_bl(xe.id)})
+
+@app.route('/admin/api/gia-giay-to-bl/<int:xe_id>', methods=['POST'])
+@admin_required
+def admin_update_gia_giay_to_bl(xe_id):
+    """
+    Cập nhật giá giấy tờ của 1 xe cho các khu vực nhỏ Bạc Liêu.
+    Body JSON: { "gia": { "<khu_vuc_nho_id>": 1234000, ... } }
+    """
+    xe = db.get_or_404(Xe, xe_id)
+    data = request.get_json(silent=True) or {}
+    gia_map = data.get('gia', {}) or {}
+
+    so_luong_cap_nhat = 0
+    for khu_vuc_nho_id_str, gia_moi in gia_map.items():
+        try:
+            khu_vuc_nho_id = int(khu_vuc_nho_id_str)
+        except (TypeError, ValueError):
+            continue
+        gia_moi = safe_float(gia_moi, 0)
+
+        row = GiaGiayToXeBL.query.filter_by(xe_id=xe.id, khu_vuc_nho_id=khu_vuc_nho_id).first()
+        if row:
+            if row.gia != gia_moi:
+                row.gia = gia_moi
+                so_luong_cap_nhat += 1
+        else:
+            db.session.add(GiaGiayToXeBL(xe_id=xe.id, khu_vuc_nho_id=khu_vuc_nho_id, gia=gia_moi))
+            so_luong_cap_nhat += 1
+
+    db.session.commit()
+
+    if so_luong_cap_nhat:
+        cap_nhat_thoi_gian_dong_bo('Bạc Liêu', session.get('username'))
+
+    return jsonify({'success': True, 'message': f'Đã cập nhật {so_luong_cap_nhat} khu vực giấy tờ Bạc Liêu cho xe {xe.ten_xe}.'})
 
 @app.route("/admin/update_price/<int:xe_id>", methods=["POST", "PUT"])
 @admin_required
@@ -1427,6 +1730,14 @@ if __name__ == "__main__":
             xe.loai_xe = tu_dong_phan_loai(xe.ten_xe)
         db.session.commit()
         print(f"Đã làm mới phân loại thành công!")
+
+        # Tạo sẵn 3 khu vực lớn + các khu vực nhỏ giấy tờ Bạc Liêu nếu chưa có
+        try:
+            seed_khu_vuc_giay_to_bl()
+            print("Đã đồng bộ khu vực giấy tờ Bạc Liêu!")
+        except Exception as e:
+            db.session.rollback()
+            print("Lỗi khi seed khu vực giấy tờ Bạc Liêu:", e)
         
     start_background_sync() 
     

@@ -604,6 +604,7 @@
                         data-gia-xa-cm="{{ xe.gia_giay_to_xa_ca_mau | default(0, true) }}"
                         data-gia-phuong-bl="{{ xe.gia_giay_to_phuong_bac_lieu | default(0, true) }}"
                         data-gia-xa-bl="{{ xe.gia_giay_to_xa_bac_lieu | default(0, true) }}"
+                        data-giay-to-bl='{{ xe.gia_giay_to_khu_vuc_nho_bl | default([], true) | tojson | safe }}'
                         data-gia-thap="{{ xe.gia_thap | default(0, true) }}"
                         data-gia-trung="{{ xe.gia_trung | default(0, true) }}"
                         data-vung="{{ current_vung }}"
@@ -904,7 +905,15 @@
                     xaBL: Number(this.getAttribute('data-gia-xa-bl')) || 0
                 };
 
-                showCarImage(carName, defaultImg, colors, basePrice, feesByVung, giaThap, giaTrung, userVung);
+                // Giá giấy tờ theo từng khu vực nhỏ Bạc Liêu (Nam Sương 4 / Nam Sương 2 / Nam Sương 5 - NSM1)
+                let giayToKhuVucNhoBL = [];
+                try {
+                    giayToKhuVucNhoBL = JSON.parse(this.getAttribute('data-giay-to-bl') || '[]');
+                } catch (e) {
+                    giayToKhuVucNhoBL = [];
+                }
+
+                showCarImage(carName, defaultImg, colors, basePrice, feesByVung, giaThap, giaTrung, userVung, giayToKhuVucNhoBL);
             });
         });
         // --- KHỞI TẠO WATERMARK ĐỘNG CHỐNG RÒ RỈ DỮ LIỆU ---
@@ -941,7 +950,121 @@ document.addEventListener("DOMContentLoaded", function() {
 });
     });
 
-    function showCarImage(carName, defaultImg, colors, basePrice, feesByVung, giaThap, giaTrung, userVung) {
+    // ===== XỬ LÝ CHỌN VÙNG GIẤY TỜ TRONG MODAL =====
+    // Cà Mau: giữ nguyên logic cũ - hiển thị sẵn cả 2 mức Phường/Xã.
+    // Bạc Liêu: người dùng tự chọn Khu vực lớn (Nam Sương 4/2/5-NSM1) rồi Khu vực nhỏ (phường/xã),
+    // sau đó phần "Máy tính" sẽ cộng giá xe nhập vào + giá giấy tờ của khu vực nhỏ vừa chọn.
+
+    function switchModalRegion(vung) {
+        window.currentModalVung = vung;
+        const isBL = (vung || '').toLowerCase().includes('bạc liêu') || (vung || '').toLowerCase().includes('bac lieu');
+
+        const cmBlock = document.getElementById('cmGiayToBlock');
+        const blBlock = document.getElementById('blGiayToBlock');
+        const rowXa = document.getElementById('draftRowXa');
+        const labelPhuong = document.getElementById('draftLabelPhuong');
+
+        if (isBL) {
+            if (cmBlock) cmBlock.style.display = 'none';
+            if (blBlock) blBlock.style.display = 'block';
+            if (rowXa) rowXa.style.display = 'none';
+            if (labelPhuong) labelPhuong.innerText = 'Dự toán:';
+            renderBLZoneSelectors();
+        } else {
+            if (cmBlock) cmBlock.style.display = 'table';
+            if (blBlock) blBlock.style.display = 'none';
+            if (rowXa) rowXa.style.display = 'flex';
+            if (labelPhuong) labelPhuong.innerText = 'Dự toán Phường:';
+
+            const fees = window.currentModalFees || { phuongCM: 0, xaCM: 0 };
+            const giaPhuongEl = document.getElementById('modalGiaPhuong');
+            const giaXaEl = document.getElementById('modalGiaXa');
+            if (giaPhuongEl) giaPhuongEl.innerText = formatCurrency(fees.phuongCM || 0);
+            if (giaXaEl) giaXaEl.innerText = formatCurrency(fees.xaCM || 0);
+
+            const draftInput = document.getElementById('draftPriceInput');
+            if (draftInput) {
+                draftInput.setAttribute('data-phi-phuong', fees.phuongCM || 0);
+                draftInput.setAttribute('data-phi-xa', fees.xaCM || 0);
+            }
+        }
+        capNhatDuToanGiayTo();
+    }
+
+    function renderBLZoneSelectors() {
+        const lonSelect = document.getElementById('blKhuVucLonSelect');
+        if (!lonSelect) return;
+
+        const dsKhuVucLon = window.currentModalGiayToBL || [];
+        const lonDangChon = lonSelect.value;
+        lonSelect.innerHTML = dsKhuVucLon.map(kvl =>
+            `<option value="${kvl.khu_vuc_lon_id}">${kvl.ten_khu_vuc_lon}</option>`
+        ).join('');
+
+        // Giữ lại lựa chọn cũ nếu vẫn còn tồn tại, ngược lại chọn khu vực lớn đầu tiên
+        if (lonDangChon && dsKhuVucLon.some(k => String(k.khu_vuc_lon_id) === lonDangChon)) {
+            lonSelect.value = lonDangChon;
+        }
+
+        onBLKhuVucLonChange();
+    }
+
+    function onBLKhuVucLonChange() {
+        const lonSelect = document.getElementById('blKhuVucLonSelect');
+        const nhoSelect = document.getElementById('blKhuVucNhoSelect');
+        if (!lonSelect || !nhoSelect) return;
+
+        const dsKhuVucLon = window.currentModalGiayToBL || [];
+        const kvl = dsKhuVucLon.find(k => String(k.khu_vuc_lon_id) === String(lonSelect.value)) || dsKhuVucLon[0];
+
+        const nhoDangChon = nhoSelect.value;
+        const dsNho = (kvl && kvl.khu_vuc_nho) ? kvl.khu_vuc_nho : [];
+        nhoSelect.innerHTML = dsNho.map(kvn =>
+            `<option value="${kvn.id}" data-gia="${kvn.gia || 0}">${kvn.ten_khu_vuc_nho}</option>`
+        ).join('');
+
+        if (nhoDangChon && dsNho.some(n => String(n.id) === nhoDangChon)) {
+            nhoSelect.value = nhoDangChon;
+        }
+
+        onBLKhuVucNhoChange();
+    }
+
+    function onBLKhuVucNhoChange() {
+        const nhoSelect = document.getElementById('blKhuVucNhoSelect');
+        const giaZoneEl = document.getElementById('modalGiaBLZone');
+        const draftInput = document.getElementById('draftPriceInput');
+
+        let giaKhuVuc = 0;
+        if (nhoSelect && nhoSelect.selectedOptions && nhoSelect.selectedOptions.length > 0) {
+            giaKhuVuc = Number(nhoSelect.selectedOptions[0].getAttribute('data-gia')) || 0;
+        }
+
+        if (giaZoneEl) giaZoneEl.innerText = formatCurrency(giaKhuVuc);
+        if (draftInput) {
+            draftInput.setAttribute('data-phi-phuong', giaKhuVuc);
+            draftInput.setAttribute('data-phi-xa', giaKhuVuc);
+        }
+        capNhatDuToanGiayTo();
+    }
+
+    // Cộng giá xe (người dùng nhập) + giá giấy tờ của vùng/khu vực đang chọn -> ra dự toán
+    function capNhatDuToanGiayTo() {
+        const draftInput = document.getElementById('draftPriceInput');
+        if (!draftInput) return;
+
+        const rawValue = (draftInput.value || '').replace(/\D/g, '');
+        const val = Number(rawValue) || 0;
+        const p = Number(draftInput.getAttribute('data-phi-phuong')) || 0;
+        const x = Number(draftInput.getAttribute('data-phi-xa')) || 0;
+
+        const totalPhuongEl = document.getElementById('draftTotalPhuong');
+        const totalXaEl = document.getElementById('draftTotalXa');
+        if (totalPhuongEl) totalPhuongEl.innerText = formatCurrency(val + p);
+        if (totalXaEl) totalXaEl.innerText = formatCurrency(val + x);
+    }
+
+    function showCarImage(carName, defaultImg, colors, basePrice, feesByVung, giaThap, giaTrung, userVung, giayToKhuVucNhoBL) {
         const modal = document.getElementById('carImageModal');
         const modalTitle = document.getElementById('modalCarTitle');
         const modalImg = document.getElementById('modalCarImg');
@@ -952,7 +1075,7 @@ document.addEventListener("DOMContentLoaded", function() {
         
         const regionTextEl = document.getElementById('modalRegionText');
         if (regionTextEl) {
-            regionTextEl.innerText = 'Mặc định theo khu vực của bạn: ' + khuVuc;
+            regionTextEl.innerText = khuVuc;
         }
 
         modalTitle.innerText = carName;
@@ -964,6 +1087,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // Lưu giá giấy tờ của cả 2 vùng + vùng đang chọn (mặc định = khu vực của người dùng)
         window.currentModalFees = feesByVung || { phuongCM: 0, xaCM: 0, phuongBL: 0, xaBL: 0 };
+        // Giá giấy tờ theo từng khu vực nhỏ Bạc Liêu (3 khu vực lớn, mỗi khu vực lớn nhiều khu vực nhỏ)
+        window.currentModalGiayToBL = giayToKhuVucNhoBL || [];
         const khuVucLower = khuVuc.toLowerCase();
         window.currentModalVung = (khuVucLower.includes('bạc liêu') || khuVucLower.includes('bac lieu')) ? 'Bạc Liêu' : 'Cà Mau';
 
