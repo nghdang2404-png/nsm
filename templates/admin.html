@@ -523,13 +523,13 @@
                                                 <div class="col-6">
                                                     <div class="p-1 rounded bg-light border">
                                                         <span class="price-label-tag text-primary">CL Cà Mau:</span>
-                                                        <input type="text" inputmode="numeric" name="edit_chenh_lech_cm_{{ mau.id }}" value="{{ mau.chenh_lech_cm if mau.chenh_lech_cm and mau.chenh_lech_cm != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm currency-input">
+                                                        <input type="text" inputmode="decimal" name="edit_chenh_lech_cm_{{ mau.id }}" value="{{ mau.chenh_lech_cm if mau.chenh_lech_cm and mau.chenh_lech_cm != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm currency-input">
                                                     </div>
                                                 </div>
                                                 <div class="col-6">
                                                     <div class="p-1 rounded bg-light border">
                                                         <span class="price-label-tag text-success">CL Bạc Liêu:</span>
-                                                        <input type="text" inputmode="numeric" name="edit_chenh_lech_bl_{{ mau.id }}" value="{{ mau.chenh_lech_bl if mau.chenh_lech_bl and mau.chenh_lech_bl != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm currency-input">
+                                                        <input type="text" inputmode="decimal" name="edit_chenh_lech_bl_{{ mau.id }}" value="{{ mau.chenh_lech_bl if mau.chenh_lech_bl and mau.chenh_lech_bl != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm currency-input">
                                                     </div>
                                                 </div>
                                             </div>
@@ -614,15 +614,19 @@ document.addEventListener("DOMContentLoaded", function () {
         pollAndUpdateAdminData();
 
         // --- BƯỚC 1: ĐỊNH DẠNG TIỀN TỆ KHI TẢI TRANG LẦN ĐẦU ---[cite: 17]
+        // --- BƯỚC 1: ĐỊNH DẠNG TIỀN TỆ KHI TẢI TRANG LẦN ĐẦU ---
         document.querySelectorAll(".currency-input").forEach(function (input) {
-            let val = input.value.trim();
+            let val = String(input.value).trim();
             if (val && val !== '0' && val !== 'None') {
+                let isNegative = val.startsWith('-'); // Lưu lại trạng thái âm
                 let integerPart = val.split('.')[0];
                 let rawVal = integerPart.replace(/\D/g, "");
                 
                 if (rawVal) {
                     let num = parseInt(rawVal, 10);
-                    input.value = new Intl.NumberFormat("vi-VN").format(num);
+                    let formatted = new Intl.NumberFormat("vi-VN").format(num);
+                    // Ghép lại dấu trừ nếu là số âm
+                    input.value = isNegative ? "-" + formatted : formatted; 
                 } else {
                     input.value = "";
                 }
@@ -630,7 +634,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 input.value = "";
             }
         });
-
         // --- BƯỚC 2: LƯU LẠI TRẠNG THÁI BAN ĐẦU ---[cite: 17]
         document.querySelectorAll("input[form^='form_edit_'], select[form^='form_edit_'], textarea[form^='form_edit_']").forEach(input => {
             if (input.type === 'file') {
@@ -710,7 +713,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     } else {
                         let val = input.value;
                         if (input.classList.contains("currency-input")) {
-                            val = val.replace(/\D/g, ""); 
+                            let isNegative = val.startsWith("-"); // Kiểm tra có dấu trừ ở đầu không
+                            val = val.replace(/\D/g, ""); // Tách lấy các con số
+                            if (isNegative && val !== "") {
+                                val = "-" + val; // Gắn lại dấu trừ để gửi lên server
+                            }
                         }
                         formData.set(input.name, val);
                     }
