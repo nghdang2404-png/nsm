@@ -285,6 +285,40 @@ def set_vung():
         session['vung'] = vung_moi
     return redirect(url_for('home'))
 
+@app.route("/api/change-password", methods=["POST"])
+def change_password():
+    if 'username' not in session:
+        return jsonify({"success": False, "message": "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại."}), 401
+
+    data = request.get_json(silent=True) or {}
+    mat_khau_cu = (data.get('mat_khau_cu') or '').strip()
+    mat_khau_moi = (data.get('mat_khau_moi') or '').strip()
+    xac_nhan = (data.get('xac_nhan') or '').strip()
+
+    if not mat_khau_cu or not mat_khau_moi or not xac_nhan:
+        return jsonify({"success": False, "message": "Vui lòng nhập đầy đủ thông tin."}), 400
+
+    if mat_khau_moi != xac_nhan:
+        return jsonify({"success": False, "message": "Mật khẩu mới và xác nhận không khớp."}), 400
+
+    if len(mat_khau_moi) < 6:
+        return jsonify({"success": False, "message": "Mật khẩu mới phải có ít nhất 6 ký tự."}), 400
+
+    user = User.query.filter_by(username=session['username']).first()
+    if not user:
+        return jsonify({"success": False, "message": "Không tìm thấy tài khoản."}), 404
+
+    if not check_password_hash(user.password, mat_khau_cu):
+        return jsonify({"success": False, "message": "Mật khẩu hiện tại không đúng."}), 400
+
+    if check_password_hash(user.password, mat_khau_moi):
+        return jsonify({"success": False, "message": "Mật khẩu mới phải khác mật khẩu hiện tại."}), 400
+
+    user.password = generate_password_hash(mat_khau_moi)
+    db.session.commit()
+
+    return jsonify({"success": True, "message": "Đổi mật khẩu thành công!"})
+
 @app.route("/home")
 def home():
     if 'username' not in session: 
@@ -657,6 +691,11 @@ def get_home_data():
             "gia_thap": gia_info['gia_thap'],
             "gia_giay_to_phuong": gia_info['gia_gt_phuong'],
             "gia_giay_to_xa": gia_info['gia_gt_xa'],
+            # Giá làm giấy tờ theo TỪNG vùng (để FE cho phép chọn vùng khác vùng đăng nhập)
+            "gia_giay_to_phuong_cm": xe.gia_gt_phuong_cm or 0,
+            "gia_giay_to_xa_cm": xe.gia_gt_xa_cm or 0,
+            "gia_giay_to_phuong_bl": xe.gia_gt_phuong_bl or 0,
+            "gia_giay_to_xa_bl": xe.gia_gt_xa_bl or 0,
             "mau_xe": [mau.to_dict(vung) for mau in xe.mau_xe]
         })
         

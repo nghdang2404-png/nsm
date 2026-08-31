@@ -114,6 +114,33 @@
         .logout-btn:hover {
             background: #b91c1c;
         }
+        .user-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .icon-btn {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            color: var(--primary-blue);
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .icon-btn:hover {
+            background: var(--primary-blue);
+            color: #fff;
+            border-color: var(--primary-blue);
+        }
 
         /* HERO BANNER */
         .hero-banner {
@@ -422,6 +449,11 @@
                 font-weight: 600;
             }
         }
+
+        @media (max-width: 380px) {
+            .logout-text { display: none; }
+            .logout-btn { padding: 8px 10px; }
+        }
     </style>
 </head>
 <body>
@@ -476,9 +508,14 @@
             
         </div>
 
-        <a href="{{ url_for('logout') }}" class="logout-btn">
-            <i class="fas fa-sign-out-alt"></i> Đăng xuất
-        </a>
+        <div class="user-actions">
+            <button type="button" class="icon-btn" id="btnOpenChangePassword" onclick="openChangePasswordModal()" title="Đổi mật khẩu">
+                <i class="fas fa-key"></i>
+            </button>
+            <a href="{{ url_for('logout') }}" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> <span class="logout-text">Đăng xuất</span>
+            </a>
+        </div>
     </div>
 </nav>
 
@@ -550,6 +587,10 @@
                         data-base-price="{{ xe.gia_cao | default(xe.gia_hien_thi, true) | default(0, true) }}"
                         data-gia-phuong="{{ (xe.gia_giay_to_phuong_bac_lieu if is_bac_lieu else xe.gia_giay_to_phuong_ca_mau) | default(xe.gia_giay_to_phuong, true) | default(0, true) }}"
                         data-gia-xa="{{ (xe.gia_giay_to_xa_bac_lieu if is_bac_lieu else xe.gia_giay_to_xa_ca_mau) | default(xe.gia_giay_to_xa, true) | default(0, true) }}"
+                        data-gia-phuong-cm="{{ xe.gia_giay_to_phuong_ca_mau | default(0, true) }}"
+                        data-gia-xa-cm="{{ xe.gia_giay_to_xa_ca_mau | default(0, true) }}"
+                        data-gia-phuong-bl="{{ xe.gia_giay_to_phuong_bac_lieu | default(0, true) }}"
+                        data-gia-xa-bl="{{ xe.gia_giay_to_xa_bac_lieu | default(0, true) }}"
                         data-gia-thap="{{ xe.gia_thap | default(0, true) }}"
                         data-gia-trung="{{ xe.gia_trung | default(0, true) }}"
                         data-vung="{{ current_vung }}"
@@ -838,13 +879,19 @@
                     colors = [];
                 }
                 const basePrice = Number(this.getAttribute('data-base-price')) || 0;
-                const giaPhuong = Number(this.getAttribute('data-gia-phuong')) || 0;
-                const giaXa = Number(this.getAttribute('data-gia-xa')) || 0;
                 const giaThap = Number(this.getAttribute('data-gia-thap')) || 0;
                 const giaTrung = Number(this.getAttribute('data-gia-trung')) || 0;
                 const userVung = this.getAttribute('data-vung');
 
-                showCarImage(carName, defaultImg, colors, basePrice, giaPhuong, giaXa, giaThap, giaTrung, userVung);
+                // Giá giấy tờ theo TỪNG vùng, để người dùng có thể chọn vùng khác trong modal
+                const feesByVung = {
+                    phuongCM: Number(this.getAttribute('data-gia-phuong-cm')) || 0,
+                    xaCM: Number(this.getAttribute('data-gia-xa-cm')) || 0,
+                    phuongBL: Number(this.getAttribute('data-gia-phuong-bl')) || 0,
+                    xaBL: Number(this.getAttribute('data-gia-xa-bl')) || 0
+                };
+
+                showCarImage(carName, defaultImg, colors, basePrice, feesByVung, giaThap, giaTrung, userVung);
             });
         });
         // --- KHỞI TẠO WATERMARK ĐỘNG CHỐNG RÒ RỈ DỮ LIỆU ---
@@ -881,7 +928,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
     });
 
-    function showCarImage(carName, defaultImg, colors, basePrice, giaPhuong, giaXa, giaThap, giaTrung, userVung) {
+    function showCarImage(carName, defaultImg, colors, basePrice, feesByVung, giaThap, giaTrung, userVung) {
         const modal = document.getElementById('carImageModal');
         const modalTitle = document.getElementById('modalCarTitle');
         const modalImg = document.getElementById('modalCarImg');
@@ -892,37 +939,38 @@ document.addEventListener("DOMContentLoaded", function() {
         
         const regionTextEl = document.getElementById('modalRegionText');
         if (regionTextEl) {
-            regionTextEl.innerText = khuVuc;
+            regionTextEl.innerText = 'Mặc định theo khu vực của bạn: ' + khuVuc;
         }
 
         modalTitle.innerText = carName;
         colorButtonsContainer.innerHTML = '';
         
         const giaGoc = Number(basePrice) || 0;
-        const phiPhuong = Number(giaPhuong) || 0;
-        const phiXa = Number(giaXa) || 0;
-        
         const thapGoc = Number(giaThap) || 0;
         const trungGoc = Number(giaTrung) || 0;
 
+        // Lưu giá giấy tờ của cả 2 vùng + vùng đang chọn (mặc định = khu vực của người dùng)
+        window.currentModalFees = feesByVung || { phuongCM: 0, xaCM: 0, phuongBL: 0, xaBL: 0 };
+        const khuVucLower = khuVuc.toLowerCase();
+        window.currentModalVung = (khuVucLower.includes('bạc liêu') || khuVucLower.includes('bac lieu')) ? 'Bạc Liêu' : 'Cà Mau';
+
         const draftInput = document.getElementById('draftPriceInput');
         if (draftInput) {
-            draftInput.setAttribute('data-phi-phuong', phiPhuong);
-            draftInput.setAttribute('data-phi-xa', phiXa);
             draftInput.value = '';
             document.getElementById('draftTotalPhuong').innerText = '0 VNĐ';
             document.getElementById('draftTotalXa').innerText = '0 VNĐ';
         }
 
         function updateModalPrice(currentBasePrice, currentThap, currentTrung) {
+            window.currentModalBasePrice = currentBasePrice;
             document.getElementById('modalBasePrice').innerText = formatCurrency(currentBasePrice);
-            document.getElementById('modalGiaPhuong').innerText = formatCurrency(phiPhuong);
-            document.getElementById('modalGiaXa').innerText = formatCurrency(phiXa);
-            document.getElementById('modalTongPhuong').innerText = formatCurrency(currentBasePrice + phiPhuong);
-            document.getElementById('modalTongXa').innerText = formatCurrency(currentBasePrice + phiXa);
-            
             document.getElementById('modalGiaThap').innerText = formatCurrency(currentThap);
             document.getElementById('modalGiaTrung').innerText = formatCurrency(currentTrung);
+
+            // Cập nhật phí giấy tờ + tổng theo vùng đang được chọn trong modal
+            if (typeof switchModalRegion === 'function') {
+                switchModalRegion(window.currentModalVung);
+            }
         }
 
         function updateStockDisplay(colorItem) {
@@ -1135,16 +1183,16 @@ document.addEventListener("DOMContentLoaded", function() {
                             if (matchedItem) {
                                 window.currentCarModalData = matchedItem;
                                 const basePrice = Number(matchedItem.gia_cao) || 0;
-                                const giaPhuong = Number(matchedItem.gia_giay_to_phuong) || 0;
-                                const giaXa = Number(matchedItem.gia_giay_to_xa) || 0;
                                 const thapGoc = Number(matchedItem.gia_thap) || 0;
                                 const trungGoc = Number(matchedItem.gia_trung) || 0;
 
-                                const draftInput = document.getElementById('draftPriceInput');
-                                if (draftInput) {
-                                    draftInput.setAttribute('data-phi-phuong', giaPhuong);
-                                    draftInput.setAttribute('data-phi-xa', giaXa);
-                                }
+                                // Cập nhật giá giấy tờ mới nhất của CẢ 2 vùng, giữ nguyên vùng người dùng đang chọn
+                                window.currentModalFees = {
+                                    phuongCM: Number(matchedItem.gia_giay_to_phuong_cm) || 0,
+                                    xaCM: Number(matchedItem.gia_giay_to_xa_cm) || 0,
+                                    phuongBL: Number(matchedItem.gia_giay_to_phuong_bl) || 0,
+                                    xaBL: Number(matchedItem.gia_giay_to_xa_bl) || 0
+                                };
 
                                 let colors = matchedItem.mau_xe || [];
                                 
@@ -1155,13 +1203,15 @@ document.addEventListener("DOMContentLoaded", function() {
 
                                 const chenhLech = selectedColorItem ? (Number(selectedColorItem.chenh_lech_gia) || 0) : 0;
 
+                                window.currentModalBasePrice = basePrice + chenhLech;
                                 document.getElementById('modalBasePrice').innerText = formatCurrency(basePrice + chenhLech);
-                                document.getElementById('modalGiaPhuong').innerText = formatCurrency(giaPhuong);
-                                document.getElementById('modalGiaXa').innerText = formatCurrency(giaXa);
-                                document.getElementById('modalTongPhuong').innerText = formatCurrency(basePrice + chenhLech + giaPhuong);
-                                document.getElementById('modalTongXa').innerText = formatCurrency(basePrice + chenhLech + giaXa);
                                 document.getElementById('modalGiaThap').innerText = formatCurrency(thapGoc + chenhLech);
                                 document.getElementById('modalGiaTrung').innerText = formatCurrency(trungGoc + chenhLech);
+
+                                // Vẽ lại phí giấy tờ + tổng theo vùng đang được chọn (không đổi vùng đã chọn)
+                                if (typeof switchModalRegion === 'function') {
+                                    switchModalRegion(window.currentModalVung || 'Cà Mau');
+                                }
 
                                 const setVal = (id, val) => {
                                     const el = document.getElementById(id);
@@ -1217,9 +1267,11 @@ document.addEventListener("DOMContentLoaded", function() {
                                                 }
 
                                                 const cl = Number(item.chenh_lech_gia) || 0;
+                                                window.currentModalBasePrice = basePrice + cl;
                                                 document.getElementById('modalBasePrice').innerText = formatCurrency(basePrice + cl);
-                                                document.getElementById('modalTongPhuong').innerText = formatCurrency(basePrice + cl + giaPhuong);
-                                                document.getElementById('modalTongXa').innerText = formatCurrency(basePrice + cl + giaXa);
+                                                if (typeof switchModalRegion === 'function') {
+                                                    switchModalRegion(window.currentModalVung || 'Cà Mau');
+                                                }
                                                 document.getElementById('modalGiaThap').innerText = formatCurrency(thapGoc + cl);
                                                 document.getElementById('modalGiaTrung').innerText = formatCurrency(trungGoc + cl);
 
@@ -1326,5 +1378,125 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 })();
 </script>
+<!-- MODAL ĐỔI MẬT KHẨU -->
+<div id="changePasswordModal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 1100; justify-content:center; align-items:center; padding: 15px; box-sizing: border-box;">
+    <div style="background:#fff; width:100%; max-width:420px; border-radius:12px; padding:20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); box-sizing: border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:15px;">
+            <h3 style="margin:0; font-size:1.15rem; color:#333;"><i class="fas fa-key" style="color: var(--primary-red); margin-right:6px;"></i>Đổi mật khẩu</h3>
+            <span onclick="closeChangePasswordModal()" style="cursor:pointer; font-size:1.5rem; color:#888; line-height:1;">&times;</span>
+        </div>
+
+        <div id="cpMessage" style="display:none; padding:8px 12px; border-radius:6px; margin-bottom:12px; font-size:13px;"></div>
+
+        <form id="changePasswordForm" onsubmit="return submitChangePassword(event)">
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:5px;">Mật khẩu hiện tại</label>
+                <input type="password" id="cpOldPassword" autocomplete="current-password" required style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px; box-sizing:border-box;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:5px;">Mật khẩu mới</label>
+                <input type="password" id="cpNewPassword" autocomplete="new-password" required minlength="6" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px; box-sizing:border-box;">
+            </div>
+            <div style="margin-bottom:18px;">
+                <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:5px;">Xác nhận mật khẩu mới</label>
+                <input type="password" id="cpConfirmPassword" autocomplete="new-password" required minlength="6" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px; box-sizing:border-box;">
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button type="button" onclick="closeChangePasswordModal()" style="flex:1; padding:11px; border-radius:6px; border:1px solid #cbd5e1; background:#fff; color:#374151; font-weight:600; cursor:pointer;">Hủy</button>
+                <button type="submit" id="cpSubmitBtn" style="flex:1; padding:11px; border-radius:6px; border:none; background: var(--primary-red); color:#fff; font-weight:600; cursor:pointer;">Xác nhận</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openChangePasswordModal() {
+    const modal = document.getElementById('changePasswordModal');
+    document.getElementById('changePasswordForm').reset();
+    const msg = document.getElementById('cpMessage');
+    msg.style.display = 'none';
+    modal.style.display = 'flex';
+}
+
+function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').style.display = 'none';
+}
+
+function showCpMessage(text, isError) {
+    const msg = document.getElementById('cpMessage');
+    msg.innerText = text;
+    msg.style.display = 'block';
+    if (isError) {
+        msg.style.background = '#fee2e2';
+        msg.style.color = '#b91c1c';
+        msg.style.border = '1px solid #fca5a5';
+    } else {
+        msg.style.background = '#dcfce7';
+        msg.style.color = '#15803d';
+        msg.style.border = '1px solid #86efac';
+    }
+}
+
+function submitChangePassword(e) {
+    e.preventDefault();
+    const oldPw = document.getElementById('cpOldPassword').value;
+    const newPw = document.getElementById('cpNewPassword').value;
+    const confirmPw = document.getElementById('cpConfirmPassword').value;
+
+    if (newPw !== confirmPw) {
+        showCpMessage('Mật khẩu mới và xác nhận không khớp.', true);
+        return false;
+    }
+    if (newPw.length < 6) {
+        showCpMessage('Mật khẩu mới phải có ít nhất 6 ký tự.', true);
+        return false;
+    }
+
+    const btn = document.getElementById('cpSubmitBtn');
+    btn.disabled = true;
+    btn.innerText = 'Đang xử lý...';
+
+    fetch('/api/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            mat_khau_cu: oldPw,
+            mat_khau_moi: newPw,
+            xac_nhan: confirmPw
+        })
+    })
+    .then(res => res.json().then(data => ({ status: res.status, body: data })))
+    .then(({ body }) => {
+        btn.disabled = false;
+        btn.innerText = 'Xác nhận';
+        if (body.success) {
+            showCpMessage(body.message || 'Đổi mật khẩu thành công!', false);
+            setTimeout(closeChangePasswordModal, 1200);
+        } else {
+            showCpMessage(body.message || 'Có lỗi xảy ra, vui lòng thử lại.', true);
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.innerText = 'Xác nhận';
+        showCpMessage('Lỗi kết nối, vui lòng thử lại.', true);
+    });
+
+    return false;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const cpModal = document.getElementById('changePasswordModal');
+    if (cpModal) {
+        cpModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeChangePasswordModal();
+            }
+        });
+    }
+});
+</script>
+
 </body>
 </html>
