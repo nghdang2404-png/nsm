@@ -1532,6 +1532,131 @@ def admin_import_gia_giay_to_bl():
         db.session.rollback()
         return jsonify({'success': False, 'message': f'Lỗi khi xử lý file Excel: {str(e)}'}), 500
 
+@app.route('/admin/gia-giay-to')
+@admin_required
+def admin_gia_giay_to_page():
+    """
+    Trang quản trị RIÊNG BIỆT, hợp nhất quản lý giá giấy tờ:
+    - Tab Cà Mau: giá giấy tờ Phường / Xã (2 giá trị cố định cho mỗi xe).
+    - Tab Bạc Liêu: giá giấy tờ theo từng khu vực nhỏ (Nam Sương 4 / Nam Sương 2 / Nam Sương 5 - NSM1).
+    Toàn bộ được sửa trực tiếp trên bảng rồi lưu 1 lần bằng nút "Lưu tất cả".
+    """
+    danh_sach_xe_obj = Xe.query.order_by(get_order_priority(), Xe.ten_xe.asc()).all()
+
+    khu_vuc_lon = KhuVucLonBL.query.order_by(KhuVucLonBL.thu_tu).all()
+    khu_vuc_lon_data = [{
+        'id': kvl.id,
+        'ma_khu_vuc': kvl.ma_khu_vuc,
+        'ten_khu_vuc': kvl.ten_khu_vuc,
+        'khu_vuc_nho': [
+            {'id': n.id, 'ten_khu_vuc_nho': n.ten_khu_vuc_nho}
+            for n in sorted(kvl.khu_vuc_nho, key=lambda x: x.thu_tu)
+        ]
+    } for kvl in khu_vuc_lon]
+
+    # Lấy 1 lần toàn bộ giá giấy tờ Bạc Liêu, gom theo xe để tránh truy vấn lặp lại trong vòng lặp
+    gia_bl_theo_xe = {}
+    for g in GiaGiayToXeBL.query.all():
+        gia_bl_theo_xe.setdefault(g.xe_id, {})[g.khu_vuc_nho_id] = g.gia or 0
+
+    danh_sach_xe = [{
+        'id': xe.id,
+        'ten_xe': xe.ten_xe,
+        'phien_ban': xe.phien_ban,
+        'loai_xe': xe.loai_xe,
+        'gia_gt_phuong_cm': xe.gia_gt_phuong_cm or 0,
+        'gia_gt_xa_cm': xe.gia_gt_xa_cm or 0,
+        'gia_bl_map': gia_bl_theo_xe.get(xe.id, {})
+    } for xe in danh_sach_xe_obj]
+
+    return render_template('admin_gia_giay_to.html', khu_vuc_lon=khu_vuc_lon_data, danh_sach_xe=danh_sach_xe)
+
+
+@app.route('/admin/api/luu-gia-giay-to-cm', methods=['POST'])
+@admin_required
+def admin_luu_gia_giay_to_cm():
+    """
+    Lưu hàng loạt giá giấy tờ Cà Mau (Phường / Xã) cho nhiều xe cùng lúc.
+    Body JSON: { "gia": { "<xe_id>": {"phuong": 500000, "xa": 700000}, ... } }
+    """
+    data = request.get_json(silent=True) or {}
+    gia_map = data.get('gia', {}) or {}
+
+    so_luong_cap_nhat = 0
+    for xe_id_str, gt in gia_map.items():
+        try:
+            xe_id = int(xe_id_str)
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(gt, dict):
+            continue
+
+        xe = Xe.query.get(xe_id)
+        if not xe:
+            continue
+
+        gia_phuong_moi = safe_float(gt.get('phuong'), xe.gia_gt_phuong_cm or 0)
+        gia_xa_moi = safe_float(gt.get('xa'), xe.gia_gt_xa_cm or 0)
+
+        if (xe.gia_gt_phuong_cm or 0) != gia_phuong_moi or (xe.gia_gt_xa_cm or 0) != gia_xa_moi:
+            xe.gia_gt_phuong_cm = gia_phuong_moi
+            xe.gia_gt_xa_cm = gia_xa_moi
+            so_luong_cap_nhat += 1
+
+    db.session.commit()
+
+    if so_luong_cap_nhat:
+        cap_nhat_thoi_gian_dong_bo('Cà Mau', session.get('username'))
+
+    return jsonify({
+        'success': True,
+        'message': f'Đã cập nhật giá giấy tờ Cà Mau cho {so_luong_cap_nhat} xe.',
+        'so_luong': so_luong_cap_nhat
+    })
+
+
+@app.route('/admin/api/luu-gia-giay-to-bl', methods=['POST'])
+@admin_required
+def admin_luu_gia_giay_to_bl_hang_loat():
+    """
+    Lưu hàng loạt giá giấy tờ Bạc Liêu theo khu vực nhỏ, cho nhiều xe và cả 3 khu vực lớn cùng lúc.
+    Body JSON: { "gia": [ {"xe_id": 1, "khu_vuc_nho_id": 5, "gia": 1200000}, ... ] }
+    """
+    data = request.get_json(silent=True) or {}
+    danh_sach_gia = data.get('gia', []) or []
+
+    so_luong_cap_nhat = 0
+    for item in danh_sach_gia:
+        if not isinstance(item, dict):
+            continue
+        try:
+            xe_id = int(item.get('xe_id'))
+            khu_vuc_nho_id = int(item.get('khu_vuc_nho_id'))
+        except (TypeError, ValueError):
+            continue
+        gia_moi = safe_float(item.get('gia'), 0)
+
+        row = GiaGiayToXeBL.query.filter_by(xe_id=xe_id, khu_vuc_nho_id=khu_vuc_nho_id).first()
+        if row:
+            if (row.gia or 0) != gia_moi:
+                row.gia = gia_moi
+                so_luong_cap_nhat += 1
+        else:
+            db.session.add(GiaGiayToXeBL(xe_id=xe_id, khu_vuc_nho_id=khu_vuc_nho_id, gia=gia_moi))
+            so_luong_cap_nhat += 1
+
+    db.session.commit()
+
+    if so_luong_cap_nhat:
+        cap_nhat_thoi_gian_dong_bo('Bạc Liêu', session.get('username'))
+
+    return jsonify({
+        'success': True,
+        'message': f'Đã cập nhật {so_luong_cap_nhat} mức giá giấy tờ Bạc Liêu.',
+        'so_luong': so_luong_cap_nhat
+    })
+
+
 @app.route('/api/khu-vuc-giay-to-bl')
 def api_khu_vuc_giay_to_bl():
     """Danh sách khu vực lớn + khu vực nhỏ giấy tờ Bạc Liêu (không kèm giá, dùng dựng dropdown)."""

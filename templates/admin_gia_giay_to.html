@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}Quản lý Giá Giấy Tờ - Hệ thống Nam Sương{% endblock %}
+
+{% block hero_section %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .brand-card {
+        border: none;
+        border-top: 4px solid #16a34a;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+        border-radius: 8px;
+    }
+
+    .table th {
+        vertical-align: middle;
+        background-color: #1a56db !important;
+        color: #fff;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .table td {
+        vertical-align: middle;
+        padding: 6px !important;
+    }
+
+    .badge-cm {
+        background-color: #0d6efd; color: #fff; font-size: 10px;
+        padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-block;
+    }
+    .badge-bl {
+        background-color: #16a34a; color: #fff; font-size: 10px;
+        padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-block;
+    }
+
+    .form-control-sm {
+        border-radius: 5px;
+        border-color: #cbd5e1;
+        background-color: #ffffff;
+        font-size: 12px;
+        min-width: 90px;
+    }
+    .form-control-sm:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+    }
+    .form-control-sm.cell-changed {
+        border-color: #f59e0b !important;
+        background-color: #fffbeb !important;
+        font-weight: 700;
+    }
+
+    .ten-xe-cell {
+        text-align: left !important;
+        white-space: nowrap;
+        position: sticky;
+        left: 0;
+        background: #fff;
+        z-index: 2;
+        box-shadow: 2px 0 4px rgba(0,0,0,0.04);
+    }
+    .table thead .ten-xe-cell { z-index: 3; background-color: #1a56db !important; }
+
+    .region-pills .nav-link {
+        font-weight: 700;
+        font-size: 13px;
+        border-radius: 30px;
+        padding: 8px 20px;
+    }
+    .region-pills .nav-link.active#pill-cm-tab { background-color: #0d6efd; }
+    .region-pills .nav-link.active#pill-bl-tab { background-color: #16a34a; }
+
+    .bl-sub-tabs .nav-link {
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    /* Nút LƯU TẤT CẢ nổi ở góc dưới phải màn hình */
+    .floating-save-container { position: fixed; bottom: 25px; right: 25px; z-index: 9998; }
+    .btn-floating-save {
+        background: linear-gradient(135deg, #198754, #157347);
+        color: white; border: none; border-radius: 50px;
+        padding: 14px 28px; font-size: 15px; font-weight: bold;
+        box-shadow: 0 6px 20px rgba(25, 135, 84, 0.4);
+        display: flex; align-items: center; gap: 10px;
+        transition: all 0.3s ease;
+    }
+    .btn-floating-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(25, 135, 84, 0.6);
+        background: linear-gradient(135deg, #157347, #146c43);
+        color: white;
+    }
+
+    #toast-container { position: fixed; bottom: 90px; right: 25px; z-index: 9999; }
+    .custom-toast {
+        background: #198754; color: white; padding: 10px 20px; border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-size: 13px; font-weight: 600;
+        display: flex; align-items: center; gap: 8px;
+        animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+    }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fadeOut { to { opacity: 0; transform: translateY(10px); } }
+
+    @media (max-width: 768px) {
+        body { font-size: 14px; }
+        .container { padding-left: 10px; padding-right: 10px; }
+        .card-body { padding: 12px !important; }
+        .table-responsive { border: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .form-control-sm { font-size: 14px !important; padding: 8px 10px !important; min-width: 80px; }
+        .btn-sm { font-size: 13px !important; padding: 8px 12px !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="toast-container"></div>
+
+<div class="floating-save-container">
+    <button type="button" id="btn-save-all" class="btn-floating-save">
+        <i class="fa-solid fa-floppy-disk fs-5"></i> Lưu tất cả
+    </button>
+</div>
+
+<div class="card mb-3 brand-card">
+    <div class="card-body py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h5 class="mb-1 fw-bold"><i class="fa-solid fa-file-invoice me-2 text-success"></i>Quản lý Giá Giấy Tờ</h5>
+            <span class="text-muted" style="font-size: 13px;">Sửa trực tiếp trên bảng, sau đó bấm <b>Lưu tất cả</b> ở góc dưới phải để lưu 1 lần.</span>
+        </div>
+        <a href="{{ url_for('admin_panel') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fa-solid fa-arrow-left me-1"></i> Về trang Quản trị
+        </a>
+    </div>
+</div>
+
+<ul class="nav nav-pills region-pills mb-3" id="regionPills" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="pill-cm-tab" data-bs-toggle="pill" data-bs-target="#pill-cm" type="button" role="tab">
+            <span class="badge-cm me-1">CM</span> Cà Mau
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="pill-bl-tab" data-bs-toggle="pill" data-bs-target="#pill-bl" type="button" role="tab">
+            <span class="badge-bl me-1">BL</span> Bạc Liêu
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+    <!-- ===================== TAB CÀ MAU ===================== -->
+    <div class="tab-pane fade show active" id="pill-cm" role="tabpanel">
+        <div class="card brand-card">
+            <div class="card-header bg-white py-2">
+                <h6 class="mb-0 fw-bold" style="font-size: 13px;"><i class="fa-solid fa-location-dot me-1 text-primary"></i> Giá giấy tờ theo Phường / Xã &mdash; Cà Mau</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle text-center mb-0" id="table-cm">
+                        <thead>
+                            <tr>
+                                <th class="ten-xe-cell">Xe</th>
+                                <th style="min-width: 130px;">Giá Giấy Tờ Phường</th>
+                                <th style="min-width: 130px;">Giá Giấy Tờ Xã</th>
+                            </tr>
+                        </thead>
+                        <tbody style="font-size: 13px;">
+                            {% for xe in danh_sach_xe %}
+                            <tr data-xe-id="{{ xe.id }}">
+                                <td class="ten-xe-cell">
+                                    <span class="fw-bold text-dark">{{ xe.ten_xe }}</span>
+                                    {% if xe.phien_ban %}<span class="text-muted d-block" style="font-size: 11px;">{{ xe.phien_ban }}</span>{% endif %}
+                                </td>
+                                <td>
+                                    <input type="text" inputmode="numeric" class="form-control form-control-sm currency-input cm-input"
+                                           data-xe-id="{{ xe.id }}" data-field="phuong"
+                                           value="{{ xe.gia_gt_phuong_cm if xe.gia_gt_phuong_cm and xe.gia_gt_phuong_cm != 0 else '' }}" placeholder="0">
+                                </td>
+                                <td>
+                                    <input type="text" inputmode="numeric" class="form-control form-control-sm currency-input cm-input"
+                                           data-xe-id="{{ xe.id }}" data-field="xa"
+                                           value="{{ xe.gia_gt_xa_cm if xe.gia_gt_xa_cm and xe.gia_gt_xa_cm != 0 else '' }}" placeholder="0">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== TAB BẠC LIÊU ===================== -->
+    <div class="tab-pane fade" id="pill-bl" role="tabpanel">
+        <div class="card brand-card">
+            <div class="card-header bg-white py-2">
+                <h6 class="mb-0 fw-bold" style="font-size: 13px;"><i class="fa-solid fa-location-dot me-1 text-success"></i> Giá giấy tờ theo khu vực nhỏ &mdash; Bạc Liêu</h6>
+            </div>
+            <div class="card-body">
+                {% if khu_vuc_lon %}
+                <ul class="nav nav-tabs bl-sub-tabs mb-3" id="blSubTabs" role="tablist">
+                    {% for kvl in khu_vuc_lon %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if loop.first %}active{% endif %}" id="bl-tab-{{ kvl.id }}"
+                                data-bs-toggle="tab" data-bs-target="#bl-pane-{{ kvl.id }}" type="button" role="tab">
+                            {{ kvl.ten_khu_vuc }}
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                <div class="tab-content">
+                    {% for kvl in khu_vuc_lon %}
+                    <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="bl-pane-{{ kvl.id }}" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle text-center mb-0" id="table-bl-{{ kvl.id }}">
+                                <thead>
+                                    <tr>
+                                        <th class="ten-xe-cell">Xe</th>
+                                        {% for kvn in kvl.khu_vuc_nho %}
+                                        <th style="min-width: 150px;">{{ kvn.ten_khu_vuc_nho }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody style="font-size: 13px;">
+                                    {% for xe in danh_sach_xe %}
+                                    <tr data-xe-id="{{ xe.id }}">
+                                        <td class="ten-xe-cell">
+                                            <span class="fw-bold text-dark">{{ xe.ten_xe }}</span>
+                                            {% if xe.phien_ban %}<span class="text-muted d-block" style="font-size: 11px;">{{ xe.phien_ban }}</span>{% endif %}
+                                        </td>
+                                        {% for kvn in kvl.khu_vuc_nho %}
+                                        <td>
+                                            <input type="text" inputmode="numeric" class="form-control form-control-sm currency-input bl-input"
+                                                   data-xe-id="{{ xe.id }}" data-khu-vuc-nho-id="{{ kvn.id }}"
+                                                   value="{{ xe.gia_bl_map.get(kvn.id, 0) if xe.gia_bl_map.get(kvn.id, 0) else '' }}" placeholder="0">
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">Chưa có dữ liệu khu vực giấy tờ Bạc Liêu.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function showToast(message) {
+        let container = document.getElementById("toast-container");
+        let toast = document.createElement("div");
+        toast.className = "custom-toast";
+        toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+    }
+
+    function formatCurrencyValue(val) {
+        val = String(val || '').trim();
+        if (!val || val === '0' || val === 'None') return '';
+        let isNegative = val.startsWith('-');
+        // QUAN TRỌNG: cắt bỏ phần thập phân (vd "817000.0" -> "817000") TRƯỚC khi xóa ký tự
+        // không phải số, nếu không dấu "." sẽ bị xóa còn số "0" phía sau bị giữ lại -> dư 1 số 0.
+        let integerPart = val.split('.')[0];
+        let rawVal = integerPart.replace(/\D/g, "");
+        if (!rawVal) return '';
+        let formatted = new Intl.NumberFormat("vi-VN").format(parseInt(rawVal, 10));
+        return isNegative ? "-" + formatted : formatted;
+    }
+
+    function parseCurrencyValue(val) {
+        val = String(val || '');
+        let isNegative = val.startsWith('-');
+        let raw = val.replace(/\D/g, "");
+        if (!raw) return 0;
+        let num = parseInt(raw, 10);
+        return isNegative ? -num : num;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // Định dạng tiền tệ ban đầu + lưu giá trị gốc để so sánh thay đổi
+        document.querySelectorAll(".currency-input").forEach(function (input) {
+            input.value = formatCurrencyValue(input.value);
+            input.dataset.initial = input.value;
+        });
+
+        // Định dạng khi đang gõ + đánh dấu ô đã thay đổi
+        document.addEventListener("input", function (e) {
+            if (!e.target.classList.contains("currency-input")) return;
+            let input = e.target;
+            let startPos = input.selectionStart;
+            let oldLength = input.value.length;
+
+            let isNegative = input.value.startsWith("-");
+            let rawVal = input.value.replace(/\D/g, "");
+            if (rawVal) {
+                let formatted = new Intl.NumberFormat("vi-VN").format(rawVal);
+                input.value = isNegative ? "-" + formatted : formatted;
+            } else {
+                input.value = isNegative ? "-" : "";
+            }
+
+            let newLength = input.value.length;
+            startPos = startPos + (newLength - oldLength);
+            if (startPos < 0) startPos = 0;
+            input.setSelectionRange(startPos, startPos);
+
+            input.classList.toggle("cell-changed", input.value !== input.dataset.initial);
+        });
+
+        document.getElementById("btn-save-all").addEventListener("click", async function () {
+            let btnAll = this;
+
+            // --- Gom các ô CÀ MAU đã thay đổi ---
+            let giaCM = {};
+            let coThayDoiCM = false;
+            document.querySelectorAll(".cm-input").forEach(function (input) {
+                if (input.value === input.dataset.initial) return;
+                coThayDoiCM = true;
+                let xeId = input.dataset.xeId;
+                let field = input.dataset.field;
+                if (!giaCM[xeId]) giaCM[xeId] = {};
+                giaCM[xeId][field] = parseCurrencyValue(input.value);
+            });
+
+            // --- Gom các ô BẠC LIÊU đã thay đổi ---
+            let giaBL = [];
+            document.querySelectorAll(".bl-input").forEach(function (input) {
+                if (input.value === input.dataset.initial) return;
+                giaBL.push({
+                    xe_id: parseInt(input.dataset.xeId, 10),
+                    khu_vuc_nho_id: parseInt(input.dataset.khuVucNhoId, 10),
+                    gia: parseCurrencyValue(input.value)
+                });
+            });
+
+            if (!coThayDoiCM && giaBL.length === 0) {
+                showToast("Không có thay đổi nào mới để lưu!");
+                return;
+            }
+
+            let oldHtml = btnAll.innerHTML;
+            btnAll.disabled = true;
+            btnAll.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> Đang lưu...`;
+
+            let tongCapNhat = 0;
+            let coLoi = false;
+
+            try {
+                let promises = [];
+                if (coThayDoiCM) {
+                    promises.push(
+                        fetch("{{ url_for('admin_luu_gia_giay_to_cm') }}", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ gia: giaCM })
+                        }).then(r => r.json())
+                    );
+                }
+                if (giaBL.length > 0) {
+                    promises.push(
+                        fetch("{{ url_for('admin_luu_gia_giay_to_bl_hang_loat') }}", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ gia: giaBL })
+                        }).then(r => r.json())
+                    );
+                }
+
+                let ketQua = await Promise.all(promises);
+                ketQua.forEach(function (res) {
+                    if (res && res.success) {
+                        tongCapNhat += (res.so_luong || 0);
+                    } else {
+                        coLoi = true;
+                    }
+                });
+            } catch (err) {
+                console.error("Lỗi khi lưu giá giấy tờ:", err);
+                coLoi = true;
+            }
+
+            // Cập nhật lại trạng thái "ban đầu" cho các ô vừa lưu thành công
+            if (!coLoi) {
+                document.querySelectorAll(".currency-input").forEach(function (input) {
+                    input.dataset.initial = input.value;
+                    input.classList.remove("cell-changed");
+                });
+            }
+
+            btnAll.innerHTML = oldHtml;
+            btnAll.disabled = false;
+
+            if (!coLoi) {
+                showToast(`Đã lưu thành công (${tongCapNhat} thay đổi)!`);
+            } else {
+                showToast("Có lỗi xảy ra, vui lòng thử lại!");
+            }
+        });
+    });
+</script>
+{% endblock %}

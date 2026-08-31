@@ -190,6 +190,16 @@
         to { opacity: 0; transform: translateY(10px); }
     }
 
+    .link-giay-to {
+        color: #16a34a;
+        font-weight: 600;
+    }
+    .link-giay-to:hover { color: #157347; text-decoration: underline !important; }
+
+    @media (max-width: 992px) {
+        .table th, .table td { font-size: 12px; }
+    }
+
     @media (max-width: 768px) {
         body { font-size: 14px; }
         .container { padding-left: 10px; padding-right: 10px; }
@@ -198,7 +208,12 @@
         .form-control, .form-control-sm, .form-select-sm { font-size: 14px !important; padding: 8px 10px !important; height: auto !important; }
         .btn-sm { font-size: 13px !important; padding: 8px 12px !important; }
         .box-cm, .box-bl { padding: 10px !important; margin-bottom: 10px !important; }
-        .table { min-width: 780px; }
+        .table { min-width: 620px; }
+    }
+
+    @media (max-width: 420px) {
+        .table { min-width: 560px; }
+        .price-label-tag { font-size: 8px; }
     }
 </style>
 {% endblock %}
@@ -237,6 +252,19 @@
                 <a href="/admin" class="btn btn-outline-secondary btn-sm flex-grow-1 text-center"><i class="fa-solid fa-rotate-right"></i> Đặt lại</a>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Nút sang trang quản lý riêng: Giá giấy tờ (Cà Mau + Bạc Liêu) -->
+<div class="card mb-3 brand-card" style="border-top-color: #16a34a;">
+    <div class="card-body py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h6 class="mb-0 fw-bold" style="font-size: 14px;"><i class="fa-solid fa-file-invoice me-1 text-success"></i> Quản lý Giá Giấy Tờ</h6>
+            <span class="text-muted" style="font-size: 12px;">Trang riêng để nhập nhanh giá giấy tờ Cà Mau &amp; Bạc Liêu cho tất cả xe</span>
+        </div>
+        <a href="{{ url_for('admin_gia_giay_to_page') }}" class="btn btn-success btn-sm px-3">
+            <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Mở trang Giá Giấy Tờ
+        </a>
     </div>
 </div>
 
@@ -372,9 +400,9 @@
             <table class="table table-bordered align-middle text-center mb-0">
                 <thead>
                     <tr>
-                        <th style="min-width: 90px;">Loại</th>
-                        <th style="min-width: 420px;">Bảng Giá & Giấy tờ (Cà Mau / Bạc Liêu)</th>
-                        <th style="min-width: 420px;">Hình ảnh, Tồn kho & Màu sắc</th>
+                        <th style="min-width: 70px;">Loại</th>
+                        <th style="min-width: 260px;">Bảng Giá Bán (Cà Mau / Bạc Liêu)</th>
+                        <th style="min-width: 340px;">Hình ảnh, Tồn kho & Màu sắc</th>
                     </tr>
                 </thead>
                 <tbody style="font-size: 13px;">
@@ -400,14 +428,14 @@
                     </tr>
 
                     <tr class="align-middle">
-                        <!-- CỘT 1: GIÁ & GIẤY TỜ[cite: 17] -->
+                        <!-- CỘT 1: GIÁ BÁN (giấy tờ đã chuyển sang trang riêng /admin/gia-giay-to) -->
                         <td class="text-start align-top">
                             <div class="box-cm">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="badge-cm">CÀ MAU</span>
-                                    <span class="small text-primary fw-bold" style="font-size: 10px;">Giá bán & Giấy tờ</span>
+                                    <span class="small text-primary fw-bold" style="font-size: 10px;">Giá bán</span>
                                 </div>
-                                <div class="row g-1 mb-1">
+                                <div class="row g-1">
                                     <div class="col-4">
                                         <span class="price-label-tag text-primary">Giá Cao</span>
                                         <input type="text" inputmode="numeric" name="gia_cm_cao" value="{{ xe.gia_cm_cao if xe.gia_cm_cao and xe.gia_cm_cao != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary currency-input">
@@ -421,24 +449,17 @@
                                         <input type="text" inputmode="numeric" name="gia_cm_thap" value="{{ xe.gia_cm_thap if xe.gia_cm_thap and xe.gia_cm_thap != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary currency-input">
                                     </div>
                                 </div>
-                                <div class="row g-1">
-                                    <div class="col-6">
-                                        <span class="price-label-tag text-primary">GT Phường CM</span>
-                                        <input type="text" inputmode="numeric" name="gia_gt_phuong_cm" value="{{ xe.gia_gt_phuong_cm if xe.gia_gt_phuong_cm and xe.gia_gt_phuong_cm != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm currency-input">
-                                    </div>
-                                    <div class="col-6">
-                                        <span class="price-label-tag text-primary">GT Xã CM</span>
-                                        <input type="text" inputmode="numeric" name="gia_gt_xa_cm" value="{{ xe.gia_gt_xa_cm if xe.gia_gt_xa_cm and xe.gia_gt_xa_cm != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm currency-input">
-                                    </div>
-                                </div>
+                                <!-- Giá giấy tờ CM giữ nguyên giá trị cũ (không hiển thị) để không bị mất khi lưu form này -->
+                                <input type="hidden" name="gia_gt_phuong_cm" value="{{ xe.gia_gt_phuong_cm or 0 }}" form="form_edit_{{ xe.id }}">
+                                <input type="hidden" name="gia_gt_xa_cm" value="{{ xe.gia_gt_xa_cm or 0 }}" form="form_edit_{{ xe.id }}">
                             </div>
 
                             <div class="box-bl">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="badge-bl">BẠC LIÊU</span>
-                                    <span class="small text-success fw-bold" style="font-size: 10px;">Giá bán & Giấy tờ</span>
+                                    <span class="small text-success fw-bold" style="font-size: 10px;">Giá bán</span>
                                 </div>
-                                <div class="row g-1 mb-1">
+                                <div class="row g-1">
                                     <div class="col-4">
                                         <span class="price-label-tag text-success">Giá Cao</span>
                                         <input type="text" inputmode="numeric" name="gia_bl_cao" value="{{ xe.gia_bl_cao if xe.gia_bl_cao and xe.gia_bl_cao != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success currency-input">
@@ -452,17 +473,14 @@
                                         <input type="text" inputmode="numeric" name="gia_bl_thap" value="{{ xe.gia_bl_thap if xe.gia_bl_thap and xe.gia_bl_thap != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success currency-input">
                                     </div>
                                 </div>
-                                <div class="row g-1">
-                                    <div class="col-6">
-                                        <span class="price-label-tag text-success">GT Phường BL</span>
-                                        <input type="text" inputmode="numeric" name="gia_gt_phuong_bl" value="{{ xe.gia_gt_phuong_bl if xe.gia_gt_phuong_bl and xe.gia_gt_phuong_bl != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm currency-input">
-                                    </div>
-                                    <div class="col-6">
-                                        <span class="price-label-tag text-success">GT Xã BL</span>
-                                        <input type="text" inputmode="numeric" name="gia_gt_xa_bl" value="{{ xe.gia_gt_xa_bl if xe.gia_gt_xa_bl and xe.gia_gt_xa_bl != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm currency-input">
-                                    </div>
-                                </div>
+                                <!-- Giá giấy tờ BL (cũ, không còn dùng để tính giá) giữ nguyên giá trị, không hiển thị -->
+                                <input type="hidden" name="gia_gt_phuong_bl" value="{{ xe.gia_gt_phuong_bl or 0 }}" form="form_edit_{{ xe.id }}">
+                                <input type="hidden" name="gia_gt_xa_bl" value="{{ xe.gia_gt_xa_bl or 0 }}" form="form_edit_{{ xe.id }}">
                             </div>
+
+                            <a href="{{ url_for('admin_gia_giay_to_page') }}" class="d-block text-center text-decoration-none mt-1 link-giay-to" style="font-size: 10px;">
+                                <i class="fa-solid fa-file-invoice me-1"></i>Quản lý giá giấy tờ tại trang riêng
+                            </a>
                         </td>
                         
                         <!-- CỘT 2: TỒN KHO, HÌNH ẢNH & MÀU SẮC[cite: 17] -->
