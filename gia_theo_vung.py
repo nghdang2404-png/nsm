@@ -25,13 +25,7 @@ def lay_gia_theo_vung(xe, khu_vuc_user):
         }
 
 def lay_gia_giay_to_khu_vuc_nho_bl(xe_id):
-    """
-    Trả về giá giấy tờ của 1 xe theo TỪNG khu vực nhỏ Bạc Liêu, gom theo khu vực lớn
-    (Nam Sương 4 / Nam Sương 2 / Nam Sương 5 - NSM1). Dùng để người dùng tự chọn
-    khu vực giấy tờ ở tinh_gia_nhap.html (khác với giá xe, vốn cố định theo vùng của user).
 
-    Import các model bên trong hàm để tránh vòng lặp import với app.py.
-    """
     from app import KhuVucLonBL, GiaGiayToXeBL
 
     ds_gia = {g.khu_vuc_nho_id: (g.gia or 0) for g in GiaGiayToXeBL.query.filter_by(xe_id=xe_id).all()}
