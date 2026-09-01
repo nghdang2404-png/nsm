@@ -681,7 +681,19 @@ def _don_dep_xe_vision_chi_tiet(ten_vision_da_gop):
 
     return so_luong_don
 
+_sync_lock = threading.Lock()
+
 def run_sync_process(username=None):
+    # Không cho 2 lần đồng bộ (nền + tay) chạy chồng lên nhau cùng lúc,
+    # tránh tạo trùng xe / ghi đè tồn kho không nhất quán.
+    if not _sync_lock.acquire(blocking=False):
+        return False, "Đang có một tiến trình đồng bộ khác chạy, vui lòng thử lại sau."
+    try:
+        return _run_sync_process_inner(username=username)
+    finally:
+        _sync_lock.release()
+
+def _run_sync_process_inner(username=None):
     setting = Setting.query.filter_by(key='csv_url').first()
     csv_url = setting.value if setting else None
     
@@ -949,17 +961,25 @@ def run_sync_process(username=None):
         traceback.print_exc()
         return False, str(e)
 
+# Chu kỳ đồng bộ nền bình thường (giây). 6 giây/lần là quá dày, dễ bị Google
+# Sheets giới hạn (429) và tốn tài nguyên DB không cần thiết -> giãn ra 2 phút.
+SYNC_INTERVAL_SECONDS = 120
+# Khi lỗi liên tiếp (VD: link sai, mất mạng), lùi thời gian chờ ra để tránh
+# spam request/log liên tục.
+SYNC_ERROR_BACKOFF_SECONDS = 300
+
 def start_background_sync():
     def run_loop():
-        time.sleep(6)
+        time.sleep(10)  # đợi app khởi động xong trước lần sync đầu tiên
         while True:
             try:
-                time.sleep(6)
                 with app.app_context():
                     success, msg = run_sync_process(username=None)
                     print(f"--- [BACKGROUND SYNC] {msg} ---")
+                time.sleep(SYNC_INTERVAL_SECONDS if success else SYNC_ERROR_BACKOFF_SECONDS)
             except Exception as e:
                 print(f"[BACKGROUND] Lỗi tự động đồng bộ nền: {e}")
+                time.sleep(SYNC_ERROR_BACKOFF_SECONDS)
 
     thread = threading.Thread(target=run_loop, daemon=True)
     thread.start()
@@ -2172,6 +2192,12 @@ if __name__ == "__main__":
             db.session.rollback()
             print("Lỗi khi seed khu vực giấy tờ Bạc Liêu:", e)
         
-    start_background_sync() 
-    
+    # Khi debug=True, Flask reloader sẽ import/exec lại toàn bộ file trong
+    # tiến trình "theo dõi" lẫn tiến trình con thực sự chạy server. Nếu không
+    # kiểm tra WERKZEUG_RUN_MAIN, start_background_sync() sẽ bị gọi 2 lần,
+    # tạo ra 2 luồng đồng bộ song song. Chỉ khởi động ở tiến trình con
+    # (hoặc khi debug=False, không có reloader).
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not app.debug:
+        start_background_sync()
+
     app.run(debug=True)
