@@ -782,15 +782,15 @@
         return new Intl.NumberFormat('vi-VN').format(amount).replace(/,/g, '.') + ' VNĐ';
     }
 
-    // HIỂN THỊ GIÁ CAO NGAY TRÊN DÒNG/CARD XE (THEO KHU VỰC PHÂN QUYỀN CỦA USER)
-    //function updateRowPrices() {
-        //document.querySelectorAll('.car-row-item').forEach(row => {
+    //HIỂN THỊ GIÁ CAO NGAY TRÊN DÒNG/CARD XE (THEO KHU VỰC PHÂN QUYỀN CỦA USER)
+    function updateRowPrices() {
+        document.querySelectorAll('.car-row-item').forEach(row => {
             //const priceEl = row.querySelector('.row-price-display');
-          //  if (!priceEl) return;
-           // const price = Number(row.getAttribute('data-base-price')) || 0;
+          //if (!priceEl) return;
+           //const price = Number(row.getAttribute('data-base-price')) || 0;
             //priceEl.innerText = price > 0 ? formatCurrency(price) : 'Liên hệ';
-       // });
-   // }
+       });
+   }
 
     // HỆ THỐNG XỬ LÝ MÀU CHUẨN XÁC CHO HONDA
     function getColorStyle(colorName) {
