@@ -963,27 +963,46 @@ def _run_sync_process_inner(username=None):
 
 # Chu kỳ đồng bộ nền bình thường (giây). 6 giây/lần là quá dày, dễ bị Google
 # Sheets giới hạn (429) và tốn tài nguyên DB không cần thiết -> giãn ra 2 phút.
+# SYNC_INTERVAL_SECONDS = 120
+# # Khi lỗi liên tiếp (VD: link sai, mất mạng), lùi thời gian chờ ra để tránh
+# # spam request/log liên tục.
+# SYNC_ERROR_BACKOFF_SECONDS = 300
+
+# def start_background_sync():
+#     def run_loop():
+#         time.sleep(10)  # đợi app khởi động xong trước lần sync đầu tiên
+#         while True:
+#             try:
+#                 with app.app_context():
+#                     success, msg = run_sync_process(username=None)
+#                     print(f"--- [BACKGROUND SYNC] {msg} ---")
+#                 time.sleep(SYNC_INTERVAL_SECONDS if success else SYNC_ERROR_BACKOFF_SECONDS)
+#             except Exception as e:
+#                 print(f"[BACKGROUND] Lỗi tự động đồng bộ nền: {e}")
+#                 time.sleep(SYNC_ERROR_BACKOFF_SECONDS)
+                
+
+#     thread = threading.Thread(target=run_loop, daemon=True)
+#     thread.start()
+from apscheduler.schedulers.background import BackgroundScheduler
+
+# Bạn có thể giữ lại các hằng số này
 SYNC_INTERVAL_SECONDS = 120
-# Khi lỗi liên tiếp (VD: link sai, mất mạng), lùi thời gian chờ ra để tránh
-# spam request/log liên tục.
-SYNC_ERROR_BACKOFF_SECONDS = 300
 
 def start_background_sync():
-    def run_loop():
-        time.sleep(10)  # đợi app khởi động xong trước lần sync đầu tiên
-        while True:
+    def run_sync_job():
+        with app.app_context():
             try:
-                with app.app_context():
-                    success, msg = run_sync_process(username=None)
-                    print(f"--- [BACKGROUND SYNC] {msg} ---")
-                time.sleep(SYNC_INTERVAL_SECONDS if success else SYNC_ERROR_BACKOFF_SECONDS)
+                success, msg = run_sync_process(username="Auto Scheduler")
+                print(f"--- [BACKGROUND SYNC] {msg} ---")
             except Exception as e:
                 print(f"[BACKGROUND] Lỗi tự động đồng bộ nền: {e}")
-                time.sleep(SYNC_ERROR_BACKOFF_SECONDS)
 
-    thread = threading.Thread(target=run_loop, daemon=True)
-    thread.start()
-
+    scheduler = BackgroundScheduler(daemon=True)
+    
+    # Thiết lập chạy vòng lặp mỗi 120 giây
+    scheduler.add_job(run_sync_job, 'interval', seconds=SYNC_INTERVAL_SECONDS)
+    scheduler.start()
 @app.route("/admin/sync-sheet", methods=["POST"])
 @admin_required
 def sync_sheet():
