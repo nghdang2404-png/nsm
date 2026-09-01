@@ -526,7 +526,8 @@ def _chuan_hoa_ten_xe_bo_qua_moi(ten_xe):
     có hậu tố "(MỚI)" ở cuối theo từng tháng (VD: "... ACB125K2VM" và "... ACB125K2VM (MỚI)").
     """
     s = unicodedata.normalize('NFC', str(ten_xe or '')).strip()
-    s = re.sub(r'\s*\(\s*m[ớo]i\s*\)\s*$', '', s, flags=re.IGNORECASE)
+    # Bắt cả "(MỚI)" có ngoặc lẫn "MỚI" không ngoặc ở cuối tên (VD: "...K2CN MỚI")
+    s = re.sub(r'\s*\(?\s*m[ớo]i\s*\)?\s*$', '', s, flags=re.IGNORECASE)
     return s.strip().lower()
 
 def _gop_xe_trung_ten_bo_qua_moi():
@@ -549,10 +550,10 @@ def _gop_xe_trung_ten_bo_qua_moi():
         if len(ds_xe) < 2:
             continue
 
-        # Ưu tiên giữ lại xe có tên KHÔNG mang hậu tố "(MỚI)" làm bản ghi chính
+        # Ưu tiên giữ lại xe có tên KHÔNG mang hậu tố "(MỚI)"/"MỚI" làm bản ghi chính
         xe_khong_hau_to_moi = [
             x for x in ds_xe
-            if not re.search(r'\(\s*m[ớo]i\s*\)\s*$', x.ten_xe.strip(), re.IGNORECASE)
+            if not re.search(r'\(?\s*m[ớo]i\s*\)?\s*$', x.ten_xe.strip(), re.IGNORECASE)
         ]
         xe_chinh = xe_khong_hau_to_moi[0] if xe_khong_hau_to_moi else ds_xe[0]
         ds_xe_phu = [x for x in ds_xe if x.id != xe_chinh.id]
@@ -599,6 +600,86 @@ def _gop_xe_trung_ten_bo_qua_moi():
         db.session.commit()
 
     return so_luong_gop
+
+_TU_KHOA_PHAN_LOAI_VISION = ['thể thao', 'cao cấp', 'đặc biệt', 'tiêu chuẩn']
+
+def _phan_loai_vision(ten_xe):
+    """Xác định phân loại VISION (Tiêu chuẩn/Đặc biệt/Cao cấp/Thể thao) dựa trên tên xe."""
+    t = unicodedata.normalize('NFC', str(ten_xe or '')).lower()
+    for tu_khoa in _TU_KHOA_PHAN_LOAI_VISION:
+        if tu_khoa in t:
+            return tu_khoa
+    return None
+
+def _don_dep_xe_vision_chi_tiet(ten_vision_da_gop):
+    """
+    Dọn các xe VISION "chi tiết" (theo từng miền Bắc/Nam riêng, tên đặt kiểu
+    "V06-[V01]", "V01-V06]"... khác hẳn tên đã cộng gộp) còn sót lại trong CSDL từ những
+    lần đồng bộ trước khi có bộ lọc theo dòng "Cộng gộp". Mỗi xe chi tiết được nhận diện
+    PHÂN LOẠI (Tiêu chuẩn/Đặc biệt/Cao cấp/Thể thao) rồi gộp dữ liệu (giá xe, giá giấy tờ,
+    màu xe - chỉ điền vào chỗ đang trống/0) vào đúng bản ĐÃ CỘNG GỘP cùng phân loại của
+    tháng này, sau đó xoá bản chi tiết. Xe không xác định được phân loại hoặc không có bản
+    cộng gộp tương ứng sẽ được GIỮ NGUYÊN (không xoá nhầm).
+    Trả về số xe chi tiết đã dọn.
+    """
+    if not ten_vision_da_gop:
+        return 0
+
+    tat_ca_xe_vision = Xe.query.filter(Xe.ten_xe.ilike('%vision%')).all()
+
+    xe_chinh_theo_loai = {}
+    for xe in tat_ca_xe_vision:
+        if xe.ten_xe in ten_vision_da_gop:
+            loai = _phan_loai_vision(xe.ten_xe)
+            if loai and loai not in xe_chinh_theo_loai:
+                xe_chinh_theo_loai[loai] = xe
+
+    so_luong_don = 0
+    for xe in tat_ca_xe_vision:
+        if xe.ten_xe in ten_vision_da_gop:
+            continue  # đây là bản đã cộng gộp của tháng này -> giữ nguyên
+
+        loai = _phan_loai_vision(xe.ten_xe)
+        xe_chinh = xe_chinh_theo_loai.get(loai)
+        if not xe_chinh:
+            continue  # không xác định được phân loại / chưa có bản cộng gộp tương ứng -> bỏ qua
+
+        if not xe_chinh.gia_cm_cao: xe_chinh.gia_cm_cao = xe.gia_cm_cao
+        if not xe_chinh.gia_cm_trung: xe_chinh.gia_cm_trung = xe.gia_cm_trung
+        if not xe_chinh.gia_cm_thap: xe_chinh.gia_cm_thap = xe.gia_cm_thap
+        if not xe_chinh.gia_bl_cao: xe_chinh.gia_bl_cao = xe.gia_bl_cao
+        if not xe_chinh.gia_bl_trung: xe_chinh.gia_bl_trung = xe.gia_bl_trung
+        if not xe_chinh.gia_bl_thap: xe_chinh.gia_bl_thap = xe.gia_bl_thap
+        if not xe_chinh.gia_gt_phuong_cm: xe_chinh.gia_gt_phuong_cm = xe.gia_gt_phuong_cm
+        if not xe_chinh.gia_gt_xa_cm: xe_chinh.gia_gt_xa_cm = xe.gia_gt_xa_cm
+        if not xe_chinh.gia_gt_phuong_bl: xe_chinh.gia_gt_phuong_bl = xe.gia_gt_phuong_bl
+        if not xe_chinh.gia_gt_xa_bl: xe_chinh.gia_gt_xa_bl = xe.gia_gt_xa_bl
+
+        for g in GiaGiayToXeBL.query.filter_by(xe_id=xe.id).all():
+            g_chinh = GiaGiayToXeBL.query.filter_by(
+                xe_id=xe_chinh.id, khu_vuc_nho_id=g.khu_vuc_nho_id
+            ).first()
+            if g_chinh:
+                if not g_chinh.gia:
+                    g_chinh.gia = g.gia
+                db.session.delete(g)
+            else:
+                g.xe_id = xe_chinh.id
+
+        for mau in XeMau.query.filter_by(xe_id=xe.id).all():
+            mau_chinh = XeMau.query.filter_by(xe_id=xe_chinh.id, ten_mau=mau.ten_mau).first()
+            if mau_chinh:
+                db.session.delete(mau)
+            else:
+                mau.xe_id = xe_chinh.id
+
+        db.session.delete(xe)
+        so_luong_don += 1
+
+    if so_luong_don:
+        db.session.commit()
+
+    return so_luong_don
 
 def run_sync_process(username=None):
     setting = Setting.query.filter_by(key='csv_url').first()
@@ -691,6 +772,21 @@ def run_sync_process(username=None):
             except:
                 return 0
 
+        def _co_cum_cong_gop_vision(text):
+            t = unicodedata.normalize('NFC', str(text or '')).lower()
+            return 'cộng gộp' in t and 'vision' in t
+
+        # Tìm dòng đánh dấu "Cộng gộp các dòng Vision của miền Bắc và Miền Nam..." trong sheet.
+        # Các dòng VISION nằm TRƯỚC dòng đánh dấu này là dữ liệu CHI TIẾT theo từng miền (Bắc/Nam
+        # riêng lẻ) -> bỏ qua, không tạo thành xe. Chỉ lấy các dòng VISION nằm TỪ dòng đánh dấu
+        # trở về sau (đã được cộng gộp Bắc+Nam) để tránh tạo trùng nhiều "xe" cùng phiên bản/giá.
+        vi_tri_dong_gop_vision = None
+        for idx in range(len(df)):
+            dong_gop_lai = " ".join([str(v) for v in df.iloc[idx].values])
+            if _co_cum_cong_gop_vision(dong_gop_lai):
+                vi_tri_dong_gop_vision = idx
+                break
+
         processed_data = []
         for idx in range(len(df)):
             if col_xe_idx >= df.shape[1] or col_mau_idx >= df.shape[1]:
@@ -700,6 +796,13 @@ def run_sync_process(username=None):
             if not ten_xe_excel or ten_xe_excel.lower() in ['nan', 'none', 'tổng', 'total', 'unnamed', '0']: 
                 continue
             if len(ten_xe_excel) > 150 or not any(kw in ten_xe_excel.lower() for kw in valid_vehicle_keywords):
+                continue
+            if _co_cum_cong_gop_vision(ten_xe_excel):
+                continue
+
+            # Bỏ qua các dòng VISION chi tiết (chưa cộng gộp Bắc/Nam) đứng trước dòng đánh dấu
+            if (vi_tri_dong_gop_vision is not None and idx < vi_tri_dong_gop_vision
+                    and 'vision' in ten_xe_excel.lower()):
                 continue
 
             ten_mau_excel = str(df.iloc[idx, col_mau_idx]).strip()
@@ -726,6 +829,14 @@ def run_sync_process(username=None):
 
         if not processed_data:
             return False, "Không tìm thấy dữ liệu hợp lệ trong Google Sheets."
+
+        # Dọn các xe VISION "chi tiết" (theo miền, tên khác kiểu "V06-[V01]"...) còn sót lại
+        # trong CSDL từ trước, gộp dữ liệu về đúng bản đã cộng gộp (chỉ có 4 phiên bản/tháng)
+        ten_vision_da_gop = {d['ten_xe'] for d in processed_data if 'vision' in d['ten_xe'].lower()}
+        so_luong_don_vision = _don_dep_xe_vision_chi_tiet(ten_vision_da_gop)
+        if so_luong_don_vision:
+            all_xe_db = Xe.query.all()
+            all_xe_dict = {xe.ten_xe: xe for xe in all_xe_db}
 
         df_clean = pd.DataFrame(processed_data)
         
@@ -830,7 +941,8 @@ def run_sync_process(username=None):
             cap_nhat_thoi_gian_dong_bo("Bạc Liêu", username)
             
         thong_bao_gop = f" (Đã gộp {so_luong_gop_ten} xe trùng tên do đổi hậu tố '(MỚI)'.)" if so_luong_gop_ten else ""
-        return True, f"Thêm mới {so_luong_them} xe, Cập nhật {so_luong_cap_nhat} xe.{thong_bao_gop}"
+        thong_bao_vision = f" (Đã dọn {so_luong_don_vision} xe VISION chi tiết, gộp về bản cộng gộp.)" if so_luong_don_vision else ""
+        return True, f"Thêm mới {so_luong_them} xe, Cập nhật {so_luong_cap_nhat} xe.{thong_bao_gop}{thong_bao_vision}"
         
     except Exception as e:
         db.session.rollback()
