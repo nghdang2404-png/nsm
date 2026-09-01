@@ -520,6 +520,86 @@ def save_settings():
     flash("Lưu link Google Sheets thành công!", "success")
     return redirect(url_for('admin_panel'))
 
+def _chuan_hoa_ten_xe_bo_qua_moi(ten_xe):
+    """
+    Chuẩn hoá tên xe để so khớp 2 xe THỰC CHẤT LÀ 1, chỉ khác việc sheet có/không
+    có hậu tố "(MỚI)" ở cuối theo từng tháng (VD: "... ACB125K2VM" và "... ACB125K2VM (MỚI)").
+    """
+    s = unicodedata.normalize('NFC', str(ten_xe or '')).strip()
+    s = re.sub(r'\s*\(\s*m[ớo]i\s*\)\s*$', '', s, flags=re.IGNORECASE)
+    return s.strip().lower()
+
+def _gop_xe_trung_ten_bo_qua_moi():
+    """
+    Quét toàn bộ xe hiện có trong CSDL, gộp các xe có tên giống hệt nhau sau khi bỏ hậu tố "(MỚI)"
+    (VD: cùng là 1 xe nhưng tháng trước sheet đặt tên có "(MỚI)", tháng này bỏ đi).
+    Xe không có hậu tố "(MỚI)" được coi là bản ghi CHÍNH (tên hiện hành) và được giữ lại;
+    mọi giá xe / giá giấy tờ / màu xe của bản ghi phụ sẽ được chuyển sang bản ghi chính
+    (chỉ điền vào những chỗ bản ghi chính đang trống/0, không ghi đè giá trị đã có),
+    sau đó xoá bản ghi phụ. Nhờ vậy giá giấy tờ đã nhập không bị mất khi tên xe đổi qua các tháng.
+    Trả về số cặp đã gộp.
+    """
+    nhom_theo_ten = {}
+    for xe in Xe.query.all():
+        key = _chuan_hoa_ten_xe_bo_qua_moi(xe.ten_xe)
+        nhom_theo_ten.setdefault(key, []).append(xe)
+
+    so_luong_gop = 0
+    for key, ds_xe in nhom_theo_ten.items():
+        if len(ds_xe) < 2:
+            continue
+
+        # Ưu tiên giữ lại xe có tên KHÔNG mang hậu tố "(MỚI)" làm bản ghi chính
+        xe_khong_hau_to_moi = [
+            x for x in ds_xe
+            if not re.search(r'\(\s*m[ớo]i\s*\)\s*$', x.ten_xe.strip(), re.IGNORECASE)
+        ]
+        xe_chinh = xe_khong_hau_to_moi[0] if xe_khong_hau_to_moi else ds_xe[0]
+        ds_xe_phu = [x for x in ds_xe if x.id != xe_chinh.id]
+
+        for xe_phu in ds_xe_phu:
+            # Giá xe (chỉ lấy khi bản ghi chính đang trống/0)
+            if not xe_chinh.gia_cm_cao: xe_chinh.gia_cm_cao = xe_phu.gia_cm_cao
+            if not xe_chinh.gia_cm_trung: xe_chinh.gia_cm_trung = xe_phu.gia_cm_trung
+            if not xe_chinh.gia_cm_thap: xe_chinh.gia_cm_thap = xe_phu.gia_cm_thap
+            if not xe_chinh.gia_bl_cao: xe_chinh.gia_bl_cao = xe_phu.gia_bl_cao
+            if not xe_chinh.gia_bl_trung: xe_chinh.gia_bl_trung = xe_phu.gia_bl_trung
+            if not xe_chinh.gia_bl_thap: xe_chinh.gia_bl_thap = xe_phu.gia_bl_thap
+
+            # Giá giấy tờ Cà Mau
+            if not xe_chinh.gia_gt_phuong_cm: xe_chinh.gia_gt_phuong_cm = xe_phu.gia_gt_phuong_cm
+            if not xe_chinh.gia_gt_xa_cm: xe_chinh.gia_gt_xa_cm = xe_phu.gia_gt_xa_cm
+            if not xe_chinh.gia_gt_phuong_bl: xe_chinh.gia_gt_phuong_bl = xe_phu.gia_gt_phuong_bl
+            if not xe_chinh.gia_gt_xa_bl: xe_chinh.gia_gt_xa_bl = xe_phu.gia_gt_xa_bl
+
+            # Giá giấy tờ Bạc Liêu theo từng khu vực nhỏ: chuyển toàn bộ sang xe chính
+            for g in GiaGiayToXeBL.query.filter_by(xe_id=xe_phu.id).all():
+                g_chinh = GiaGiayToXeBL.query.filter_by(
+                    xe_id=xe_chinh.id, khu_vuc_nho_id=g.khu_vuc_nho_id
+                ).first()
+                if g_chinh:
+                    if not g_chinh.gia:
+                        g_chinh.gia = g.gia
+                    db.session.delete(g)
+                else:
+                    g.xe_id = xe_chinh.id
+
+            # Màu xe: giữ màu của xe chính nếu trùng tên màu, ngược lại chuyển sang xe chính
+            for mau in XeMau.query.filter_by(xe_id=xe_phu.id).all():
+                mau_chinh = XeMau.query.filter_by(xe_id=xe_chinh.id, ten_mau=mau.ten_mau).first()
+                if mau_chinh:
+                    db.session.delete(mau)
+                else:
+                    mau.xe_id = xe_chinh.id
+
+            db.session.delete(xe_phu)
+            so_luong_gop += 1
+
+    if so_luong_gop:
+        db.session.commit()
+
+    return so_luong_gop
+
 def run_sync_process(username=None):
     setting = Setting.query.filter_by(key='csv_url').first()
     csv_url = setting.value if setting else None
@@ -546,6 +626,10 @@ def run_sync_process(username=None):
             'wave', 'blade', 'future', 'vision', 'air blade', 'sh', 'winner', 
             'lead', 'vario', 'cub', 'rebel', 'cb', 'cbr', 'afb', 'afs', 'supream'
         ]
+
+        # Gộp các xe trùng nhau chỉ khác hậu tố "(MỚI)" trước khi đối chiếu với sheet mới,
+        # để tên xe đổi qua từng tháng không tạo ra bản ghi (và phải nhập lại giá giấy tờ) mới.
+        so_luong_gop_ten = _gop_xe_trung_ten_bo_qua_moi()
 
         all_xe_db = Xe.query.all()
         all_xe_dict = {xe.ten_xe: xe for xe in all_xe_db}
@@ -653,16 +737,39 @@ def run_sync_process(username=None):
         has_price_changed_cm = False
         has_price_changed_bl = False
 
+        # Map tên đã chuẩn hoá (bỏ hậu tố "(MỚI)") -> danh sách xe, dùng để nhận diện xe
+        # trong sheet mới có tên chỉ khác xe đã có trong CSDL đúng mỗi hậu tố "(MỚI)"
+        all_xe_dict_norm = {}
+        for ten, xe_obj in all_xe_dict.items():
+            key_norm = _chuan_hoa_ten_xe_bo_qua_moi(ten)
+            all_xe_dict_norm.setdefault(key_norm, []).append(xe_obj)
+
         for _, row in df_clean.iterrows():
             ten_xe_excel = row['ten_xe']
             loai_xe_excel = tu_dong_phan_loai(ten_xe_excel)
             
             if ten_xe_excel not in all_xe_dict:
-                xe = Xe(loai_xe=loai_xe_excel, ten_xe=ten_xe_excel, phien_ban='')
-                new_xe_objects.append(xe)
-                db.session.add(xe)
-                all_xe_dict[ten_xe_excel] = xe
-                so_luong_them += 1
+                # Thử tìm xe đã có trong CSDL nhưng tên chỉ khác đúng hậu tố "(MỚI)"
+                # -> coi là CÙNG 1 xe, đổi tên theo sheet tháng này thay vì tạo bản ghi mới
+                # (giữ nguyên giá xe / giá giấy tờ / màu xe đã nhập trước đó).
+                key_norm = _chuan_hoa_ten_xe_bo_qua_moi(ten_xe_excel)
+                ung_vien = [x for x in all_xe_dict_norm.get(key_norm, []) if x.ten_xe in all_xe_dict]
+                if len(ung_vien) == 1:
+                    xe = ung_vien[0]
+                    ten_cu = xe.ten_xe
+                    if ten_cu != ten_xe_excel:
+                        del all_xe_dict[ten_cu]
+                        xe.ten_xe = ten_xe_excel
+                        all_xe_dict[ten_xe_excel] = xe
+                    if loai_xe_excel and xe.loai_xe == "Chưa phân loại":
+                        xe.loai_xe = loai_xe_excel
+                    so_luong_cap_nhat += 1
+                else:
+                    xe = Xe(loai_xe=loai_xe_excel, ten_xe=ten_xe_excel, phien_ban='')
+                    new_xe_objects.append(xe)
+                    db.session.add(xe)
+                    all_xe_dict[ten_xe_excel] = xe
+                    so_luong_them += 1
             else:
                 xe = all_xe_dict[ten_xe_excel]
                 if loai_xe_excel and xe.loai_xe == "Chưa phân loại":
@@ -722,7 +829,8 @@ def run_sync_process(username=None):
         if has_price_changed_bl:
             cap_nhat_thoi_gian_dong_bo("Bạc Liêu", username)
             
-        return True, f"Thêm mới {so_luong_them} xe, Cập nhật {so_luong_cap_nhat} xe."
+        thong_bao_gop = f" (Đã gộp {so_luong_gop_ten} xe trùng tên do đổi hậu tố '(MỚI)'.)" if so_luong_gop_ten else ""
+        return True, f"Thêm mới {so_luong_them} xe, Cập nhật {so_luong_cap_nhat} xe.{thong_bao_gop}"
         
     except Exception as e:
         db.session.rollback()
