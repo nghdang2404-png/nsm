@@ -18,18 +18,27 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import case, text
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from PIL import Image, ImageOps
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
 app = Flask(__name__)
-app.secret_key = 'super_secret_key'
+# Ưu tiên đọc SECRET_KEY từ biến môi trường (set trong Render > Environment).
+# Nếu chưa set thì fallback về giá trị cũ để chạy local không bị lỗi.
+app.secret_key = os.environ.get('SECRET_KEY', 'super_secret_key')
+
+# Render tự động set biến môi trường RENDER=true trên server production.
+# Dùng để bật các cấu hình chỉ nên áp dụng khi chạy thật (HTTPS), không áp dụng khi
+# chạy local qua http://127.0.0.1 (nếu bật Secure=True lúc chạy local, cookie sẽ
+# không được set vì không có HTTPS -> không đăng nhập được).
+IS_PRODUCTION = os.environ.get('RENDER') == 'true'
 
 # --- CẤU HÌNH COOKIE ĐỂ GIỮ PHIÊN TRÊN ĐIỆN THOẠI ---
 app.permanent_session_lifetime = timedelta(days=30)
 app.config['SESSION_COOKIE_NAME'] = 'namsuong_session'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = False
+app.config['SESSION_COOKIE_SECURE'] = IS_PRODUCTION
 
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -43,7 +52,13 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # ?v=... nếu ghi đè cùng tên file).
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 30
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://neondb_owner:npg_knMXRhS06HbT@ep-fancy-block-az7pz4uf.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&connect_timeout=30'
+# Ưu tiên đọc chuỗi kết nối từ biến môi trường DATABASE_URL (set trong Render >
+# Environment). Fallback về chuỗi cũ để vẫn chạy được khi test local mà chưa set env.
+# LƯU Ý: nên đổi mật khẩu DB này vì đã từng bị lộ thẳng trong code nguồn.
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+    'DATABASE_URL',
+    'postgresql://neondb_owner:npg_knMXRhS06HbT@ep-fancy-block-az7pz4uf.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&connect_timeout=30'
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True, 'pool_recycle': 300}
 
@@ -369,9 +384,43 @@ def admin_required(f):
     return decorated_function
 
 def save_image(file):
+    """Lưu ảnh upload, đồng thời NÉN + THU NHỎ ảnh trước khi lưu.
+    Đây là nguyên nhân chính khiến ảnh load chậm khi đã deploy lên server thật:
+    ảnh chụp trực tiếp từ điện thoại thường rất nặng (3-8MB, độ phân giải 3000-4000px)
+    trong khi hiển thị trên web chỉ cần vài trăm px, gây lãng phí băng thông rất lớn
+    -> chậm rõ rệt trên mạng di động / server có băng thông hạn chế, dù chạy trên máy
+    của mình (localhost) vẫn thấy nhanh vì không qua mạng thật.
+    Nếu Pillow xử lý lỗi (file hỏng, định dạng lạ...), sẽ tự động lưu file gốc như cũ
+    để không làm gián đoạn thao tác của admin."""
     if file and file.filename != '':
         filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        try:
+            img = Image.open(file.stream)
+            # Xoay ảnh đúng chiều theo thông tin EXIF (ảnh chụp điện thoại hay bị xoay
+            # ngang nếu không xử lý bước này), đồng thời gỡ bỏ dữ liệu EXIF thừa (vị trí
+            # GPS, thông tin thiết bị...) giúp giảm thêm dung lượng và bảo vệ quyền riêng tư.
+            img = ImageOps.exif_transpose(img)
+
+            # Giới hạn kích thước tối đa 1600px chiều dài nhất (đủ nét trên mọi màn hình
+            # điện thoại/máy tính hiển thị danh sách xe/màu xe), không phóng to ảnh nhỏ hơn.
+            MAX_KICH_THUOC = 1600
+            img.thumbnail((MAX_KICH_THUOC, MAX_KICH_THUOC), Image.LANCZOS)
+
+            ext = os.path.splitext(filename)[1].lower()
+            if ext == '.png' and (img.mode in ('RGBA', 'LA') or 'transparency' in img.info):
+                # Giữ định dạng PNG nếu ảnh có nền trong suốt, chỉ tối ưu nén (không mất chi tiết)
+                img.save(save_path, format='PNG', optimize=True)
+            else:
+                # Các trường hợp còn lại nén sang JPEG chất lượng cao (82%) - giảm dung lượng
+                # rất nhiều (thường còn 10-20% so với ảnh gốc) mà mắt thường không thấy khác biệt
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    img = img.convert('RGB')
+                img.save(save_path, format='JPEG', quality=82, optimize=True, progressive=True)
+        except Exception as e:
+            print("Lỗi nén ảnh, lưu file gốc:", e)
+            file.stream.seek(0)
+            file.save(save_path)
         return filename
     return ''
 
@@ -2435,38 +2484,55 @@ def admin_history():
         """, 500
 
     return render_template('history.html', history_logs=history_logs)
-start_background_sync()
-if __name__ == "__main__":
-    with app.app_context(): 
-        db.create_all()
-        # Tự động thêm cột trang_thai nếu cơ sở dữ liệu cũ chưa có
-        try:
-            db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS trang_thai VARCHAR(20) DEFAULT 'approved';"))
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            print("Lỗi tự động thêm cột trang_thai:", e)
-
-        danh_sach_tat_ca_xe = Xe.query.all()
-        for xe in danh_sach_tat_ca_xe:
-            xe.loai_xe = tu_dong_phan_loai(xe.ten_xe)
+# --- KHỞI TẠO / MIGRATE / SEED DATABASE ---
+# Đoạn này chạy VÔ ĐIỀU KIỆN ở mức module (không nằm trong if __name__), vì khi
+# deploy bằng Gunicorn (gunicorn app:app), Gunicorn chỉ IMPORT module này chứ
+# không bao giờ chạy khối "if __name__ == '__main__':" -> nếu để trong đó thì
+# db.create_all(), thêm cột trang_thai, và seed khu vực Bạc Liêu sẽ KHÔNG chạy
+# trên Render, dù mọi thứ vẫn chạy bình thường khi test local bằng `python app.py`.
+with app.app_context():
+    db.create_all()
+    # Tự động thêm cột trang_thai nếu cơ sở dữ liệu cũ chưa có
+    try:
+        db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS trang_thai VARCHAR(20) DEFAULT 'approved';"))
         db.session.commit()
-        print(f"Đã làm mới phân loại thành công!")
+    except Exception as e:
+        db.session.rollback()
+        print("Lỗi tự động thêm cột trang_thai:", e)
 
-        # Tạo sẵn 3 khu vực lớn + các khu vực nhỏ giấy tờ Bạc Liêu nếu chưa có
-        try:
-            seed_khu_vuc_giay_to_bl()
-            print("Đã đồng bộ khu vực giấy tờ Bạc Liêu!")
-        except Exception as e:
-            db.session.rollback()
-            print("Lỗi khi seed khu vực giấy tờ Bạc Liêu:", e)
-        
-    # Khi debug=True, Flask reloader sẽ import/exec lại toàn bộ file trong
-    # tiến trình "theo dõi" lẫn tiến trình con thực sự chạy server. Nếu không
-    # kiểm tra WERKZEUG_RUN_MAIN, start_background_sync() sẽ bị gọi 2 lần,
-    # tạo ra 2 luồng đồng bộ song song. Chỉ khởi động ở tiến trình con
-    # (hoặc khi debug=False, không có reloader).
-    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not app.debug:
-        start_background_sync()
+    danh_sach_tat_ca_xe = Xe.query.all()
+    for xe in danh_sach_tat_ca_xe:
+        xe.loai_xe = tu_dong_phan_loai(xe.ten_xe)
+    db.session.commit()
+    print(f"Đã làm mới phân loại thành công!")
 
-    app.run(debug=True)
+    # Tạo sẵn 3 khu vực lớn + các khu vực nhỏ giấy tờ Bạc Liêu nếu chưa có
+    try:
+        seed_khu_vuc_giay_to_bl()
+        print("Đã đồng bộ khu vực giấy tờ Bạc Liêu!")
+    except Exception as e:
+        db.session.rollback()
+        print("Lỗi khi seed khu vực giấy tờ Bạc Liêu:", e)
+
+# --- KHỞI ĐỘNG ĐỒNG BỘ NỀN ---
+# Gọi 1 LẦN duy nhất ở mức module. Trước đây hàm này còn bị gọi thêm 1 lần nữa
+# bên trong if __name__ (có kiểm tra WERKZEUG_RUN_MAIN) -> khi chạy `python app.py`
+# với debug=True, thực tế nó bị khởi động 2 lần cùng lúc (2 scheduler song song).
+# Xoá lệnh gọi trùng, chỉ giữ lại đúng 1 lần ở đây.
+#
+# LƯU Ý khi lên Render: nếu sau này tăng số worker Gunicorn (--workers > 1), mỗi
+# worker là 1 tiến trình riêng và sẽ tự khởi động 1 scheduler riêng -> đồng bộ có
+# thể bị chạy trùng nhiều lần cùng lúc. Với 1 worker (mặc định) thì không sao.
+start_background_sync()
+
+if __name__ == "__main__":
+    # threaded=True: cho phép server xử lý NHIỀU request cùng lúc (ví dụ nhiều người cùng mở
+    # ảnh xe, hoặc trình duyệt tải nhiều ảnh màu song song). Mặc định server dev của Flask
+    # chỉ xử lý TỪNG request một -> các request ảnh phải xếp hàng chờ nhau, gây cảm giác
+    # "chậm" rõ rệt khi có nhiều người dùng cùng lúc trên server thật, dù chạy một mình trên
+    # máy cá nhân (localhost) thì không thấy vì không có request nào phải chờ.
+    #
+    # Khối này CHỈ chạy khi gọi trực tiếp `python app.py` (test local). Khi deploy
+    # trên Render bằng Gunicorn, khối này không chạy - Gunicorn tự quản lý việc
+    # nhận request, nên không cần app.run() nữa.
+    app.run(debug=not IS_PRODUCTION, threaded=True)
