@@ -971,33 +971,13 @@
    }
 
     // HỆ THỐNG XỬ LÝ MÀU CHUẨN XÁC CHO HONDA
+    // Lưu ý: KHÔNG gán cứng màu theo mã (VD "NHC60", "PB421"...) vì cùng 1 mã có thể được
+    // gắn cho nhiều tổ hợp màu chữ khác nhau tùy xe (đã từng gây hiển thị sai màu thực tế).
+    // Luôn đọc đúng tên màu chữ (sau khi bỏ phần mã trong ngoặc) để tô chấm màu.
     function getColorStyle(colorName) {
         if (!colorName) return 'background: #757575;';
         
         let normalized = colorName.normalize('NFC').toLowerCase();
-        
-        if (normalized.includes('pb421')) {
-            return 'background: linear-gradient(135deg, #1a1a1a 50%, #1d4ed8 50%);';
-        }
-        if (normalized.includes('r389') || normalized.includes('r368')) {
-            return 'background: linear-gradient(135deg, #1a1a1a 50%, #dc2626 50%);';
-        }
-        if (normalized.includes('nhd01')) {
-            return 'background: #f1f5f9; border: 1px solid #cbd5e1;';
-        }
-        if (normalized.includes('nhd14')) {
-            return 'background: linear-gradient(135deg, #f1f5f9 50%, #1a1a1a 50%);';
-        }
-        if (normalized.includes('nhc60') || normalized.includes('nhd03')) {
-            return 'background: linear-gradient(135deg, #64748b 50%, #1a1a1a 50%);';
-        }
-        if (normalized.includes('gy163')) {
-            return 'background: conic-gradient(#1d4ed8 0% 33%, #1a1a1a 33% 66%, #dc2626 66% 100%);';
-        }
-        if (normalized.includes('nha76') || (normalized.includes('đen') && !normalized.includes('xanh') && !normalized.includes('do') && !normalized.includes('đỏ'))) {
-            return 'background: #1a1a1a;';
-        }
-
         let cleanText = normalized.replace(/\([^)]*\)/g, '');
         const colorMap = [
             { kws: ['đỏ', 'do'], hex: '#dc2626' },
