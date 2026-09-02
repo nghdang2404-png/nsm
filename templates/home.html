@@ -17,6 +17,99 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <!-- FONT SVN-MONASANS (tự host) -----------------------------------------------------
+         SVN-MonaSans là font bản quyền, không có trên Google Fonts / CDN công khai.
+         Cần copy các file .otf gốc (không cần đổi định dạng) vào thư mục static/fonts/
+         trên server, giữ NGUYÊN tên file như dưới đây:
+
+             static/fonts/SVN-MonaSans-Light.otf
+             static/fonts/SVN-MonaSans-Regular.otf
+             static/fonts/SVN-MonaSans-Italic.otf
+             static/fonts/SVN-MonaSans-Medium.otf
+             static/fonts/SVN-MonaSans-SemiBoldWide.otf
+             static/fonts/SVN-MonaSans-SemiBoldWideItalic.otf
+             static/fonts/SVN-MonaSans-BoldWide.otf
+             static/fonts/SVN-MonaSans-BoldWideItalic.otf
+             static/fonts/SVN-MonaSans-ExtraBoldWide.otf
+             static/fonts/SVN-MonaSans-BlackWide.otf
+
+         (Chỉ cần copy phẳng, không cần giữ các thư mục con "Bodytext/Headline/Sub-title"
+         gốc; nếu bạn đặt tên file khác đi thì sửa lại đường dẫn url() bên dưới cho khớp).
+         Nếu chưa kịp bỏ file vào, trình duyệt sẽ tự động dùng Roboto làm phông thay thế
+         (fallback) nên trang vẫn hiển thị bình thường, không bị vỡ giao diện. -->
+    <style>
+        @font-face {
+            font-family: 'SVN-Monasans';
+            src: url("{{ url_for('static', filename='fonts/SVN-MonaSans-Light.otf') }}") format('opentype');
+            font-weight: 300;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'SVN-Monasans';
+            src: url("{{ url_for('static', filename='fonts/SVN-MonaSans-Regular.otf') }}") format('opentype');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'SVN-Monasans';
+            src: url("{{ url_for('static', filename='fonts/SVN-MonaSans-Italic.otf') }}") format('opentype');
+            font-weight: 400;
+            font-style: italic;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'SVN-Monasans';
+            src: url("{{ url_for('static', filename='fonts/SVN-MonaSans-Medium.otf') }}") format('opentype');
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'SVN-Monasans';
+            src: url("{{ url_for('static', filename='fonts/SVN-MonaSans-SemiBoldWide.otf') }}") format('opentype');
+            font-weight: 600;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'SVN-Monasans';
+            src: url("{{ url_for('static', filename='fonts/SVN-MonaSans-SemiBoldWideItalic.otf') }}") format('opentype');
+            font-weight: 600;
+            font-style: italic;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'SVN-Monasans';
+            src: url("{{ url_for('static', filename='fonts/SVN-MonaSans-BoldWide.otf') }}") format('opentype');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'SVN-Monasans';
+            src: url("{{ url_for('static', filename='fonts/SVN-MonaSans-BoldWideItalic.otf') }}") format('opentype');
+            font-weight: 700;
+            font-style: italic;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'SVN-Monasans';
+            src: url("{{ url_for('static', filename='fonts/SVN-MonaSans-ExtraBoldWide.otf') }}") format('opentype');
+            font-weight: 800;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'SVN-Monasans';
+            src: url("{{ url_for('static', filename='fonts/SVN-MonaSans-BlackWide.otf') }}") format('opentype');
+            font-weight: 900;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
     
     <style>
         :root {
@@ -31,7 +124,7 @@
         }
 
         body {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'SVN-Monasans', 'Roboto', sans-serif;
             background-color: var(--bg-main);
             color: var(--text-main);
             margin: 0;
