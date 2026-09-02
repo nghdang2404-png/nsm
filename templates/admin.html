@@ -792,6 +792,24 @@
         return activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
     }
 
+    // --- ẨN NÚT "LƯU TẤT CẢ" NỔI KHI CÓ MODAL ĐANG MỞ ---
+    // Nút nổi này có z-index rất cao (9998) để luôn nổi trên nội dung trang, nhưng vì vậy
+    // nó cũng nổi ĐÈ LÊN TRÊN cả các modal Bootstrap (Sửa khuyến mãi, Thêm khuyến mãi...),
+    // đúng vào góc dưới-phải màn hình - nơi các modal thường đặt nút "Lưu thay đổi"/"Hủy".
+    // Kết quả: bấm vào nút của modal thực chất chạm trúng nút nổi này, modal không phản hồi.
+    // Dùng sự kiện chuẩn của Bootstrap để tự ẩn/hiện nút nổi theo trạng thái modal.
+    document.addEventListener('show.bs.modal', function () {
+        const btn = document.querySelector('.floating-save-container');
+        if (btn) btn.style.display = 'none';
+    });
+    document.addEventListener('hidden.bs.modal', function () {
+        // Chỉ hiện lại nếu không còn modal nào khác đang mở (trường hợp nhiều modal lồng nhau)
+        if (!document.querySelector('.modal.show')) {
+            const btn = document.querySelector('.floating-save-container');
+            if (btn) btn.style.display = '';
+        }
+    });
+
     // --- HÀM CẬP NHẬT THỜI GIAN & NGƯỜI SỬA BÊN TRÊN NAVBAR ---[cite: 17]
     function pollAndUpdateAdminData() {
         fetch('/api/get-home-data')

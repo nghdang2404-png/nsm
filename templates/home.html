@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Bảng Giá & Tồn Kho - Nam Sương Motor</title>
     
     <!-- CẤU HÌNH PWA CHO ANDROID & IOS -->
@@ -511,16 +511,44 @@
                 flex-direction: column;
                 gap: 10px;
             }
+            .brand-logo {
+                font-size: 16px;
+            }
             .main-menu {
                 width: 100%;
                 justify-content: center;
                 gap: 15px;
                 border-top: 1px solid var(--border-color);
                 padding-top: 8px;
+                flex-wrap: wrap;
             }
+            /* --- USER PANEL: xếp dọc thành từng khối rõ ràng thay vì nhồi vào 1
+               hàng ngang (nguyên nhân chữ bị rớt dòng lộn xộn như trong ảnh chụp) --- */
             .user-panel {
                 width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            .user-panel > div:first-child {
+                align-items: flex-start !important;
+                width: 100%;
+            }
+            .user-badge {
+                flex-wrap: wrap;
+                width: 100%;
                 justify-content: space-between;
+                row-gap: 6px;
+            }
+            .user-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            /* Mọi input/select trên mobile phải >= 16px, nếu không Safari/Chrome sẽ
+               tự động ZOOM cả trang khi người dùng chạm vào ô đó - đây chính là
+               nguyên nhân màn hình "co giãn bất thường" khi thao tác trên điện thoại. */
+            .filter-input, .filter-select, select, input[type="text"] {
+                font-size: 16px !important;
             }
             .hero-banner {
                 padding: 25px 15px;
