@@ -260,7 +260,9 @@ class KhuyenMai(db.Model):
 # Thứ tự quan trọng: từ khóa dài/cụ thể hơn phải đứng trước để so khớp đúng
 # (VD: "Air Blade" phải đứng trước "Blade", "SH Mode" phải đứng trước "SH").
 DANH_SACH_TU_KHOA_DONG_XE = [
-    'Air Blade', 'SH Mode', 'SH', 'Vision', 'Lead', 'Vario', 'Scoopy', 'PCX',
+    'Air Blade 125', 'Air Blade 160', 'Air Blade',
+    'SH Mode', 'SH 125', 'SH 160', 'SH',
+    'Vision', 'Lead', 'Vario', 'Scoopy', 'PCX',
     'Wave', 'Blade', 'Future', 'Super Cub', 'Dream',
     'Winner', 'CBR', 'CB', 'Rebel', 'Sonic', 'Monkey', 'MSX'
 ]
