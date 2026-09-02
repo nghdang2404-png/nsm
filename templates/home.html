@@ -354,56 +354,89 @@
             50% { box-shadow: 0 2px 12px rgba(249, 115, 22, 0.65); }
         }
 
-        /* MODAL CHI TIẾT KHUYẾN MÃI */
-        .km-modal-tabs {
+        /* MODAL CHI TIẾT KHUYẾN MÃI (gộp 1 khung, phân biệt bằng màu) */
+        .km-summary-bar {
             display: flex;
             gap: 8px;
-            border-bottom: 2px solid #f1f5f9;
             margin-bottom: 14px;
+            flex-wrap: wrap;
         }
-        .km-modal-tab {
-            flex: 1;
-            text-align: center;
-            padding: 10px 8px;
+        .km-summary-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
             font-weight: 700;
-            font-size: 13px;
-            color: #64748b;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all 0.2s;
+            padding: 5px 10px;
+            border-radius: 20px;
         }
-        .km-modal-tab.active {
-            color: #ea580c;
-            border-bottom-color: #ea580c;
+        .km-summary-chip .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
         }
-        .km-modal-tab .badge-count {
-            background: #f1f5f9;
-            color: #64748b;
-            border-radius: 10px;
-            font-size: 10px;
-            padding: 1px 7px;
-            margin-left: 5px;
-        }
-        .km-modal-tab.active .badge-count {
+        .km-summary-chip.chip-cty {
             background: #ffedd5;
-            color: #ea580c;
+            color: #9a3412;
         }
+        .km-summary-chip.chip-cty .dot { background: #ea580c; }
+        .km-summary-chip.chip-honda {
+            background: #dbeafe;
+            color: #1e3a8a;
+        }
+        .km-summary-chip.chip-honda .dot { background: #2563eb; }
+
         .km-item-card {
-            background: #fff7ed;
-            border: 1px solid #fed7aa;
             border-radius: 8px;
             padding: 12px 14px;
             margin-bottom: 10px;
+            border-left-width: 4px;
+            border-style: solid;
+        }
+        /* Khuyến mãi Công ty: tông cam */
+        .km-item-card.km-cty {
+            background: #fff7ed;
+            border-color: #fed7aa;
+            border-left-color: #ea580c;
+        }
+        .km-item-card.km-cty .km-item-title { color: #9a3412; }
+        .km-item-card.km-cty .km-item-date { color: #b45309; }
+        .km-item-card.km-cty .km-type-badge { background: #ffedd5; color: #c2410c; }
+
+        /* Khuyến mãi Honda: tông xanh dương, dễ phân biệt với Công ty */
+        .km-item-card.km-honda {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            border-left-color: #2563eb;
+        }
+        .km-item-card.km-honda .km-item-title { color: #1e3a8a; }
+        .km-item-card.km-honda .km-item-date { color: #2563eb; }
+        .km-item-card.km-honda .km-type-badge { background: #dbeafe; color: #1d4ed8; }
+
+        .km-item-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 4px;
         }
         .km-item-title {
             font-weight: 700;
             font-size: 14px;
-            color: #9a3412;
-            margin-bottom: 4px;
+            flex: 1;
+        }
+        .km-type-badge {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         .km-item-date {
             font-size: 11.5px;
-            color: #b45309;
             font-weight: 600;
             margin-bottom: 6px;
         }
@@ -754,12 +787,8 @@
             <span onclick="closeKhuyenMaiModal()" style="cursor:pointer; font-size:22px; line-height:1; opacity:0.9;">&times;</span>
         </div>
         <div style="padding:16px 18px;">
-            <div class="km-modal-tabs">
-                <div class="km-modal-tab active" id="kmTabCty" onclick="switchKmTab('cty')">Khuyến mãi Công ty <span class="badge-count" id="kmCountCty">0</span></div>
-                <div class="km-modal-tab" id="kmTabHonda" onclick="switchKmTab('honda')">Khuyến mãi Honda <span class="badge-count" id="kmCountHonda">0</span></div>
-            </div>
-            <div id="kmPanelCty"></div>
-            <div id="kmPanelHonda" style="display:none;"></div>
+            <div class="km-summary-bar" id="kmSummaryBar"></div>
+            <div id="kmPanelAll"></div>
         </div>
     </div>
 </div>
@@ -1267,6 +1296,16 @@ document.addEventListener("DOMContentLoaded", function() {
         if (colors && colors.length > 0) {
             window.activeColorName = colors[0].ten_mau; 
 
+            // TỐI ƯU TỐC ĐỘ: tải trước (preload) ảnh của TẤT CẢ các màu ngay khi mở modal,
+            // thay vì đợi đến lúc người dùng bấm mới tải. Nhờ vậy khi bấm đổi màu, ảnh đã
+            // nằm sẵn trong cache trình duyệt và hiển thị gần như tức thì.
+            colors.forEach(function (item) {
+                if (item && item.hinh_anh_mau) {
+                    const preloadImg = new Image();
+                    preloadImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
+                }
+            });
+
             colors.forEach((item, index) => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -1389,16 +1428,23 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    // ==================== MODAL CHI TIẾT KHUYẾN MÃI ====================
+    // ==================== MODAL CHI TIẾT KHUYẾN MÃI (1 khung gộp, highlight theo loại) ====================
     function renderKmList(danhSach) {
+        // danhSach: mảng các CTKM, mỗi item đã có thêm cờ __loai ('cty' | 'honda')
         if (!danhSach || danhSach.length === 0) {
             return '<div class="km-empty-state"><i class="fas fa-box-open" style="font-size:22px; margin-bottom:6px; display:block;"></i>Không có chương trình nào đang áp dụng.</div>';
         }
         return danhSach.map(function (km) {
             const noiDung = km.noi_dung ? escapeHtml(km.noi_dung) : 'Liên hệ nhân viên tư vấn để biết thêm chi tiết.';
+            const isHonda = km.__loai === 'honda';
+            const cardClass = isHonda ? 'km-honda' : 'km-cty';
+            const badgeText = isHonda ? 'HONDA' : 'CÔNG TY';
             return `
-                <div class="km-item-card">
-                    <div class="km-item-title"><i class="fas fa-tag"></i> ${escapeHtml(km.tieu_de)}</div>
+                <div class="km-item-card ${cardClass}">
+                    <div class="km-item-title-row">
+                        <div class="km-item-title"><i class="fas fa-tag"></i> ${escapeHtml(km.tieu_de)}</div>
+                        <span class="km-type-badge">${badgeText}</span>
+                    </div>
                     <div class="km-item-date"><i class="far fa-calendar-alt"></i> Áp dụng: ${km.ngay_bat_dau} - ${km.ngay_ket_thuc}</div>
                     <div class="km-item-content">${noiDung}</div>
                 </div>`;
@@ -1414,11 +1460,26 @@ document.addEventListener("DOMContentLoaded", function() {
     function openKhuyenMaiModalData(title, km) {
         km = km || { cty: [], honda: [] };
         document.getElementById('kmModalCarTitle').innerText = title || '';
-        document.getElementById('kmCountCty').innerText = (km.cty || []).length;
-        document.getElementById('kmCountHonda').innerText = (km.honda || []).length;
-        document.getElementById('kmPanelCty').innerHTML = renderKmList(km.cty);
-        document.getElementById('kmPanelHonda').innerHTML = renderKmList(km.honda);
-        switchKmTab('cty');
+
+        const dsCty = (km.cty || []).map(function (item) { return Object.assign({}, item, { __loai: 'cty' }); });
+        const dsHonda = (km.honda || []).map(function (item) { return Object.assign({}, item, { __loai: 'honda' }); });
+
+        // Chip tổng quan: chỉ hiện chip của loại nào thực sự có CTKM,
+        // để dễ nhận biết ngay có bao nhiêu KM mỗi loại mà không cần bấm tab.
+        let chipsHtml = '';
+        if (dsCty.length > 0) {
+            chipsHtml += `<span class="km-summary-chip chip-cty"><span class="dot"></span>Công ty (${dsCty.length})</span>`;
+        }
+        if (dsHonda.length > 0) {
+            chipsHtml += `<span class="km-summary-chip chip-honda"><span class="dot"></span>Honda (${dsHonda.length})</span>`;
+        }
+        document.getElementById('kmSummaryBar').innerHTML = chipsHtml;
+        document.getElementById('kmSummaryBar').style.display = chipsHtml ? 'flex' : 'none';
+
+        // Gộp cả 2 loại vào chung 1 khung, Công ty hiển thị trước, Honda sau,
+        // mỗi thẻ tự có màu viền/nền riêng để phân biệt (cam = Công ty, xanh = Honda).
+        document.getElementById('kmPanelAll').innerHTML = renderKmList(dsCty.concat(dsHonda));
+
         document.getElementById('khuyenMaiModal').style.display = 'flex';
     }
 
@@ -1442,14 +1503,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function closeKhuyenMaiModal() {
         document.getElementById('khuyenMaiModal').style.display = 'none';
-    }
-
-    function switchKmTab(tab) {
-        const isCty = tab === 'cty';
-        document.getElementById('kmTabCty').classList.toggle('active', isCty);
-        document.getElementById('kmTabHonda').classList.toggle('active', !isCty);
-        document.getElementById('kmPanelCty').style.display = isCty ? 'block' : 'none';
-        document.getElementById('kmPanelHonda').style.display = isCty ? 'none' : 'block';
     }
 
     document.getElementById('khuyenMaiModal').addEventListener('click', function (event) {
@@ -1598,6 +1651,16 @@ document.addEventListener("DOMContentLoaded", function() {
                                     
                                     if (existingButtons.length !== colors.length) {
                                         colorButtonsContainer.innerHTML = '';
+
+                                        // Preload lại ảnh các màu (giống lúc mở modal lần đầu) vì
+                                        // danh sách nút màu vừa được vẽ lại sau khi đồng bộ dữ liệu.
+                                        colors.forEach(function (item) {
+                                            if (item && item.hinh_anh_mau) {
+                                                const preloadImg = new Image();
+                                                preloadImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
+                                            }
+                                        });
+
                                         colors.forEach((item) => {
                                             const btn = document.createElement('button');
                                             btn.type = 'button';

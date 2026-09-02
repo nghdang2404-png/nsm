@@ -35,6 +35,14 @@ UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# --- CACHE ẢNH TĨNH (logo, ảnh xe theo màu...) TRÊN TRÌNH DUYỆT ---
+# Mặc định Flask không set Cache-Control cho /static, nên mỗi lần đổi màu xe (kể cả
+# đã xem màu đó trước đó) trình duyệt vẫn phải hỏi lại server -> chậm.
+# Set 30 ngày để trình duyệt tự phục vụ từ cache cục bộ cho các lần sau, ảnh chỉ tải
+# lại khi tên file thay đổi (khi admin thay ảnh mới, tên file thường đổi hoặc cần thêm
+# ?v=... nếu ghi đè cùng tên file).
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 30
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://neondb_owner:npg_knMXRhS06HbT@ep-fancy-block-az7pz4uf.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&connect_timeout=30'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True, 'pool_recycle': 300}
