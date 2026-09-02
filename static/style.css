@@ -14,7 +14,7 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Roboto', Arial, sans-serif;
+    font-family: 'SVN-Monasans', 'Roboto', Arial, sans-serif;
 }
 
 body {
@@ -302,20 +302,3 @@ body {
 .dot-bac, [class*="dot-bac"] {
     background: #c0c0c0 !important;
 }
-/* Chặn bôi đen toàn bộ trang */
-body {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
-
-/* Khi bấm Ctrl + P cố tình in trang thì sẽ ẩn toàn bộ nội dung */
-@media print {
-    body {
-        display: none !important;
-    }
-}
-/* --- LỚP WATERMARK BẢO MẬT CHÌM --- */
-/* --- LỚP WATERMARK PHỦ ĐÈ TRÊN CÙNG (KỂ CẢ MODAL/POPUP) --- */
-/* --- LỚP WATERMARK PHỦ ĐÈ TRÊN CÙNG (ĐỘ TƯƠNG PHẢN CAO) --- */

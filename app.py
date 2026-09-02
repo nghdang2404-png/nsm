@@ -1294,6 +1294,7 @@ def start_background_sync():
     # Thiết lập chạy vòng lặp mỗi 120 giây
     scheduler.add_job(run_sync_job, 'interval', seconds=SYNC_INTERVAL_SECONDS)
     scheduler.start()
+
 @app.route("/admin/sync-sheet", methods=["POST"])
 @admin_required
 def sync_sheet():

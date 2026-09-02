@@ -7,6 +7,17 @@
     <!-- Giữ lại FontAwesome để hiển thị icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <!-- FONT SVN-MONASANS (tự host) - dùng chung 1 file cho mọi độ đậm, xem giải thích
+         chi tiết trong home.html (nơi khai báo font-face gốc). -->
+    <style>
+        @font-face {
+            font-family: 'SVN-Monasans';
+            src: url("{{ url_for('static', filename='fonts/SVN-MonaSans-SemiBoldWide.otf') }}") format('opentype');
+            font-weight: 100 900;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
     <style>
         /* =========================================
            1. RESET CSS - KHÔNG KẾ THỪA TỪ ĐÂU
@@ -15,7 +26,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'SVN-Monasans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
 
         /* =========================================
