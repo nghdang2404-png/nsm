@@ -393,6 +393,211 @@
     </div>
 </div>
 
+<!-- Quản lý Chương trình Khuyến mãi -->
+<div class="card mb-3 brand-card" style="border-top-color: #f97316;">
+    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseKhuyenMai" aria-expanded="false" style="cursor: pointer; border-bottom: none;">
+        <h6 class="mb-0 fw-bold" style="font-size: 14px; color: #f97316;">
+            <i class="fa-solid fa-gift me-1"></i> Quản lý Chương trình Khuyến mãi
+            {% if danh_sach_khuyen_mai %}
+                <span class="badge bg-warning text-dark ms-1" style="font-size: 10px;">{{ danh_sach_khuyen_mai|length }}</span>
+            {% endif %}
+        </h6>
+        <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 10px;">
+            Mở rộng <i class="fa-solid fa-chevron-down transition-icon ms-1"></i>
+        </span>
+    </div>
+    <div class="collapse" id="collapseKhuyenMai">
+        <div class="card-body py-2 pt-2">
+            <div class="d-flex justify-content-end mb-2">
+                <button type="button" class="btn btn-sm text-white fw-semibold" style="background-color:#f97316;" data-bs-toggle="modal" data-bs-target="#modalThemKM">
+                    <i class="fa-solid fa-circle-plus me-1"></i> Thêm chương trình khuyến mãi
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle text-center mb-0" style="font-size: 12px;">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="background-color:#f97316 !important; color:#fff;">Loại</th>
+                            <th style="background-color:#f97316 !important; color:#fff; text-align:left;">Tiêu đề</th>
+                            <th style="background-color:#f97316 !important; color:#fff;">Thời gian áp dụng</th>
+                            <th style="background-color:#f97316 !important; color:#fff; text-align:left;">Dòng xe áp dụng</th>
+                            <th style="background-color:#f97316 !important; color:#fff;">Trạng thái</th>
+                            <th style="background-color:#f97316 !important; color:#fff;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if danh_sach_khuyen_mai %}
+                            {% for km in danh_sach_khuyen_mai %}
+                            <tr>
+                                <td>
+                                    {% if km.loai == 'honda' %}
+                                        <span class="badge bg-danger px-2 py-1">Honda</span>
+                                    {% else %}
+                                        <span class="badge bg-primary px-2 py-1">Công ty</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-start fw-semibold">{{ km.tieu_de }}</td>
+                                <td class="text-nowrap">{{ km.ngay_bat_dau.strftime('%d/%m/%Y') }} <br> đến {{ km.ngay_ket_thuc.strftime('%d/%m/%Y') }}</td>
+                                <td class="text-start">
+                                    {% for dx in km.danh_sach_dong_xe %}
+                                        <span class="badge bg-light text-dark border" style="font-size:10px;">{{ dx }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% set tt = km.trang_thai_text() %}
+                                    {% if tt == 'Đang diễn ra' %}
+                                        <span class="badge bg-success px-2 py-1">Đang diễn ra</span>
+                                    {% elif tt == 'Sắp diễn ra' %}
+                                        <span class="badge bg-info text-dark px-2 py-1">Sắp diễn ra</span>
+                                    {% elif tt == 'Đã kết thúc' %}
+                                        <span class="badge bg-secondary px-2 py-1">Đã kết thúc</span>
+                                    {% else %}
+                                        <span class="badge bg-dark px-2 py-1">Đã tắt</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2" style="font-size: 11px;" data-bs-toggle="modal" data-bs-target="#modalSuaKM{{ km.id }}" title="Sửa">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        <a href="/admin/khuyen-mai/toggle/{{ km.id }}" class="btn btn-outline-warning btn-sm py-1 px-2 text-dark" style="font-size: 11px;" title="{{ 'Tắt' if km.dang_bat else 'Bật lại' }}">
+                                            <i class="fa-solid {{ 'fa-toggle-on' if km.dang_bat else 'fa-toggle-off' }}"></i>
+                                        </a>
+                                        <a href="/admin/khuyen-mai/delete/{{ km.id }}" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 11px;" onclick="return confirm('Bạn có chắc muốn xóa chương trình khuyến mãi \'{{ km.tieu_de }}\' không?')" title="Xóa">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Modal SỬA chương trình khuyến mãi #{{ km.id }} -->
+                            <div class="modal fade" id="modalSuaKM{{ km.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                    <div class="modal-content">
+                                        <form action="/admin/khuyen-mai/edit/{{ km.id }}" method="POST">
+                                            <div class="modal-header" style="background-color:#f97316; color:#fff;">
+                                                <h6 class="modal-title fw-bold"><i class="fa-solid fa-pen me-1"></i> Sửa chương trình khuyến mãi</h6>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row g-2">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small fw-semibold">Loại khuyến mãi</label>
+                                                        <select name="loai" class="form-select form-select-sm" required>
+                                                            <option value="cty" {% if km.loai == 'cty' %}selected{% endif %}>Khuyến mãi của công ty</option>
+                                                            <option value="honda" {% if km.loai == 'honda' %}selected{% endif %}>Khuyến mãi của Honda</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small fw-semibold">Tiêu đề chương trình</label>
+                                                        <input type="text" name="tieu_de" class="form-control form-control-sm" value="{{ km.tieu_de }}" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small fw-semibold">Ngày bắt đầu</label>
+                                                        <input type="date" name="ngay_bat_dau" class="form-control form-control-sm" value="{{ km.ngay_bat_dau.strftime('%Y-%m-%d') }}" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small fw-semibold">Ngày kết thúc</label>
+                                                        <input type="date" name="ngay_ket_thuc" class="form-control form-control-sm" value="{{ km.ngay_ket_thuc.strftime('%Y-%m-%d') }}" required>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label class="form-label small fw-semibold">Nội dung chi tiết</label>
+                                                        <textarea name="noi_dung" class="form-control form-control-sm" rows="4" placeholder="Mô tả chi tiết chương trình khuyến mãi...">{{ km.noi_dung }}</textarea>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label class="form-label small fw-semibold">Dòng xe được áp dụng</label>
+                                                        <div class="d-flex flex-wrap gap-2 border rounded p-2">
+                                                            {% for dx in danh_sach_dong_xe %}
+                                                            <div class="form-check form-check-inline m-0">
+                                                                <input class="form-check-input" type="checkbox" name="dong_xe[]" value="{{ dx }}" id="editKM{{ km.id }}_{{ loop.index }}" {% if dx in km.danh_sach_dong_xe %}checked{% endif %}>
+                                                                <label class="form-check-label small" for="editKM{{ km.id }}_{{ loop.index }}">{{ dx }}</label>
+                                                            </div>
+                                                            {% else %}
+                                                            <span class="text-muted small">Chưa có dữ liệu dòng xe.</span>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                                <button type="submit" class="btn btn-sm text-white fw-semibold" style="background-color:#f97316;">Lưu thay đổi</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-muted py-3">Chưa có chương trình khuyến mãi nào.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal THÊM chương trình khuyến mãi -->
+<div class="modal fade" id="modalThemKM" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form action="/admin/khuyen-mai/add" method="POST">
+                <div class="modal-header" style="background-color:#f97316; color:#fff;">
+                    <h6 class="modal-title fw-bold"><i class="fa-solid fa-gift me-1"></i> Thêm chương trình khuyến mãi mới</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Loại khuyến mãi</label>
+                            <select name="loai" class="form-select form-select-sm" required>
+                                <option value="cty">Khuyến mãi của công ty</option>
+                                <option value="honda">Khuyến mãi của Honda</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Tiêu đề chương trình</label>
+                            <input type="text" name="tieu_de" class="form-control form-control-sm" placeholder="VD: Ưu đãi tháng 9 cho Vision" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Ngày bắt đầu</label>
+                            <input type="date" name="ngay_bat_dau" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Ngày kết thúc</label>
+                            <input type="date" name="ngay_ket_thuc" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Nội dung chi tiết</label>
+                            <textarea name="noi_dung" class="form-control form-control-sm" rows="4" placeholder="Mô tả chi tiết chương trình khuyến mãi (mức giảm, quà tặng, điều kiện áp dụng...)"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Dòng xe được áp dụng <span class="text-muted fw-normal">(tick chọn, tự động áp dụng cho mọi phiên bản thuộc dòng xe đó)</span></label>
+                            <div class="d-flex flex-wrap gap-2 border rounded p-2">
+                                {% for dx in danh_sach_dong_xe %}
+                                <div class="form-check form-check-inline m-0">
+                                    <input class="form-check-input" type="checkbox" name="dong_xe[]" value="{{ dx }}" id="addKM_{{ loop.index }}">
+                                    <label class="form-check-label small" for="addKM_{{ loop.index }}">{{ dx }}</label>
+                                </div>
+                                {% else %}
+                                <span class="text-muted small">Chưa có dữ liệu dòng xe (hãy thêm/nhập xe trước).</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-sm text-white fw-semibold" style="background-color:#f97316;">Lưu chương trình</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Bảng dữ liệu quản lý[cite: 17] -->
 <div class="card mb-5 brand-card" style="border-top-color: #1a56db;">
     <div class="card-body p-0">

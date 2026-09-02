@@ -330,6 +330,96 @@
             border-color: var(--primary-blue);
         }
 
+        /* NÚT/BADGE HIỂN THỊ CÓ KHUYẾN MÃI (ngay trên nút Chi tiết) */
+        .km-badge-btn {
+            align-items: center;
+            gap: 5px;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 11px;
+            border: none;
+            margin-bottom: 6px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(249, 115, 22, 0.35);
+            animation: kmPulse 1.8s infinite;
+        }
+        .km-badge-btn:hover {
+            filter: brightness(1.05);
+        }
+        @keyframes kmPulse {
+            0%, 100% { box-shadow: 0 2px 6px rgba(249, 115, 22, 0.35); }
+            50% { box-shadow: 0 2px 12px rgba(249, 115, 22, 0.65); }
+        }
+
+        /* MODAL CHI TIẾT KHUYẾN MÃI */
+        .km-modal-tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 2px solid #f1f5f9;
+            margin-bottom: 14px;
+        }
+        .km-modal-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 8px;
+            font-weight: 700;
+            font-size: 13px;
+            color: #64748b;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .km-modal-tab.active {
+            color: #ea580c;
+            border-bottom-color: #ea580c;
+        }
+        .km-modal-tab .badge-count {
+            background: #f1f5f9;
+            color: #64748b;
+            border-radius: 10px;
+            font-size: 10px;
+            padding: 1px 7px;
+            margin-left: 5px;
+        }
+        .km-modal-tab.active .badge-count {
+            background: #ffedd5;
+            color: #ea580c;
+        }
+        .km-item-card {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+        }
+        .km-item-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: #9a3412;
+            margin-bottom: 4px;
+        }
+        .km-item-date {
+            font-size: 11.5px;
+            color: #b45309;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .km-item-content {
+            font-size: 13px;
+            color: #57534e;
+            white-space: pre-line;
+            line-height: 1.5;
+        }
+        .km-empty-state {
+            text-align: center;
+            color: #9ca3af;
+            padding: 24px 10px;
+            font-size: 13px;
+        }
+
         /* FOOTER */
         .footer {
             background: #0f172a;
@@ -608,6 +698,7 @@
                         data-gia-thap="{{ xe.gia_thap | default(0, true) }}"
                         data-gia-trung="{{ xe.gia_trung | default(0, true) }}"
                         data-vung="{{ current_vung }}"
+                        data-khuyen-mai='{{ xe.khuyen_mai | default({"cty": [], "honda": []}, true) | tojson | safe }}'
                         title="Click để xem hình ảnh và dự toán chi phí lăn bánh">
                         
                         <td><span class="car-type-text">{{ xe.loai_xe }}</span></td>
@@ -630,6 +721,9 @@
 
                         <td class="text-center">
                             <div class="row-price-display" style="font-weight: 700; color: var(--primary-red); font-size: 15px; margin-bottom: 6px;"></div>
+                            <button type="button" class="km-badge-btn" onclick="event.stopPropagation(); openKhuyenMaiModal(this);" style="display: {{ 'inline-flex' if xe.co_khuyen_mai else 'none' }};">
+                                <i class="fas fa-gift"></i> Có khuyến mãi
+                            </button>
                             <span class="view-detail-hint">
                                 <i class="fas fa-eye"></i> Chi tiết
                             </span>
@@ -648,6 +742,27 @@
 
 <!-- GỌI COMPONENT MODAL TÍNH GIÁ NHÁP -->
 {% include 'tinh_gia_nhap.html' %}
+
+<!-- MODAL CHI TIẾT KHUYẾN MÃI (Công ty / Honda) -->
+<div id="khuyenMaiModal" style="display:none; position:fixed; z-index:2000; inset:0; background:rgba(15,23,42,0.55); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#fff; border-radius:14px; width:100%; max-width:520px; max-height:88vh; overflow-y:auto; box-shadow:0 20px 50px rgba(0,0,0,0.25);">
+        <div style="background:linear-gradient(135deg, #f97316, #ea580c); color:#fff; padding:16px 18px; border-radius:14px 14px 0 0; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+                <div style="font-size:11px; opacity:0.85; font-weight:600; letter-spacing:0.5px;"><i class="fas fa-gift"></i> KHUYẾN MÃI ĐANG ÁP DỤNG</div>
+                <div id="kmModalCarTitle" style="font-size:16px; font-weight:800; margin-top:2px;"></div>
+            </div>
+            <span onclick="closeKhuyenMaiModal()" style="cursor:pointer; font-size:22px; line-height:1; opacity:0.9;">&times;</span>
+        </div>
+        <div style="padding:16px 18px;">
+            <div class="km-modal-tabs">
+                <div class="km-modal-tab active" id="kmTabCty" onclick="switchKmTab('cty')">Khuyến mãi Công ty <span class="badge-count" id="kmCountCty">0</span></div>
+                <div class="km-modal-tab" id="kmTabHonda" onclick="switchKmTab('honda')">Khuyến mãi Honda <span class="badge-count" id="kmCountHonda">0</span></div>
+            </div>
+            <div id="kmPanelCty"></div>
+            <div id="kmPanelHonda" style="display:none;"></div>
+        </div>
+    </div>
+</div>
 
 <footer class="footer">
     <div class="container footer-content">
@@ -913,7 +1028,15 @@
                     giayToKhuVucNhoBL = [];
                 }
 
-                showCarImage(carName, defaultImg, colors, basePrice, feesByVung, giaThap, giaTrung, userVung, giayToKhuVucNhoBL);
+                // Khuyến mãi đang áp dụng cho xe này (Công ty / Honda)
+                let khuyenMai = { cty: [], honda: [] };
+                try {
+                    khuyenMai = JSON.parse(this.getAttribute('data-khuyen-mai') || '{"cty":[],"honda":[]}');
+                } catch (e) {
+                    khuyenMai = { cty: [], honda: [] };
+                }
+
+                showCarImage(carName, defaultImg, colors, basePrice, feesByVung, giaThap, giaTrung, userVung, giayToKhuVucNhoBL, khuyenMai);
             });
         });
         // --- KHỞI TẠO WATERMARK ĐỘNG CHỐNG RÒ RỈ DỮ LIỆU ---
@@ -1064,12 +1187,21 @@ document.addEventListener("DOMContentLoaded", function() {
         if (totalXaEl) totalXaEl.innerText = formatCurrency(val + x);
     }
 
-    function showCarImage(carName, defaultImg, colors, basePrice, feesByVung, giaThap, giaTrung, userVung, giayToKhuVucNhoBL) {
+    function showCarImage(carName, defaultImg, colors, basePrice, feesByVung, giaThap, giaTrung, userVung, giayToKhuVucNhoBL, khuyenMai) {
         const modal = document.getElementById('carImageModal');
         const modalTitle = document.getElementById('modalCarTitle');
         const modalImg = document.getElementById('modalCarImg');
         const noImgText = document.getElementById('modalNoImgText');
         const colorButtonsContainer = document.getElementById('modalColorButtons');
+
+        // Khuyến mãi đang áp dụng cho xe này, dùng để hiện/ẩn khối "Xe đang có khuyến mãi" trong modal
+        window.currentModalKhuyenMai = khuyenMai || { cty: [], honda: [] };
+        const kmBar = document.getElementById('modalKmBar');
+        if (kmBar) {
+            const coKm = (window.currentModalKhuyenMai.cty && window.currentModalKhuyenMai.cty.length > 0) ||
+                         (window.currentModalKhuyenMai.honda && window.currentModalKhuyenMai.honda.length > 0);
+            kmBar.style.display = coKm ? 'flex' : 'none';
+        }
 
         const khuVuc = userVung || 'Cà Mau'; 
         
@@ -1257,6 +1389,73 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
+    // ==================== MODAL CHI TIẾT KHUYẾN MÃI ====================
+    function renderKmList(danhSach) {
+        if (!danhSach || danhSach.length === 0) {
+            return '<div class="km-empty-state"><i class="fas fa-box-open" style="font-size:22px; margin-bottom:6px; display:block;"></i>Không có chương trình nào đang áp dụng.</div>';
+        }
+        return danhSach.map(function (km) {
+            const noiDung = km.noi_dung ? escapeHtml(km.noi_dung) : 'Liên hệ nhân viên tư vấn để biết thêm chi tiết.';
+            return `
+                <div class="km-item-card">
+                    <div class="km-item-title"><i class="fas fa-tag"></i> ${escapeHtml(km.tieu_de)}</div>
+                    <div class="km-item-date"><i class="far fa-calendar-alt"></i> Áp dụng: ${km.ngay_bat_dau} - ${km.ngay_ket_thuc}</div>
+                    <div class="km-item-content">${noiDung}</div>
+                </div>`;
+        }).join('');
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.innerText = str;
+        return div.innerHTML;
+    }
+
+    function openKhuyenMaiModalData(title, km) {
+        km = km || { cty: [], honda: [] };
+        document.getElementById('kmModalCarTitle').innerText = title || '';
+        document.getElementById('kmCountCty').innerText = (km.cty || []).length;
+        document.getElementById('kmCountHonda').innerText = (km.honda || []).length;
+        document.getElementById('kmPanelCty').innerHTML = renderKmList(km.cty);
+        document.getElementById('kmPanelHonda').innerHTML = renderKmList(km.honda);
+        switchKmTab('cty');
+        document.getElementById('khuyenMaiModal').style.display = 'flex';
+    }
+
+    function openKhuyenMaiModal(btnEl) {
+        const row = btnEl.closest('.car-row-item');
+        if (!row) return;
+        let km = { cty: [], honda: [] };
+        try {
+            km = JSON.parse(row.getAttribute('data-khuyen-mai') || '{"cty":[],"honda":[]}');
+        } catch (e) {
+            km = { cty: [], honda: [] };
+        }
+        openKhuyenMaiModalData(row.getAttribute('data-name') || '', km);
+    }
+
+    function openKhuyenMaiModalFromDetail() {
+        const titleEl = document.getElementById('modalCarTitle');
+        const title = titleEl ? titleEl.innerText : '';
+        openKhuyenMaiModalData(title, window.currentModalKhuyenMai);
+    }
+
+    function closeKhuyenMaiModal() {
+        document.getElementById('khuyenMaiModal').style.display = 'none';
+    }
+
+    function switchKmTab(tab) {
+        const isCty = tab === 'cty';
+        document.getElementById('kmTabCty').classList.toggle('active', isCty);
+        document.getElementById('kmTabHonda').classList.toggle('active', !isCty);
+        document.getElementById('kmPanelCty').style.display = isCty ? 'block' : 'none';
+        document.getElementById('kmPanelHonda').style.display = isCty ? 'none' : 'block';
+    }
+
+    document.getElementById('khuyenMaiModal').addEventListener('click', function (event) {
+        if (event.target === this) closeKhuyenMaiModal();
+    });
+
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
@@ -1308,6 +1507,13 @@ document.addEventListener("DOMContentLoaded", function() {
                                 row.setAttribute('data-gia-phuong', item.gia_giay_to_phuong || 0);
                                 row.setAttribute('data-gia-xa', item.gia_giay_to_xa || 0);
                                 row.setAttribute('data-colors', JSON.stringify(item.mau_xe || []));
+
+                                // Tự động cập nhật hiển thị/ẩn badge khuyến mãi theo ngày (không cần tải lại trang)
+                                row.setAttribute('data-khuyen-mai', JSON.stringify(item.khuyen_mai || { cty: [], honda: [] }));
+                                const kmBtn = row.querySelector('.km-badge-btn');
+                                if (kmBtn) {
+                                    kmBtn.style.display = item.co_khuyen_mai ? 'inline-flex' : 'none';
+                                }
                             }
                         });
                         updateRowPrices();
@@ -1320,6 +1526,16 @@ document.addEventListener("DOMContentLoaded", function() {
                             
                             if (matchedItem) {
                                 window.currentCarModalData = matchedItem;
+
+                                // Cập nhật khối khuyến mãi trong modal chi tiết theo dữ liệu mới nhất
+                                window.currentModalKhuyenMai = matchedItem.khuyen_mai || { cty: [], honda: [] };
+                                const kmBarPoll = document.getElementById('modalKmBar');
+                                if (kmBarPoll) {
+                                    const coKmPoll = (window.currentModalKhuyenMai.cty && window.currentModalKhuyenMai.cty.length > 0) ||
+                                                     (window.currentModalKhuyenMai.honda && window.currentModalKhuyenMai.honda.length > 0);
+                                    kmBarPoll.style.display = coKmPoll ? 'flex' : 'none';
+                                }
+
                                 const basePrice = Number(matchedItem.gia_cao) || 0;
                                 const thapGoc = Number(matchedItem.gia_thap) || 0;
                                 const trungGoc = Number(matchedItem.gia_trung) || 0;

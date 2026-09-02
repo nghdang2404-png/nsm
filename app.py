@@ -1,6 +1,7 @@
 import os
 import re
 import io
+import json
 import unicodedata
 import ssl
 import threading
@@ -201,6 +202,132 @@ DU_LIEU_KHU_VUC_GIAY_TO_BL = [
         ]
     },
 ]
+
+class KhuyenMai(db.Model):
+    """Chương trình khuyến mãi áp dụng cho các dòng xe (khuyến mãi của công ty hoặc của Honda)."""
+    __tablename__ = 'khuyen_mai'
+    id = db.Column(db.Integer, primary_key=True)
+    loai = db.Column(db.String(20), nullable=False)  # 'cty' hoặc 'honda'
+    tieu_de = db.Column(db.String(200), nullable=False)
+    noi_dung = db.Column(db.Text, default='')
+    ngay_bat_dau = db.Column(db.Date, nullable=False)
+    ngay_ket_thuc = db.Column(db.Date, nullable=False)
+    dong_xe_json = db.Column(db.Text, default='[]')  # danh sách dòng xe ngắn gọn, VD: ["Vision","Wave"]
+    dang_bat = db.Column(db.Boolean, default=True)  # cho phép admin tắt thủ công dù còn hạn
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now())
+    created_by = db.Column(db.String(80))
+
+    @property
+    def danh_sach_dong_xe(self):
+        try:
+            return json.loads(self.dong_xe_json or '[]')
+        except Exception:
+            return []
+
+    @danh_sach_dong_xe.setter
+    def danh_sach_dong_xe(self, ds):
+        self.dong_xe_json = json.dumps(ds or [], ensure_ascii=False)
+
+    def dang_hoat_dong(self):
+        """CTKM được coi là 'đang hoạt động' khi hôm nay nằm trong khoảng ngày bắt đầu - kết thúc
+        và admin chưa tắt thủ công. Tự động hiển thị/ẩn hoàn toàn dựa vào ngày, không cần thao tác thủ công."""
+        if not self.dang_bat:
+            return False
+        homnay = datetime.now().date()
+        return self.ngay_bat_dau <= homnay <= self.ngay_ket_thuc
+
+    def trang_thai_text(self):
+        homnay = datetime.now().date()
+        if not self.dang_bat:
+            return 'Đã tắt'
+        if homnay < self.ngay_bat_dau:
+            return 'Sắp diễn ra'
+        if homnay > self.ngay_ket_thuc:
+            return 'Đã kết thúc'
+        return 'Đang diễn ra'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'loai': self.loai,
+            'tieu_de': self.tieu_de,
+            'noi_dung': self.noi_dung or '',
+            'ngay_bat_dau': self.ngay_bat_dau.strftime('%d/%m/%Y') if self.ngay_bat_dau else '',
+            'ngay_ket_thuc': self.ngay_ket_thuc.strftime('%d/%m/%Y') if self.ngay_ket_thuc else '',
+        }
+
+# --- DANH SÁCH TỪ KHÓA DÒNG XE (dùng để chọn nhanh dòng xe áp dụng khuyến mãi) ---
+# Thứ tự quan trọng: từ khóa dài/cụ thể hơn phải đứng trước để so khớp đúng
+# (VD: "Air Blade" phải đứng trước "Blade", "SH Mode" phải đứng trước "SH").
+DANH_SACH_TU_KHOA_DONG_XE = [
+    'Air Blade', 'SH Mode', 'SH', 'Vision', 'Lead', 'Vario', 'Scoopy', 'PCX',
+    'Wave', 'Blade', 'Future', 'Super Cub', 'Dream',
+    'Winner', 'CBR', 'CB', 'Rebel', 'Sonic', 'Monkey', 'MSX'
+]
+
+def _chuan_hoa_de_so_khop(s):
+    """Chuẩn hoá chuỗi để so khớp dòng xe: bỏ dấu cách/gạch ngang/gạch dưới/chấm, viết thường.
+    Nhờ vậy 'Air Blade', 'AirBlade', 'Air-Blade' đều được coi là khớp nhau, tránh bị sót
+    dòng xe chỉ vì cách viết tên xe trong CSDL không có khoảng trắng giống hệt từ khóa."""
+    s = unicodedata.normalize('NFC', str(s or '')).lower()
+    return re.sub(r'[\s\-_.]+', '', s)
+
+def lay_danh_sach_dong_xe_hien_co():
+    """Quét toàn bộ tên xe hiện có trong CSDL, chỉ trả về những dòng xe THỰC SỰ đang tồn tại
+    để hiển thị lên danh sách tick chọn cho admin. Mỗi xe chỉ được xếp vào ĐÚNG 1 dòng xe
+    cụ thể nhất (ưu tiên từ khóa dài/cụ thể hơn), tránh liệt kê dư thừa những dòng xe
+    'cha' không thực sự có mặt riêng biệt (VD: CSDL chỉ có Air Blade thì KHÔNG hiện
+    thêm dòng 'Blade', dù chữ 'Blade' có nằm trong tên 'Air Blade')."""
+    danh_sach_ten = [t[0] for t in db.session.query(Xe.ten_xe).all()]
+    dong_xe_thuc_te = set()
+    for ten in danh_sach_ten:
+        dx = _xac_dinh_dong_xe_cua_ten(ten)
+        if dx:
+            dong_xe_thuc_te.add(dx)
+    # Giữ đúng thứ tự ưu tiên đã khai báo trong DANH_SACH_TU_KHOA_DONG_XE khi hiển thị
+    return [tu_khoa for tu_khoa in DANH_SACH_TU_KHOA_DONG_XE if tu_khoa in dong_xe_thuc_te]
+
+def _xac_dinh_dong_xe_cua_ten(ten_xe):
+    """Xác định DUY NHẤT 1 dòng xe (ngắn gọn) mà 1 chiếc xe thuộc về, dựa vào từ khóa khớp
+    ĐẦU TIÊN trong DANH_SACH_TU_KHOA_DONG_XE (từ khóa dài/cụ thể hơn được ưu tiên trước,
+    VD: 'Air Blade' được xét trước 'Blade', 'SH Mode' được xét trước 'SH').
+    Trả về None nếu tên xe không khớp dòng xe nào."""
+    t = _chuan_hoa_de_so_khop(ten_xe)
+    for tu_khoa in DANH_SACH_TU_KHOA_DONG_XE:
+        if _chuan_hoa_de_so_khop(tu_khoa) in t:
+            return tu_khoa
+    return None
+
+def xe_thuoc_dong_xe_da_chon(ten_xe, ds_dong_xe):
+    """Kiểm tra 1 xe (theo tên đầy đủ) có thuộc dòng xe (đúng 1 dòng xe cụ thể nhất)
+    mà admin đã tick chọn hay không. Nhờ việc mỗi xe chỉ thuộc về 1 dòng xe duy nhất,
+    khuyến mãi tick 'Air Blade' sẽ KHÔNG bị áp dụng nhầm sang xe 'Blade' và ngược lại."""
+    if not ds_dong_xe:
+        return False
+    dx_cua_xe = _xac_dinh_dong_xe_cua_ten(ten_xe)
+    return bool(dx_cua_xe) and dx_cua_xe in ds_dong_xe
+
+_CACHE_KHUYEN_MAI = {'data': None, 'thoi_diem': 0}
+
+def lay_danh_sach_khuyen_mai_dang_hoat_dong():
+    """Lấy toàn bộ CTKM đang hoạt động (còn hạn + chưa bị tắt), cache ngắn hạn (5 giây)
+    để tránh truy vấn CSDL liên tục khi trang chủ polling mỗi 3 giây."""
+    now_ts = time.time()
+    if _CACHE_KHUYEN_MAI['data'] is not None and (now_ts - _CACHE_KHUYEN_MAI['thoi_diem']) < 5:
+        return _CACHE_KHUYEN_MAI['data']
+    ds = [km for km in KhuyenMai.query.all() if km.dang_hoat_dong()]
+    _CACHE_KHUYEN_MAI['data'] = ds
+    _CACHE_KHUYEN_MAI['thoi_diem'] = now_ts
+    return ds
+
+def lay_khuyen_mai_ap_dung_cho_xe(ten_xe):
+    """Trả về {'cty': [...], 'honda': [...]} gồm các CTKM đang hoạt động áp dụng cho xe này."""
+    ket_qua = {'cty': [], 'honda': []}
+    for km in lay_danh_sach_khuyen_mai_dang_hoat_dong():
+        if xe_thuoc_dong_xe_da_chon(ten_xe, km.danh_sach_dong_xe):
+            key = 'honda' if km.loai == 'honda' else 'cty'
+            ket_qua[key].append(km.to_dict())
+    return ket_qua
 
 def seed_khu_vuc_giay_to_bl():
     """Tạo sẵn 3 khu vực lớn + các khu vực nhỏ Bạc Liêu nếu CSDL chưa có (idempotent)."""
@@ -479,16 +606,121 @@ def admin_panel():
     # --- CHỈ LẤY CÁC TÀI KHOẢN ĐANG CHỜ DUYỆT (trang_thai = 'pending') ---
     danh_sach_user = User.query.filter_by(trang_thai='pending').order_by(User.id.asc()).all()
 
+    # --- DANH SÁCH CHƯƠNG TRÌNH KHUYẾN MÃI (mới nhất lên trước) ---
+    danh_sach_khuyen_mai = KhuyenMai.query.order_by(KhuyenMai.ngay_bat_dau.desc(), KhuyenMai.id.desc()).all()
+    danh_sach_dong_xe = lay_danh_sach_dong_xe_hien_co()
+
     return render_template(
         "admin.html", 
         danh_sach_xe=danh_sach_xe, 
         danh_sach_user=danh_sach_user,  # <--- Truyền biến này ra giao diện admin.html
+        danh_sach_khuyen_mai=danh_sach_khuyen_mai,
+        danh_sach_dong_xe=danh_sach_dong_xe,
         search_query=search_query, 
         loai_filter=loai_filter, 
         danh_sach_loai=danh_sach_loai, 
         username=session.get('username'),
         csv_url=csv_url
     )
+
+# --- QUẢN LÝ CHƯƠNG TRÌNH KHUYẾN MÃI ---
+def _doc_ngay(s):
+    s = (s or '').strip()
+    if not s:
+        return None
+    try:
+        return datetime.strptime(s, '%Y-%m-%d').date()
+    except ValueError:
+        return None
+
+@app.route("/admin/khuyen-mai/add", methods=["POST"])
+@admin_required
+def them_khuyen_mai():
+    tieu_de = request.form.get("tieu_de", "").strip()
+    loai = request.form.get("loai", "cty").strip()
+    if loai not in ('cty', 'honda'):
+        loai = 'cty'
+    ngay_bat_dau = _doc_ngay(request.form.get("ngay_bat_dau"))
+    ngay_ket_thuc = _doc_ngay(request.form.get("ngay_ket_thuc"))
+    ds_dong_xe = request.form.getlist("dong_xe[]")
+    noi_dung = request.form.get("noi_dung", "").strip()
+
+    if not tieu_de or not ngay_bat_dau or not ngay_ket_thuc:
+        flash("Vui lòng nhập đầy đủ Tiêu đề, Ngày bắt đầu và Ngày kết thúc!", "danger")
+        return redirect(url_for('admin_panel'))
+    if ngay_ket_thuc < ngay_bat_dau:
+        flash("Ngày kết thúc phải sau hoặc bằng Ngày bắt đầu!", "danger")
+        return redirect(url_for('admin_panel'))
+    if not ds_dong_xe:
+        flash("Vui lòng tick chọn ít nhất 1 dòng xe được áp dụng!", "danger")
+        return redirect(url_for('admin_panel'))
+
+    km = KhuyenMai(
+        loai=loai,
+        tieu_de=tieu_de,
+        noi_dung=noi_dung,
+        ngay_bat_dau=ngay_bat_dau,
+        ngay_ket_thuc=ngay_ket_thuc,
+        dang_bat=True,
+        created_by=session.get('username')
+    )
+    km.danh_sach_dong_xe = ds_dong_xe
+    db.session.add(km)
+    db.session.commit()
+    flash(f"Đã thêm chương trình khuyến mãi '{tieu_de}'!", "success")
+    return redirect(url_for('admin_panel'))
+
+@app.route("/admin/khuyen-mai/edit/<int:id>", methods=["POST"])
+@admin_required
+def sua_khuyen_mai(id):
+    km = db.get_or_404(KhuyenMai, id)
+    tieu_de = request.form.get("tieu_de", "").strip()
+    loai = request.form.get("loai", km.loai).strip()
+    if loai not in ('cty', 'honda'):
+        loai = km.loai
+    ngay_bat_dau = _doc_ngay(request.form.get("ngay_bat_dau"))
+    ngay_ket_thuc = _doc_ngay(request.form.get("ngay_ket_thuc"))
+    ds_dong_xe = request.form.getlist("dong_xe[]")
+    noi_dung = request.form.get("noi_dung", "").strip()
+
+    if not tieu_de or not ngay_bat_dau or not ngay_ket_thuc:
+        flash("Vui lòng nhập đầy đủ Tiêu đề, Ngày bắt đầu và Ngày kết thúc!", "danger")
+        return redirect(url_for('admin_panel'))
+    if ngay_ket_thuc < ngay_bat_dau:
+        flash("Ngày kết thúc phải sau hoặc bằng Ngày bắt đầu!", "danger")
+        return redirect(url_for('admin_panel'))
+    if not ds_dong_xe:
+        flash("Vui lòng tick chọn ít nhất 1 dòng xe được áp dụng!", "danger")
+        return redirect(url_for('admin_panel'))
+
+    km.tieu_de = tieu_de
+    km.loai = loai
+    km.noi_dung = noi_dung
+    km.ngay_bat_dau = ngay_bat_dau
+    km.ngay_ket_thuc = ngay_ket_thuc
+    km.danh_sach_dong_xe = ds_dong_xe
+    db.session.commit()
+    flash(f"Đã cập nhật chương trình khuyến mãi '{tieu_de}'!", "success")
+    return redirect(url_for('admin_panel'))
+
+@app.route("/admin/khuyen-mai/toggle/<int:id>", methods=["GET"])
+@admin_required
+def bat_tat_khuyen_mai(id):
+    km = db.get_or_404(KhuyenMai, id)
+    km.dang_bat = not km.dang_bat
+    db.session.commit()
+    flash(f"Đã {'bật' if km.dang_bat else 'tắt'} chương trình khuyến mãi '{km.tieu_de}'!", "success")
+    return redirect(url_for('admin_panel'))
+
+@app.route("/admin/khuyen-mai/delete/<int:id>", methods=["GET"])
+@admin_required
+def xoa_khuyen_mai(id):
+    km = db.get_or_404(KhuyenMai, id)
+    ten = km.tieu_de
+    db.session.delete(km)
+    db.session.commit()
+    flash(f"Đã xóa chương trình khuyến mãi '{ten}'!", "success")
+    return redirect(url_for('admin_panel'))
 
 @app.context_processor
 def inject_update_info():
@@ -1034,10 +1266,13 @@ def get_home_data():
     data = []
     for xe in danh_sach_xe:
         gia_info = lay_gia_theo_vung(xe, vung)
+        khuyen_mai = lay_khuyen_mai_ap_dung_cho_xe(xe.ten_xe)
         data.append({
             "id": xe.id,
             "ten_xe": xe.ten_xe,
             "loai_xe": xe.loai_xe,
+            "khuyen_mai": khuyen_mai,
+            "co_khuyen_mai": bool(khuyen_mai['cty'] or khuyen_mai['honda']),
             "gia_hien_thi": gia_info['gia_hien_thi'],
             "gia_cao": gia_info['gia_cao'],
             "gia_trung": gia_info['gia_trung'],
@@ -1649,6 +1884,8 @@ def format_xe_data_home(xe, khu_vuc_user):
     gia_giay_to_phuong = xe.gia_gt_phuong_cm if not is_bl else None
     gia_giay_to_xa = xe.gia_gt_xa_cm if not is_bl else None
 
+    khuyen_mai = lay_khuyen_mai_ap_dung_cho_xe(xe.ten_xe)
+
     return {
         'id': xe.id,
         'loai_xe': xe.loai_xe,
@@ -1669,7 +1906,10 @@ def format_xe_data_home(xe, khu_vuc_user):
         'hinh_anh': xe.hinh_anh,
         'mau_xe': [mau.to_dict(khu_vuc_user) for mau in xe.mau_xe],
         'ns1': xe.ns1, 'ns2': xe.ns2, 'ns3': xe.ns3,
-        'ns4': xe.ns4, 'ns5': xe.ns5, 'nsm1': xe.nsm1
+        'ns4': xe.ns4, 'ns5': xe.ns5, 'nsm1': xe.nsm1,
+        # MỚI: khuyến mãi đang áp dụng cho xe này (chỉ gồm CTKM còn hạn, tự động ẩn khi hết hạn)
+        'khuyen_mai': khuyen_mai,
+        'co_khuyen_mai': bool(khuyen_mai['cty'] or khuyen_mai['honda'])
     }
 
 @app.route('/cong-cu-tinh-gia')
