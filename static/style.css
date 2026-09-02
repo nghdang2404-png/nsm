@@ -302,3 +302,13 @@ body {
 .dot-bac, [class*="dot-bac"] {
     background: #c0c0c0 !important;
 }
+@media (max-width: 768px) {
+    .floating-save-container {
+        bottom: 15px;
+        right: 15px;
+    }
+    .btn-floating-save {
+        padding: 10px 18px;
+        font-size: 13px;
+    }
+}
