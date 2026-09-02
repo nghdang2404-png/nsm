@@ -268,7 +268,7 @@
     </div>
 </div>
 
-<!-- Form Quản lý & Phê duyệt tài khoản nhân viên (MỚI THÊM) -->
+<!-- Form Quản lý & Phê duyệt tài khoản nhân viên -->
 <div class="card mb-3 brand-card" style="border-top-color: #0d6efd;">
     <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseUsers" aria-expanded="false" style="cursor: pointer; border-bottom: none;">
         <h6 class="text-primary mb-0 fw-bold" style="font-size: 14px;">
@@ -285,64 +285,61 @@
         <div class="card-body py-2 pt-0">
             <div class="table-responsive">
                 <table class="table table-bordered align-middle text-center mb-0" style="font-size: 12px;">
-    <thead class="table-light">
-        <tr>
-            <th style="background-color: #0d6efd !important;">ID</th>
-            <th style="background-color: #0d6efd !important; text-align: left;">Tên đăng nhập</th>
-            <th style="background-color: #0d6efd !important;">Trạng thái</th>
-            <th style="background-color: #0d6efd !important;">Hành động</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% if danh_sach_user %}
-            {% for u in danh_sach_user %}
-            <tr>
-                <td>{{ u.id }}</td>
-                <td class="fw-bold text-start text-dark"><i class="fa-solid fa-user me-1 text-muted"></i> {{ u.username }}</td>
-                <td>
-                    {% if u.trang_thai == 'approved' %}
-                        <span class="badge bg-success px-2 py-1" style="font-size: 10px;">Đã duyệt</span>
-                    {% elif u.trang_thai == 'rejected' %}
-                        <span class="badge bg-secondary px-2 py-1" style="font-size: 10px;">Từ chối</span>
-                    {% else %}
-                        <span class="badge bg-warning text-dark px-2 py-1" style="font-size: 10px;">Chờ duyệt</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <div class="d-flex justify-content-center gap-1">
-                        {% if u.trang_thai != 'approved' %}
-                            <!-- Sửa lại đúng URL trong app.py: /admin/users/approve/ -->
-                            <a href="/admin/users/approve/{{ u.id }}" class="btn btn-success btn-sm py-1 px-2" style="font-size: 11px;" title="Phê duyệt tài khoản">
-                                <i class="fa-solid fa-check me-1"></i> Duyệt
-                            </a>
+                    <thead class="table-light">
+                        <tr>
+                            <th style="background-color: #0d6efd !important;">ID</th>
+                            <th style="background-color: #0d6efd !important; text-align: left;">Tên đăng nhập</th>
+                            <th style="background-color: #0d6efd !important;">Trạng thái</th>
+                            <th style="background-color: #0d6efd !important;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if danh_sach_user %}
+                            {% for u in danh_sach_user %}
+                            <tr>
+                                <td>{{ u.id }}</td>
+                                <td class="fw-bold text-start text-dark"><i class="fa-solid fa-user me-1 text-muted"></i> {{ u.username }}</td>
+                                <td>
+                                    {% if u.trang_thai == 'approved' %}
+                                        <span class="badge bg-success px-2 py-1" style="font-size: 10px;">Đã duyệt</span>
+                                    {% elif u.trang_thai == 'rejected' %}
+                                        <span class="badge bg-secondary px-2 py-1" style="font-size: 10px;">Từ chối</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark px-2 py-1" style="font-size: 10px;">Chờ duyệt</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex justify-content-center gap-1">
+                                        {% if u.trang_thai != 'approved' %}
+                                            <a href="/admin/users/approve/{{ u.id }}" class="btn btn-success btn-sm py-1 px-2" style="font-size: 11px;" title="Phê duyệt tài khoản">
+                                                <i class="fa-solid fa-check me-1"></i> Duyệt
+                                            </a>
+                                        {% else %}
+                                            <a href="/admin/users/reject/{{ u.id }}" class="btn btn-outline-warning btn-sm py-1 px-2 text-dark" style="font-size: 11px;" title="Từ chối/Khóa">
+                                                <i class="fa-solid fa-lock me-1"></i> Khóa
+                                            </a>
+                                        {% endif %}
+                                        
+                                        <a href="/admin/users/delete/{{ u.id }}" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 11px;" onclick="return confirm('Bạn có chắc muốn xóa tài khoản {{ u.username }} không?')" title="Xóa tài khoản">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
                         {% else %}
-                            <!-- Sửa lại đúng URL từ chối trong app.py: /admin/users/reject/ -->
-                            <a href="/admin/users/reject/{{ u.id }}" class="btn btn-outline-warning btn-sm py-1 px-2 text-dark" style="font-size: 11px;" title="Từ chối/Khóa">
-                                <i class="fa-solid fa-lock me-1"></i> Khóa
-                            </a>
+                            <tr>
+                                <td colspan="4" class="text-muted py-3">Không có tài khoản nào chờ duyệt.</td>
+                            </tr>
                         {% endif %}
-                        
-                        <!-- Sửa lại đúng URL xóa trong app.py: /admin/users/delete/ -->
-                        <a href="/admin/users/delete/{{ u.id }}" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 11px;" onclick="return confirm('Bạn có chắc muốn xóa tài khoản {{ u.username }} không?')" title="Xóa tài khoản">
-                            <i class="fa-solid fa-trash"></i>
-                        </a>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        {% else %}
-            <tr>
-                <td colspan="4" class="text-muted py-3">Không có tài khoản nào chờ duyệt.</td>
-            </tr>
-        {% endif %}
-    </tbody>
-</table>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Form Import Excel[cite: 17] -->
+<!-- Form Import Excel -->
 <div class="card mb-3 brand-card">
     <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseExcel" aria-expanded="false" style="cursor: pointer; border-bottom: none;">
         <h6 class="text-danger mb-0 fw-bold" style="font-size: 14px;"><i class="fa-solid fa-file-excel me-1 text-success"></i> Cập nhật dữ liệu nhanh từ Excel</h6>
@@ -364,7 +361,7 @@
     </div>
 </div>
 
-<!-- Form Cấu hình Link Google Sheets[cite: 17] -->
+<!-- Form Cấu hình Link Google Sheets -->
 <div class="card mb-4 brand-card">
     <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseSheets" aria-expanded="false" style="cursor: pointer; border-bottom: none;">
         <h6 class="text-danger mb-0 fw-bold" style="font-size: 14px;"><i class="fa-solid fa-link me-1"></i> Đồng bộ Google Sheets (Cập nhật link khi qua tháng)</h6>
@@ -469,64 +466,6 @@
                                     </div>
                                 </td>
                             </tr>
-
-                            <!-- Modal SỬA chương trình khuyến mãi #{{ km.id }} -->
-                            <div class="modal fade" id="modalSuaKM{{ km.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                                    <div class="modal-content">
-                                        <form action="/admin/khuyen-mai/edit/{{ km.id }}" method="POST">
-                                            <div class="modal-header" style="background-color:#f97316; color:#fff;">
-                                                <h6 class="modal-title fw-bold"><i class="fa-solid fa-pen me-1"></i> Sửa chương trình khuyến mãi</h6>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="row g-2">
-                                                    <div class="col-md-6">
-                                                        <label class="form-label small fw-semibold">Loại khuyến mãi</label>
-                                                        <select name="loai" class="form-select form-select-sm" required>
-                                                            <option value="cty" {% if km.loai == 'cty' %}selected{% endif %}>Khuyến mãi của công ty</option>
-                                                            <option value="honda" {% if km.loai == 'honda' %}selected{% endif %}>Khuyến mãi của Honda</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label small fw-semibold">Tiêu đề chương trình</label>
-                                                        <input type="text" name="tieu_de" class="form-control form-control-sm" value="{{ km.tieu_de }}" required>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label small fw-semibold">Ngày bắt đầu</label>
-                                                        <input type="date" name="ngay_bat_dau" class="form-control form-control-sm" value="{{ km.ngay_bat_dau.strftime('%Y-%m-%d') }}" required>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label small fw-semibold">Ngày kết thúc</label>
-                                                        <input type="date" name="ngay_ket_thuc" class="form-control form-control-sm" value="{{ km.ngay_ket_thuc.strftime('%Y-%m-%d') }}" required>
-                                                    </div>
-                                                    <div class="col-12">
-                                                        <label class="form-label small fw-semibold">Nội dung chi tiết</label>
-                                                        <textarea name="noi_dung" class="form-control form-control-sm" rows="4" placeholder="Mô tả chi tiết chương trình khuyến mãi...">{{ km.noi_dung }}</textarea>
-                                                    </div>
-                                                    <div class="col-12">
-                                                        <label class="form-label small fw-semibold">Dòng xe được áp dụng</label>
-                                                        <div class="d-flex flex-wrap gap-2 border rounded p-2">
-                                                            {% for dx in danh_sach_dong_xe %}
-                                                            <div class="form-check form-check-inline m-0">
-                                                                <input class="form-check-input" type="checkbox" name="dong_xe[]" value="{{ dx }}" id="editKM{{ km.id }}_{{ loop.index }}" {% if dx in km.danh_sach_dong_xe %}checked{% endif %}>
-                                                                <label class="form-check-label small" for="editKM{{ km.id }}_{{ loop.index }}">{{ dx }}</label>
-                                                            </div>
-                                                            {% else %}
-                                                            <span class="text-muted small">Chưa có dữ liệu dòng xe.</span>
-                                                            {% endfor %}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
-                                                <button type="submit" class="btn btn-sm text-white fw-semibold" style="background-color:#f97316;">Lưu thay đổi</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
                             {% endfor %}
                         {% else %}
                             <tr>
@@ -598,7 +537,71 @@
     </div>
 </div>
 
-<!-- Bảng dữ liệu quản lý[cite: 17] -->
+<!-- ========================================================================= -->
+<!-- ĐÃ ĐƯA TẤT CẢ CÁC MODAL SỬA KHUYẾN MÃI RA NGOÀI HOÀN TOÀN TẠI ĐÂY (ROOT LEVEL) -->
+<!-- ========================================================================= -->
+{% if danh_sach_khuyen_mai %}
+    {% for km in danh_sach_khuyen_mai %}
+    <div class="modal fade" id="modalSuaKM{{ km.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <form action="/admin/khuyen-mai/edit/{{ km.id }}" method="POST">
+                    <div class="modal-header" style="background-color:#f97316; color:#fff;">
+                        <h6 class="modal-title fw-bold"><i class="fa-solid fa-pen me-1"></i> Sửa chương trình khuyến mãi</h6>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Loại khuyến mãi</label>
+                                <select name="loai" class="form-select form-select-sm" required>
+                                    <option value="cty" {% if km.loai == 'cty' %}selected{% endif %}>Khuyến mãi của công ty</option>
+                                    <option value="honda" {% if km.loai == 'honda' %}selected{% endif %}>Khuyến mãi của Honda</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Tiêu đề chương trình</label>
+                                <input type="text" name="tieu_de" class="form-control form-control-sm" value="{{ km.tieu_de }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Ngày bắt đầu</label>
+                                <input type="date" name="ngay_bat_dau" class="form-control form-control-sm" value="{{ km.ngay_bat_dau.strftime('%Y-%m-%d') }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Ngày kết thúc</label>
+                                <input type="date" name="ngay_ket_thuc" class="form-control form-control-sm" value="{{ km.ngay_ket_thuc.strftime('%Y-%m-%d') }}" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Nội dung chi tiết</label>
+                                <textarea name="noi_dung" class="form-control form-control-sm" rows="4" placeholder="Mô tả chi tiết chương trình khuyến mãi...">{{ km.noi_dung }}</textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Dòng xe được áp dụng</label>
+                                <div class="d-flex flex-wrap gap-2 border rounded p-2">
+                                    {% for dx in danh_sach_dong_xe %}
+                                    <div class="form-check form-check-inline m-0">
+                                        <input class="form-check-input" type="checkbox" name="dong_xe[]" value="{{ dx }}" id="editKM{{ km.id }}_{{ loop.index }}" {% if dx in km.danh_sach_dong_xe %}checked{% endif %}>
+                                        <label class="form-check-label small" for="editKM{{ km.id }}_{{ loop.index }}">{{ dx }}</label>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted small">Chưa có dữ liệu dòng xe.</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-sm text-white fw-semibold" style="background-color:#f97316;">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+
+<!-- Bảng dữ liệu quản lý -->
 <div class="card mb-5 brand-card" style="border-top-color: #1a56db;">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -633,7 +636,7 @@
                     </tr>
 
                     <tr class="align-middle">
-                        <!-- CỘT 1: GIÁ BÁN (giấy tờ đã chuyển sang trang riêng /admin/gia-giay-to) -->
+                        <!-- CỘT 1: GIÁ BÁN -->
                         <td class="text-start align-top">
                             <div class="box-cm">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -654,7 +657,6 @@
                                         <input type="text" inputmode="numeric" name="gia_cm_thap" value="{{ xe.gia_cm_thap if xe.gia_cm_thap and xe.gia_cm_thap != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-primary currency-input">
                                     </div>
                                 </div>
-                                <!-- Giá giấy tờ CM giữ nguyên giá trị cũ (không hiển thị) để không bị mất khi lưu form này -->
                                 <input type="hidden" name="gia_gt_phuong_cm" value="{{ xe.gia_gt_phuong_cm or 0 }}" form="form_edit_{{ xe.id }}">
                                 <input type="hidden" name="gia_gt_xa_cm" value="{{ xe.gia_gt_xa_cm or 0 }}" form="form_edit_{{ xe.id }}">
                             </div>
@@ -678,7 +680,6 @@
                                         <input type="text" inputmode="numeric" name="gia_bl_thap" value="{{ xe.gia_bl_thap if xe.gia_bl_thap and xe.gia_bl_thap != 0 else '' }}" placeholder="0" form="form_edit_{{ xe.id }}" class="form-control form-control-sm border-success currency-input">
                                     </div>
                                 </div>
-                                <!-- Giá giấy tờ BL (cũ, không còn dùng để tính giá) giữ nguyên giá trị, không hiển thị -->
                                 <input type="hidden" name="gia_gt_phuong_bl" value="{{ xe.gia_gt_phuong_bl or 0 }}" form="form_edit_{{ xe.id }}">
                                 <input type="hidden" name="gia_gt_xa_bl" value="{{ xe.gia_gt_xa_bl or 0 }}" form="form_edit_{{ xe.id }}">
                             </div>
@@ -688,7 +689,7 @@
                             </a>
                         </td>
                         
-                        <!-- CỘT 2: TỒN KHO, HÌNH ẢNH & MÀU SẮC[cite: 17] -->
+                        <!-- CỘT 2: TỒN KHO, HÌNH ẢNH & MÀU SẮC -->
                         <td class="text-start bg-white align-top">
                             <div class="mb-2">
                                 <span class="small text-muted">Ảnh chính: <strong class="text-dark">{{ xe.hinh_anh if xe.hinh_anh else 'Chưa có' }}</strong></span>
@@ -776,7 +777,7 @@
 </div>
 
 <script>
-    // Hàm hiển thị thông báo nổi Toast[cite: 17]
+    // Hàm hiển thị thông báo nổi Toast
     function showToast(message) {
         let container = document.getElementById("toast-container");
         let toast = document.createElement("div");
@@ -786,31 +787,25 @@
         setTimeout(() => toast.remove(), 2500);
     }
 
-    // Kiểm tra xem Admin có đang bấm vào ô nhập liệu nào không[cite: 17]
+    // Kiểm tra xem Admin có đang bấm vào ô nhập liệu nào không
     function isAdminEditing() {
         const activeEl = document.activeElement;
         return activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
     }
 
     // --- ẨN NÚT "LƯU TẤT CẢ" NỔI KHI CÓ MODAL ĐANG MỞ ---
-    // Nút nổi này có z-index rất cao (9998) để luôn nổi trên nội dung trang, nhưng vì vậy
-    // nó cũng nổi ĐÈ LÊN TRÊN cả các modal Bootstrap (Sửa khuyến mãi, Thêm khuyến mãi...),
-    // đúng vào góc dưới-phải màn hình - nơi các modal thường đặt nút "Lưu thay đổi"/"Hủy".
-    // Kết quả: bấm vào nút của modal thực chất chạm trúng nút nổi này, modal không phản hồi.
-    // Dùng sự kiện chuẩn của Bootstrap để tự ẩn/hiện nút nổi theo trạng thái modal.
     document.addEventListener('show.bs.modal', function () {
         const btn = document.querySelector('.floating-save-container');
         if (btn) btn.style.display = 'none';
     });
     document.addEventListener('hidden.bs.modal', function () {
-        // Chỉ hiện lại nếu không còn modal nào khác đang mở (trường hợp nhiều modal lồng nhau)
         if (!document.querySelector('.modal.show')) {
             const btn = document.querySelector('.floating-save-container');
             if (btn) btn.style.display = '';
         }
     });
 
-    // --- HÀM CẬP NHẬT THỜI GIAN & NGƯỜI SỬA BÊN TRÊN NAVBAR ---[cite: 17]
+    // --- HÀM CẬP NHẬT THỜI GIAN & NGƯỜI SỬA BÊN TRÊN NAVBAR ---
     function pollAndUpdateAdminData() {
         fetch('/api/get-home-data')
             .then(response => {
@@ -851,22 +846,20 @@
             .catch(error => console.error("Lỗi đồng bộ giờ Admin:", error));
     }
 
-document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function () {
         pollAndUpdateAdminData();
 
-        // --- BƯỚC 1: ĐỊNH DẠNG TIỀN TỆ KHI TẢI TRANG LẦN ĐẦU ---[cite: 17]
-        // --- BƯỚC 1: ĐỊNH DẠNG TIỀN TỆ KHI TẢI TRANG LẦN ĐẦU ---
+        // --- ĐỊNH DẠNG TIỀN TỆ KHI TẢI TRANG LẦN ĐẦU ---
         document.querySelectorAll(".currency-input").forEach(function (input) {
             let val = String(input.value).trim();
             if (val && val !== '0' && val !== 'None') {
-                let isNegative = val.startsWith('-'); // Lưu lại trạng thái âm
+                let isNegative = val.startsWith('-');
                 let integerPart = val.split('.')[0];
                 let rawVal = integerPart.replace(/\D/g, "");
                 
                 if (rawVal) {
                     let num = parseInt(rawVal, 10);
                     let formatted = new Intl.NumberFormat("vi-VN").format(num);
-                    // Ghép lại dấu trừ nếu là số âm
                     input.value = isNegative ? "-" + formatted : formatted; 
                 } else {
                     input.value = "";
@@ -875,7 +868,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 input.value = "";
             }
         });
-        // --- BƯỚC 2: LƯU LẠI TRẠNG THÁI BAN ĐẦU ---[cite: 17]
+
+        // --- LƯU LẠI TRẠNG THÁI BAN ĐẦU ---
         document.querySelectorAll("input[form^='form_edit_'], select[form^='form_edit_'], textarea[form^='form_edit_']").forEach(input => {
             if (input.type === 'file') {
                 // Không xử lý file ban đầu
@@ -886,7 +880,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // --- BƯỚC 3: LƯU TOÀN BỘ THAY ĐỔI SONG SONG ---[cite: 17]
+        // --- LƯU TOÀN BỘ THAY ĐỔI SONG SONG ---
         document.getElementById("btn-save-all").addEventListener("click", async function () {
             let forms = document.querySelectorAll(".edit-xe-form");
             if (forms.length === 0) return;
@@ -954,10 +948,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     } else {
                         let val = input.value;
                         if (input.classList.contains("currency-input")) {
-                            let isNegative = val.startsWith("-"); // Kiểm tra có dấu trừ ở đầu không
-                            val = val.replace(/\D/g, ""); // Tách lấy các con số
+                            let isNegative = val.startsWith("-");
+                            val = val.replace(/\D/g, "");
                             if (isNegative && val !== "") {
-                                val = "-" + val; // Gắn lại dấu trừ để gửi lên server
+                                val = "-" + val;
                             }
                         }
                         formData.set(input.name, val);
@@ -1016,7 +1010,7 @@ document.addEventListener("DOMContentLoaded", function () {
             setTimeout(pollAndUpdateAdminData, 500);
         });
 
-        // --- ĐỊNH DẠNG TIỀN TỆ KHI ĐANG GÕ ---[cite: 17]
+        // --- ĐỊNH DẠNG TIỀN TỆ KHI ĐANG GÕ ---
         document.addEventListener("input", function (e) {
             if (e.target.classList.contains("currency-input")) {
                 let input = e.target;
@@ -1040,7 +1034,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // --- TỰ ĐỘNG CẬP NHẬT DỮ LIỆU BẢNG NGẦM ---[cite: 17]
+        // --- TỰ ĐỘNG CẬP NHẬT DỮ LIỆU BẢNG NGẦM ---
         function fetchLatestData() {
             if (isAdminEditing()) return; 
 
