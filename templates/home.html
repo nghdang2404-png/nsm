@@ -666,18 +666,7 @@
                     <span>Xin chào, <strong>{{ ho_ten | default(session.get('ho_ten', username), true) }}</strong></span>
                 </div>
                 
-                {% if session.get('role') == 'admin' %}
-                    <form action="{{ url_for('set_vung') }}" method="POST" style="margin: 0; display: inline-flex; align-items: center;">
-                        <select name="vung" class="filter-select" style="padding: 3px 8px; font-size: 12px; height: auto; background: #fff; color: #111; border: 1px solid #cbd5e1; border-radius: 4px; cursor: pointer;" onchange="this.form.submit()" title="Chuyển đổi khu vực xem giá">
-                            <option value="Cà Mau" {% if user_vung == 'Cà Mau' %}selected{% endif %}>Khu vực: Cà Mau</option>
-                            <option value="Bạc Liêu" {% if user_vung == 'Bạc Liêu' %}selected{% endif %}>Khu vực: Bạc Liêu</option>
-                        </select>
-                    </form>
-                {% else %}
-                    <span style="background: #fff; color: var(--primary-blue); padding: 3px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 600;">
-                        <i class="fas fa-map-marker-alt"></i> {{ user_vung | default(session.get('vung', 'Cà Mau'), true) }}
-                    </span>
-                {% endif %}
+
             </div>
 
             <!-- Dòng hiển thị thời gian và tên người cập nhật (có ID để đồng bộ tự động) -->
@@ -1156,6 +1145,11 @@ document.addEventListener("DOMContentLoaded", function() {
         window.currentModalVung = vung;
         const isBL = (vung || '').toLowerCase().includes('bạc liêu') || (vung || '').toLowerCase().includes('bac lieu');
 
+        const regionSelectEl = document.getElementById('modalRegionSelect');
+        if (regionSelectEl) {
+            regionSelectEl.value = isBL ? 'Bạc Liêu' : 'Cà Mau';
+        }
+
         const cmBlock = document.getElementById('cmGiayToBlock');
         const blBlock = document.getElementById('blGiayToBlock');
         const rowXa = document.getElementById('draftRowXa');
@@ -1279,9 +1273,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const khuVuc = userVung || 'Cà Mau'; 
         
-        const regionTextEl = document.getElementById('modalRegionText');
-        if (regionTextEl) {
-            regionTextEl.innerText = khuVuc;
+        const regionSelectEl = document.getElementById('modalRegionSelect');
+        if (regionSelectEl) {
+            regionSelectEl.value = (khuVuc.toLowerCase().includes('bạc liêu') || khuVuc.toLowerCase().includes('bac lieu')) ? 'Bạc Liêu' : 'Cà Mau';
         }
 
         modalTitle.innerText = carName;
@@ -1604,6 +1598,11 @@ document.addEventListener("DOMContentLoaded", function() {
                                 row.setAttribute('data-gia-trung', item.gia_trung || 0);
                                 row.setAttribute('data-gia-phuong', item.gia_giay_to_phuong || 0);
                                 row.setAttribute('data-gia-xa', item.gia_giay_to_xa || 0);
+                                row.setAttribute('data-gia-phuong-cm', item.gia_giay_to_phuong_cm || 0);
+                                row.setAttribute('data-gia-xa-cm', item.gia_giay_to_xa_cm || 0);
+                                row.setAttribute('data-gia-phuong-bl', item.gia_giay_to_phuong_bl || 0);
+                                row.setAttribute('data-gia-xa-bl', item.gia_giay_to_xa_bl || 0);
+                                row.setAttribute('data-giay-to-bl', JSON.stringify(item.gia_giay_to_khu_vuc_nho_bl || []));
                                 row.setAttribute('data-colors', JSON.stringify(item.mau_xe || []));
 
                                 // Tự động cập nhật hiển thị/ẩn badge khuyến mãi theo ngày (không cần tải lại trang)
@@ -1645,6 +1644,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                     phuongBL: Number(matchedItem.gia_giay_to_phuong_bl) || 0,
                                     xaBL: Number(matchedItem.gia_giay_to_xa_bl) || 0
                                 };
+                                window.currentModalGiayToBL = matchedItem.gia_giay_to_khu_vuc_nho_bl || [];
 
                                 let colors = matchedItem.mau_xe || [];
                                 

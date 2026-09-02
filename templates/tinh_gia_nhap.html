@@ -35,9 +35,10 @@
                 <i class="fa-solid fa-location-dot" style="color: #dc2626; margin-right: 6px;"></i> Phân vùng áp dụng:
             </div>
             <div>
-                <button type="button" id="modalRegionButton" class="btn btn-sm" style="background-color: #dc2626; color: #fff; font-weight: 600; font-size: 13px; padding: 4px 14px; border-radius: 6px; border: none;">
-                    <span id="modalRegionText">{{ user_vung | default(session.get('vung', 'Cà Mau'), true) }}</span>
-                </button>
+                <select id="modalRegionSelect" onchange="if (typeof switchModalRegion === 'function') { switchModalRegion(this.value); }" style="background-color: #dc2626; color: #fff; font-weight: 600; font-size: 13px; padding: 5px 22px 5px 14px; border-radius: 6px; border: none; cursor: pointer; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22white%22><path d=%22M7 10l5 5 5-5z%22/></svg>'); background-repeat: no-repeat; background-position: right 6px center; background-size: 14px;" title="Chọn vùng để xem giá tương ứng">
+                    <option value="Cà Mau">Cà Mau</option>
+                    <option value="Bạc Liêu">Bạc Liêu</option>
+                </select>
             </div>
         </div>
 

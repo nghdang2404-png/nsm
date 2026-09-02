@@ -1294,7 +1294,7 @@ def start_background_sync():
     # Thiết lập chạy vòng lặp mỗi 120 giây
     scheduler.add_job(run_sync_job, 'interval', seconds=SYNC_INTERVAL_SECONDS)
     scheduler.start()
-
+start_background_sync()
 @app.route("/admin/sync-sheet", methods=["POST"])
 @admin_required
 def sync_sheet():
@@ -1344,8 +1344,9 @@ def get_home_data():
             "gia_giay_to_xa_cm": xe.gia_gt_xa_cm or 0,
             "gia_giay_to_phuong_bl": xe.gia_gt_phuong_bl or 0,
             "gia_giay_to_xa_bl": xe.gia_gt_xa_bl or 0,
-            # MỚI: giá giấy tờ theo từng khu vực nhỏ Bạc Liêu (người dùng tự chọn ở FE)
-            "gia_giay_to_khu_vuc_nho_bl": lay_gia_giay_to_khu_vuc_nho_bl(xe.id) if vung == 'Bạc Liêu' else [],
+            # MỚI: giá giấy tờ theo từng khu vực nhỏ Bạc Liêu, luôn gửi kèm để modal có thể
+            # đổi vùng tại chỗ (không load lại trang) dù session đang ở vùng nào.
+            "gia_giay_to_khu_vuc_nho_bl": lay_gia_giay_to_khu_vuc_nho_bl(xe.id),
             "mau_xe": [mau.to_dict(vung) for mau in xe.mau_xe]
         })
         
@@ -1961,8 +1962,9 @@ def format_xe_data_home(xe, khu_vuc_user):
         # Giữ 2 trường cũ này để không phá vỡ chỗ nào còn tham chiếu (không còn dùng cho tính giá BL nữa)
         'gia_giay_to_phuong_bac_lieu': xe.gia_gt_phuong_bl,
         'gia_giay_to_xa_bac_lieu': xe.gia_gt_xa_bl,
-        # MỚI: giá giấy tờ theo từng khu vực nhỏ Bạc Liêu, chỉ cần điền khi is_bl=True
-        'gia_giay_to_khu_vuc_nho_bl': lay_gia_giay_to_khu_vuc_nho_bl(xe.id) if is_bl else [],
+        # MỚI: giá giấy tờ theo từng khu vực nhỏ Bạc Liêu, luôn gửi kèm để modal có thể
+        # đổi vùng tại chỗ (không load lại trang) dù session đang ở vùng nào.
+        'gia_giay_to_khu_vuc_nho_bl': lay_gia_giay_to_khu_vuc_nho_bl(xe.id),
         'hinh_anh': xe.hinh_anh,
         'mau_xe': [mau.to_dict(khu_vuc_user) for mau in xe.mau_xe],
         'ns1': xe.ns1, 'ns2': xe.ns2, 'ns3': xe.ns3,
@@ -2524,7 +2526,7 @@ with app.app_context():
 # LƯU Ý khi lên Render: nếu sau này tăng số worker Gunicorn (--workers > 1), mỗi
 # worker là 1 tiến trình riêng và sẽ tự khởi động 1 scheduler riêng -> đồng bộ có
 # thể bị chạy trùng nhiều lần cùng lúc. Với 1 worker (mặc định) thì không sao.
-start_background_sync()
+
 
 if __name__ == "__main__":
     # threaded=True: cho phép server xử lý NHIỀU request cùng lúc (ví dụ nhiều người cùng mở
