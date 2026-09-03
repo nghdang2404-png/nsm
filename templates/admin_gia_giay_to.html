@@ -189,6 +189,9 @@
     </div>
 </div>
 
+<!-- Input file ẩn dùng chung cho mọi nút Import (CM + từng vùng lớn Bạc Liêu) -->
+<input type="file" id="import-file-input" accept=".xlsx,.xls" style="display:none;">
+
 <ul class="nav nav-pills region-pills mb-3" id="regionPills" role="tablist">
     <li class="nav-item" role="presentation">
         <button class="nav-link active" id="pill-cm-tab" data-bs-toggle="pill" data-bs-target="#pill-cm" type="button" role="tab">
@@ -207,8 +210,11 @@
     <!-- ===================== TAB CÀ MAU ===================== -->
     <div class="tab-pane fade show active" id="pill-cm" role="tabpanel">
         <div class="card brand-card">
-            <div class="card-header bg-white py-2">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h6 class="mb-0 fw-bold" style="font-size: 13px;"><i class="fa-solid fa-location-dot me-1 text-primary"></i> Giá giấy tờ theo Phường / Xã &mdash; Cà Mau</h6>
+                <button type="button" class="btn btn-primary btn-sm btn-import" data-vung="cm">
+                    <i class="fa-solid fa-file-import me-1"></i> Import Excel
+                </button>
             </div>
             <div class="scroll-hint-mobile"><i class="fa-solid fa-arrows-left-right"></i> Vuốt ngang để xem đủ các cột giá</div>
             <div class="card-body p-0">
@@ -269,6 +275,11 @@
                 <div class="tab-content">
                     {% for kvl in khu_vuc_lon %}
                     <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="bl-pane-{{ kvl.id }}" role="tabpanel">
+                        <div class="d-flex justify-content-end mb-2">
+                            <button type="button" class="btn btn-success btn-sm btn-import" data-vung="bl" data-ma-khu-vuc="{{ kvl.ma_khu_vuc }}">
+                                <i class="fa-solid fa-file-import me-1"></i> Import Excel &mdash; {{ kvl.ten_khu_vuc }}
+                            </button>
+                        </div>
                         <div class="scroll-hint-mobile"><i class="fa-solid fa-arrows-left-right"></i> Vuốt ngang để xem đủ các khu vực</div>
                         <div class="table-responsive">
                             <table class="table table-bordered align-middle text-center mb-0" id="table-bl-{{ kvl.id }}">
@@ -342,6 +353,64 @@
         let num = parseInt(raw, 10);
         return isNegative ? -num : num;
     }
+
+    // ===================== IMPORT EXCEL (CM + từng vùng lớn BL) =====================
+    const urlImportCM = "{{ url_for('admin_import_gia_giay_to_cm') }}";
+    const urlImportBL = "{{ url_for('admin_import_gia_giay_to_bl') }}";
+    const fileInputImport = document.getElementById("import-file-input");
+    let importDangCho = null; // { vung: 'cm' | 'bl', maKhuVuc, btn }
+
+    document.addEventListener("click", function (e) {
+        const btn = e.target.closest(".btn-import");
+        if (!btn) return;
+        importDangCho = {
+            vung: btn.dataset.vung,
+            maKhuVuc: btn.dataset.maKhuVuc || "",
+            btn: btn
+        };
+        fileInputImport.value = "";
+        fileInputImport.click();
+    });
+
+    fileInputImport.addEventListener("change", async function () {
+        const file = fileInputImport.files[0];
+        if (!file || !importDangCho) return;
+
+        const { vung, maKhuVuc, btn } = importDangCho;
+        const oldHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang nhập...`;
+
+        const formData = new FormData();
+        formData.append("file", file);
+        if (vung === "bl") formData.append("ma_khu_vuc", maKhuVuc);
+
+        try {
+            const res = await fetch(vung === "bl" ? urlImportBL : urlImportCM, {
+                method: "POST",
+                body: formData
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                let canhBao = "";
+                if (data.xe_khong_tim_thay && data.xe_khong_tim_thay.length > 0) {
+                    canhBao = ` (${data.xe_khong_tim_thay.length} xe trong file không khớp tên trong hệ thống)`;
+                }
+                showToast((data.message || "Import thành công!") + canhBao);
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                showToast(data.message || "Có lỗi khi import file!");
+                btn.innerHTML = oldHtml;
+                btn.disabled = false;
+            }
+        } catch (err) {
+            console.error("Lỗi khi import Excel:", err);
+            showToast("Có lỗi xảy ra khi import file!");
+            btn.innerHTML = oldHtml;
+            btn.disabled = false;
+        }
+    });
 
     document.addEventListener("DOMContentLoaded", function () {
         // Định dạng tiền tệ ban đầu + lưu giá trị gốc để so sánh thay đổi

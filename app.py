@@ -2096,6 +2096,68 @@ def admin_import_gia_giay_to_bl():
         db.session.rollback()
         return jsonify({'success': False, 'message': f'Lỗi khi xử lý file Excel: {str(e)}'}), 500
 
+@app.route('/admin/api/import-gia-giay-to-cm', methods=['POST'])
+@admin_required
+def admin_import_gia_giay_to_cm():
+    """
+    Nhập giá giấy tờ Cà Mau (Phường / Xã) từ file Excel dạng:
+    - Cột A: 'Tên xe' (phải khớp CHÍNH XÁC với Xe.ten_xe trong CSDL)
+    - Cột C: 'Giá Giấy Tờ Phường'
+    - Cột D: 'Giá Giấy Tờ Xã'
+    (đúng định dạng của file xuất ra từ nút "Xuất Excel", sheet 'Cà Mau')
+    Dòng 1 là tiêu đề, dữ liệu bắt đầu từ dòng 2. Ô nào để trống thì giữ nguyên giá cũ.
+    """
+    file = request.files.get('file')
+    if not file or not file.filename.lower().endswith(('.xlsx', '.xls')):
+        return jsonify({'success': False, 'message': 'Vui lòng chọn tập tin Excel hợp lệ (.xlsx, .xls)!'}), 400
+
+    try:
+        wb = openpyxl.load_workbook(file, data_only=True)
+        ws = wb.active
+
+        so_xe_cap_nhat = 0
+        xe_khong_tim_thay = []
+        for row_idx in range(2, ws.max_row + 1):
+            ten_xe_excel = ws.cell(row=row_idx, column=1).value
+            ten_xe_excel = str(ten_xe_excel).strip() if ten_xe_excel is not None else ''
+            if not ten_xe_excel:
+                continue
+
+            xe = Xe.query.filter_by(ten_xe=ten_xe_excel).first()
+            if not xe:
+                xe_khong_tim_thay.append(ten_xe_excel)
+                continue
+
+            gia_phuong_moi = safe_float(ws.cell(row=row_idx, column=3).value, None)
+            gia_xa_moi = safe_float(ws.cell(row=row_idx, column=4).value, None)
+
+            co_thay_doi = False
+            if gia_phuong_moi is not None and (xe.gia_gt_phuong_cm or 0) != gia_phuong_moi:
+                xe.gia_gt_phuong_cm = gia_phuong_moi
+                co_thay_doi = True
+            if gia_xa_moi is not None and (xe.gia_gt_xa_cm or 0) != gia_xa_moi:
+                xe.gia_gt_xa_cm = gia_xa_moi
+                co_thay_doi = True
+
+            if co_thay_doi:
+                so_xe_cap_nhat += 1
+
+        db.session.commit()
+
+        if so_xe_cap_nhat:
+            cap_nhat_thoi_gian_dong_bo('Cà Mau', session.get('username'))
+
+        return jsonify({
+            'success': True,
+            'message': f'Đã cập nhật giá giấy tờ Cà Mau cho {so_xe_cap_nhat} xe.',
+            'so_luong': so_xe_cap_nhat,
+            'xe_khong_tim_thay': xe_khong_tim_thay
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Lỗi khi xử lý file Excel: {str(e)}'}), 500
+
+
 @app.route('/admin/gia-giay-to')
 @admin_required
 def admin_gia_giay_to_page():
