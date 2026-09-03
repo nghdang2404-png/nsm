@@ -443,18 +443,27 @@
                                 <td>
                                     <div class="d-flex justify-content-center gap-1">
                                         {% if u.trang_thai != 'approved' %}
-                                            <a href="/admin/users/approve/{{ u.id }}" class="btn btn-success btn-sm py-1 px-2" style="font-size: 11px;" title="Phê duyệt tài khoản">
-                                                <i class="fa-solid fa-check me-1"></i> Duyệt
-                                            </a>
+                                            <form action="/admin/users/approve/{{ u.id }}" method="POST" class="m-0">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-success btn-sm py-1 px-2" style="font-size: 11px;" title="Phê duyệt tài khoản">
+                                                    <i class="fa-solid fa-check me-1"></i> Duyệt
+                                                </button>
+                                            </form>
                                         {% else %}
-                                            <a href="/admin/users/reject/{{ u.id }}" class="btn btn-outline-warning btn-sm py-1 px-2 text-dark" style="font-size: 11px;" title="Từ chối/Khóa">
-                                                <i class="fa-solid fa-lock me-1"></i> Khóa
-                                            </a>
+                                            <form action="/admin/users/reject/{{ u.id }}" method="POST" class="m-0">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-outline-warning btn-sm py-1 px-2 text-dark" style="font-size: 11px;" title="Từ chối/Khóa">
+                                                    <i class="fa-solid fa-lock me-1"></i> Khóa
+                                                </button>
+                                            </form>
                                         {% endif %}
                                         
-                                        <a href="/admin/users/delete/{{ u.id }}" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 11px;" onclick="return confirm('Bạn có chắc muốn xóa tài khoản {{ u.username }} không?')" title="Xóa tài khoản">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </a>
+                                        <form action="/admin/users/delete/{{ u.id }}" method="POST" class="m-0" onsubmit="return confirm('Bạn có chắc muốn xóa tài khoản {{ u.username }} không?')">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 11px;" title="Xóa tài khoản">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
@@ -485,6 +494,7 @@
         <div class="tool-card-divider"></div>
         <div class="card-body py-3">
             <form action="/admin/import" method="POST" enctype="multipart/form-data" class="row g-2 align-items-center">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="col-md-4 col-12">
                     <input type="file" name="file_excel" class="form-control form-control-sm" accept=".xlsx, .xls" required>
                 </div>
@@ -512,12 +522,14 @@
             <div class="row g-2 align-items-center">
                 <div class="col-md-9 col-12">
                     <form action="/admin/settings" method="POST" class="d-flex gap-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="url" name="csv_url" value="{{ csv_url }}" class="form-control form-control-sm" placeholder="Dán link Publish to web (CSV)..." required>
                         <button type="submit" class="btn btn-outline-danger btn-sm fw-semibold text-nowrap"><i class="fa-solid fa-save me-1"></i> Lưu</button>
                     </form>
                 </div>
                 <div class="col-md-3 col-12 mt-2 mt-md-0">
                     <form action="/admin/sync-sheet" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-success btn-sm w-100 fw-semibold" {% if not csv_url %}disabled{% endif %}>
                             <i class="fa-solid fa-rotate me-1"></i> Kéo dữ liệu ngay
                         </button>
@@ -598,12 +610,18 @@
                                         <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2" style="font-size: 11px;" data-bs-toggle="modal" data-bs-target="#modalSuaKM{{ km.id }}" title="Sửa">
                                             <i class="fa-solid fa-pen"></i>
                                         </button>
-                                        <a href="/admin/khuyen-mai/toggle/{{ km.id }}" class="btn btn-outline-warning btn-sm py-1 px-2 text-dark" style="font-size: 11px;" title="{{ 'Tắt' if km.dang_bat else 'Bật lại' }}">
-                                            <i class="fa-solid {{ 'fa-toggle-on' if km.dang_bat else 'fa-toggle-off' }}"></i>
-                                        </a>
-                                        <a href="/admin/khuyen-mai/delete/{{ km.id }}" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 11px;" onclick="return confirm('Bạn có chắc muốn xóa chương trình khuyến mãi \'{{ km.tieu_de }}\' không?')" title="Xóa">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </a>
+                                        <form action="/admin/khuyen-mai/toggle/{{ km.id }}" method="POST" class="m-0">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-outline-warning btn-sm py-1 px-2 text-dark" style="font-size: 11px;" title="{{ 'Tắt' if km.dang_bat else 'Bật lại' }}">
+                                                <i class="fa-solid {{ 'fa-toggle-on' if km.dang_bat else 'fa-toggle-off' }}"></i>
+                                            </button>
+                                        </form>
+                                        <form action="/admin/khuyen-mai/delete/{{ km.id }}" method="POST" class="m-0" onsubmit="return confirm('Bạn có chắc muốn xóa chương trình khuyến mãi \'{{ km.tieu_de }}\' không?')">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 11px;" title="Xóa">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
@@ -625,6 +643,7 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <form action="/admin/khuyen-mai/add" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-header" style="background-color:#f97316; color:#fff;">
                     <h6 class="modal-title fw-bold"><i class="fa-solid fa-gift me-1"></i> Thêm chương trình khuyến mãi mới</h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -687,6 +706,7 @@
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <form action="/admin/khuyen-mai/edit/{{ km.id }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="modal-header" style="background-color:#f97316; color:#fff;">
                         <h6 class="modal-title fw-bold"><i class="fa-solid fa-pen me-1"></i> Sửa chương trình khuyến mãi</h6>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -757,6 +777,7 @@
                 <tbody style="font-size: 13px;">
                     {% for xe in danh_sach_xe %}
                     <form action="/admin/edit/{{ xe.id }}" method="POST" enctype="multipart/form-data" id="form_edit_{{ xe.id }}" class="edit-xe-form" data-id="{{ xe.id }}"></form>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" form="form_edit_{{ xe.id }}">
                     <input type="hidden" name="loai_xe" id="loai_xe_input_{{ xe.id }}" value="{{ xe.loai_xe }}" form="form_edit_{{ xe.id }}">
                     <input type="hidden" name="ten_xe" id="ten_xe_input_{{ xe.id }}" value="{{ xe.ten_xe }}" form="form_edit_{{ xe.id }}">
 
@@ -769,9 +790,12 @@
                                 <div class="fw-bold text-dark p-2 bg-light rounded border flex-grow-1 me-2 mb-0" style="font-size: 13px;">
                                     <i class="fa-solid fa-car me-1 text-primary"></i><span id="ten_xe_text_{{ xe.id }}">{{ xe.ten_xe }}</span>
                                 </div>
-                                <a href="/admin/delete/{{ xe.id }}" class="btn btn-outline-danger btn-sm px-2 text-nowrap" onclick="return confirm('Bạn có chắc muốn xóa xe này cùng toàn bộ thông tin màu sắc liên quan?')" title="Xóa xe này">
-                                    <i class="fa-solid fa-trash me-1"></i> Xóa xe
-                                </a>
+                                <form action="/admin/delete/{{ xe.id }}" method="POST" class="m-0" onsubmit="return confirm('Bạn có chắc muốn xóa xe này cùng toàn bộ thông tin màu sắc liên quan?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm px-2 text-nowrap" title="Xóa xe này">
+                                        <i class="fa-solid fa-trash me-1"></i> Xóa xe
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>
@@ -879,9 +903,12 @@
                                         <div class="color-row-item p-2 bg-white rounded border">
                                             <div class="d-flex gap-1 align-items-center mb-1">
                                                 <input type="text" name="edit_ten_mau_{{ mau.id }}" value="{{ mau.ten_mau }}" form="form_edit_{{ xe.id }}" class="form-control form-control-sm fw-bold highlight-ten-mau" placeholder="Tên màu">
-                                                <a href="/admin/delete-mau/{{ mau.id }}" class="text-danger small fw-bold text-decoration-none ms-auto p-1" onclick="return confirm('Xóa màu này?')" title="Xóa màu này">
-                                                    <i class="fa-solid fa-trash fs-6"></i>
-                                                </a>
+                                                <form action="/admin/delete-mau/{{ mau.id }}" method="POST" class="ms-auto m-0" onsubmit="return confirm('Xóa màu này?')">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-link text-danger small fw-bold text-decoration-none p-1" title="Xóa màu này">
+                                                        <i class="fa-solid fa-trash fs-6"></i>
+                                                    </button>
+                                                </form>
                                             </div>
                                             
                                             <div class="row g-1 mb-2">

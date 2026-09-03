@@ -88,9 +88,12 @@
                             </button>
                             
                             {% if u.username != username %}
-                                <a href="{{ url_for('delete_user', id=u.id) }}" class="btn btn-sm btn-outline-danger px-2" onclick="return confirm('Bạn có chắc chắn muốn xóa tài khoản {{ u.username }} này không?');" title="Xóa">
-                                    <i class="fas fa-trash"></i> Xóa
-                                </a>
+                                <form action="{{ url_for('delete_user', id=u.id) }}" method="POST" class="d-inline m-0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tài khoản {{ u.username }} này không?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger px-2" title="Xóa">
+                                        <i class="fas fa-trash"></i> Xóa
+                                    </button>
+                                </form>
                             {% else %}
                                 <button class="btn btn-sm btn-outline-secondary px-2" disabled title="Không thể xóa chính mình">Xóa</button>
                             {% endif %}
@@ -102,6 +105,7 @@
                         <div class="modal-dialog">
                             <div class="modal-content border-0 shadow">
                                 <form action="{{ url_for('edit_user', id=u.id) }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <div class="modal-header bg-dark text-white">
                                         <h5 class="modal-title fw-bold fs-6 text-warning">
                                             <i class="fas fa-user-pen me-1"></i> Chỉnh sửa tài khoản: {{ u.username }}

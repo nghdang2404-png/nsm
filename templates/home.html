@@ -7,6 +7,7 @@
     
     <!-- CẤU HÌNH PWA CHO ANDROID & IOS -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#dc2626">
     
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -848,6 +849,27 @@
         <p>&copy; Bản quyền thuộc về Nam Sương Group</p>
     </div>
 </footer>
+
+<!-- Tự động gắn CSRF token vào mọi request fetch() dùng method thay đổi dữ liệu -->
+<script>
+    (function () {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const fetchGoc = window.fetch;
+        window.fetch = function (input, init) {
+            init = init || {};
+            const method = (init.method || 'GET').toUpperCase();
+            if (csrfToken && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+                init.headers = init.headers || {};
+                if (init.headers instanceof Headers) {
+                    init.headers.set('X-CSRFToken', csrfToken);
+                } else {
+                    init.headers['X-CSRFToken'] = csrfToken;
+                }
+            }
+            return fetchGoc(input, init);
+        };
+    })();
+</script>
 
 <!-- SCRIPTS XỬ LÝ SỰ KIỆN VÀ AJAX -->
 <script>

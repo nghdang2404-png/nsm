@@ -15,6 +15,10 @@ from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, has_request_context, send_file
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf import CSRFProtect
+from flask_wtf.csrf import CSRFError
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from sqlalchemy import case, text
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -43,6 +47,33 @@ if IS_PRODUCTION and not _secret_key_env:
         "vd tạo bằng: python -c \"import secrets; print(secrets.token_hex(32))\") rồi deploy lại."
     )
 app.secret_key = _secret_key_env or 'chi-danh-cho-chay-local-khong-dung-tren-production'
+
+# --- CSRF PROTECTION (Flask-WTF) ---
+# Bật CSRF cho MỌI request POST/PUT/PATCH/DELETE mặc định. Nghĩa là mọi <form
+# method="POST"> phải có input ẩn csrf_token, và mọi fetch() POST bằng JS phải gửi
+# kèm header X-CSRFToken - nếu không sẽ bị chặn (lỗi 400 CSRF token missing).
+csrf = CSRFProtect(app)
+
+# --- RATE LIMITING: chống dò mật khẩu tự động (brute-force) ---
+# Giới hạn theo địa chỉ IP. Lưu ý: bộ nhớ mặc định (in-memory) chỉ hoạt động đúng
+# khi chạy 1 instance/worker. Nếu sau này scale Render lên nhiều instance, cần đổi
+# storage_uri sang Redis (xem ghi chú bên dưới) để giới hạn dùng chung giữa các instance.
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=[],
+    storage_uri="memory://",
+)
+
+@app.errorhandler(CSRFError)
+def loi_csrf(e):
+    flash("Phiên làm việc đã hết hạn hoặc yêu cầu không hợp lệ (CSRF). Vui lòng thử lại.", "danger")
+    return redirect(request.referrer or url_for('login')), 400
+
+@app.errorhandler(429)
+def loi_qua_nhieu_yeu_cau(e):
+    flash("Bạn đã thử đăng nhập sai quá nhiều lần. Vui lòng đợi 1 phút rồi thử lại.", "danger")
+    return redirect(url_for('login')), 429
 
 # --- CẤU HÌNH COOKIE ĐỂ GIỮ PHIÊN TRÊN ĐIỆN THOẠI ---
 app.permanent_session_lifetime = timedelta(days=30)
@@ -568,6 +599,7 @@ def cap_nhat_thoi_gian_dong_bo(vung='Cà Mau', username=None):
 
 # --- ROUTES AUTH & USER ---
 @app.route("/", methods=["GET", "POST"])
+@limiter.limit("8 per minute", methods=["POST"])
 def login():
     if request.method == "POST":
         username_input = request.form.get("username")
@@ -808,7 +840,7 @@ def sua_khuyen_mai(id):
     flash(f"Đã cập nhật chương trình khuyến mãi '{tieu_de}'!", "success")
     return redirect(url_for('admin_panel'))
 
-@app.route("/admin/khuyen-mai/toggle/<int:id>", methods=["GET"])
+@app.route("/admin/khuyen-mai/toggle/<int:id>", methods=["POST"])
 @admin_required
 def bat_tat_khuyen_mai(id):
     km = db.get_or_404(KhuyenMai, id)
@@ -817,7 +849,7 @@ def bat_tat_khuyen_mai(id):
     flash(f"Đã {'bật' if km.dang_bat else 'tắt'} chương trình khuyến mãi '{km.tieu_de}'!", "success")
     return redirect(url_for('admin_panel'))
 
-@app.route("/admin/khuyen-mai/delete/<int:id>", methods=["GET"])
+@app.route("/admin/khuyen-mai/delete/<int:id>", methods=["POST"])
 @admin_required
 def xoa_khuyen_mai(id):
     km = db.get_or_404(KhuyenMai, id)
@@ -1529,7 +1561,7 @@ def admin_add_user():
     return render_template("register.html", username=session.get('username'))
 
 # --- DUYỆT HOẶC TỪ CHỐI TÀI KHOẢN (DÀNH CHO ADMIN) ---
-@app.route("/admin/users/approve/<int:id>")
+@app.route("/admin/users/approve/<int:id>", methods=["POST"])
 @admin_required
 def approve_user(id):  # <--- Đổi 'user_id' thành 'id' cho khớp với <int:id> ở trên
     user = User.query.get_or_404(id)
@@ -1537,7 +1569,7 @@ def approve_user(id):  # <--- Đổi 'user_id' thành 'id' cho khớp với <int
     db.session.commit()
     
     return redirect(url_for('admin_panel'))
-@app.route("/admin/users/reject/<int:id>")
+@app.route("/admin/users/reject/<int:id>", methods=["POST"])
 @admin_required
 def reject_user(id):
     user = db.get_or_404(User, id)
@@ -1563,7 +1595,7 @@ def edit_user(id):
     flash(f"Cập nhật tài khoản {user.username} thành công!", "success")
     return redirect(url_for('manage_users'))
 
-@app.route("/admin/users/delete/<int:id>")
+@app.route("/admin/users/delete/<int:id>", methods=["POST"])
 @admin_required
 def delete_user(id):
     user = db.get_or_404(User, id)
@@ -1738,7 +1770,7 @@ def edit_xe(id):
 
     return redirect(url_for('admin_panel'))
 
-@app.route("/admin/delete/<int:id>", methods=["GET"])
+@app.route("/admin/delete/<int:id>", methods=["POST"])
 @admin_required
 def delete_xe(id):
     try:
@@ -1750,7 +1782,7 @@ def delete_xe(id):
         flash(f"Không thể xóa xe: {str(e)}", "danger")
     return redirect(url_for('admin_panel'))
 
-@app.route("/admin/delete-mau/<int:id>", methods=["GET"])
+@app.route("/admin/delete-mau/<int:id>", methods=["POST"])
 @admin_required
 def delete_mau(id):
     try:
@@ -1883,6 +1915,7 @@ def import_excel():
     return redirect(url_for('admin_panel'))
 
 @app.route('/api/sync-inventory', methods=['POST'])
+@csrf.exempt
 def sync_inventory_api():
     # Route này TRƯỚC ĐÂY hoàn toàn không có xác thực: bất kỳ ai gửi đúng format JSON
     # đến URL này đều có thể TẠO/SỬA dữ liệu xe và tồn kho trong database (không chỉ
