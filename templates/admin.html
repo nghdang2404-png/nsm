@@ -134,6 +134,134 @@
         transform: rotate(180deg);
     }
 
+    /* ==================== KHU VỰC THẺ CÔNG CỤ (TOOL CARDS) ==================== */
+    .tool-card {
+        background: #ffffff;
+        border: 1px solid #eef0f3;
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+        overflow: hidden;
+        transition: box-shadow 0.25s ease, transform 0.25s ease;
+    }
+    .tool-card:hover {
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+        transform: translateY(-1px);
+    }
+
+    .tool-card-header, .tool-card-body {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 15px 18px;
+        cursor: pointer;
+    }
+    .tool-card-link .tool-card-body {
+        cursor: default;
+        flex-wrap: wrap;
+    }
+
+    .tool-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 18px;
+        flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    }
+    .tool-icon-green  { background: linear-gradient(135deg, #34d399, #16a34a); }
+    .tool-icon-blue   { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+    .tool-icon-violet { background: linear-gradient(135deg, #a78bfa, #7c3aed); }
+    .tool-icon-cyan   { background: linear-gradient(135deg, #22d3ee, #0891b2); }
+    .tool-icon-orange { background: linear-gradient(135deg, #fb923c, #ea580c); }
+
+    .tool-text { flex: 1 1 auto; min-width: 0; }
+    .tool-title {
+        font-size: 14.5px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        flex-wrap: wrap;
+    }
+    .tool-subtitle {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 2px;
+        display: block;
+        font-weight: 500;
+    }
+
+    .tool-count-badge {
+        background: #ef4444;
+        color: #fff;
+        font-size: 10.5px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 20px;
+        line-height: 1.5;
+    }
+
+    .tool-expand-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #f1f5f9;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: all 0.25s ease;
+        font-size: 13px;
+    }
+    .tool-card-header[aria-expanded="true"] .tool-expand-btn {
+        background: #1e293b;
+        color: #fff;
+        transform: rotate(180deg);
+    }
+
+    .tool-cta {
+        background: linear-gradient(135deg, #34d399, #16a34a);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 10px 20px;
+        border-radius: 9px;
+        text-decoration: none;
+        white-space: nowrap;
+        box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+    }
+    .tool-cta:hover {
+        filter: brightness(1.06);
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 14px rgba(22, 163, 74, 0.3);
+    }
+
+    .tool-card-divider {
+        height: 1px;
+        background: #eef0f3;
+        margin: 0 18px;
+    }
+
+    @media (max-width: 575.98px) {
+        .tool-card-header, .tool-card-body { padding: 12px 14px; gap: 10px; }
+        .tool-icon { width: 38px; height: 38px; font-size: 15px; border-radius: 10px; }
+        .tool-title { font-size: 13px; }
+        .tool-subtitle { font-size: 11px; }
+        .tool-cta { width: 100%; justify-content: center; margin-top: 4px; }
+    }
+    /* ==================== HẾT KHU VỰC THẺ CÔNG CỤ ==================== */
+
     /* Nút LƯU TẤT CẢ nổi ở góc dưới phải màn hình */
     .floating-save-container {
         position: fixed;
@@ -256,33 +384,37 @@
 </div>
 
 <!-- Nút sang trang quản lý riêng: Giá giấy tờ (Cà Mau + Bạc Liêu) -->
-<div class="card mb-3 brand-card" style="border-top-color: #16a34a;">
-    <div class="card-body py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-            <h6 class="mb-0 fw-bold" style="font-size: 14px;"><i class="fa-solid fa-file-invoice me-1 text-success"></i> Quản lý Giá Giấy Tờ</h6>
-            <span class="text-muted" style="font-size: 12px;">Trang riêng để nhập nhanh giá giấy tờ Cà Mau &amp; Bạc Liêu cho tất cả xe</span>
+<div class="tool-card tool-card-link mb-3">
+    <div class="tool-card-body">
+        <div class="tool-icon tool-icon-green"><i class="fa-solid fa-file-invoice"></i></div>
+        <div class="tool-text">
+            <h6 class="tool-title">Quản lý Giá Giấy Tờ</h6>
+            <span class="tool-subtitle">Trang riêng để nhập nhanh giá giấy tờ Cà Mau &amp; Bạc Liêu cho tất cả xe</span>
         </div>
-        <a href="{{ url_for('admin_gia_giay_to_page') }}" class="btn btn-success btn-sm px-3">
-            <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Mở trang Giá Giấy Tờ
+        <a href="{{ url_for('admin_gia_giay_to_page') }}" class="tool-cta">
+            Mở trang <i class="fa-solid fa-arrow-right ms-2"></i>
         </a>
     </div>
 </div>
 
 <!-- Form Quản lý & Phê duyệt tài khoản nhân viên -->
-<div class="card mb-3 brand-card" style="border-top-color: #0d6efd;">
-    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseUsers" aria-expanded="false" style="cursor: pointer; border-bottom: none;">
-        <h6 class="text-primary mb-0 fw-bold" style="font-size: 14px;">
-            <i class="fa-solid fa-users-gear me-1"></i> Quản lý & Phê duyệt tài khoản 
-            {% if danh_sach_user %}
-                <span class="badge bg-danger ms-1" style="font-size: 10px;">{{ danh_sach_user|length }}</span>
-            {% endif %}
-        </h6>
-        <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 10px;">
-            Mở rộng <i class="fa-solid fa-chevron-down transition-icon ms-1"></i>
-        </span>
+<div class="tool-card mb-3">
+    <div class="tool-card-header" data-bs-toggle="collapse" data-bs-target="#collapseUsers" aria-expanded="false">
+        <div class="tool-icon tool-icon-blue"><i class="fa-solid fa-users-gear"></i></div>
+        <div class="tool-text">
+            <h6 class="tool-title">
+                Quản lý &amp; Phê duyệt tài khoản
+                {% if danh_sach_user %}
+                    <span class="tool-count-badge">{{ danh_sach_user|length }}</span>
+                {% endif %}
+            </h6>
+            <span class="tool-subtitle">Duyệt tài khoản mới hoặc khoá tài khoản nhân viên</span>
+        </div>
+        <div class="tool-expand-btn"><i class="fa-solid fa-chevron-down"></i></div>
     </div>
     <div class="collapse" id="collapseUsers">
-        <div class="card-body py-2 pt-0">
+        <div class="tool-card-divider"></div>
+        <div class="card-body py-2 pt-3">
             <div class="table-responsive">
                 <table class="table table-bordered align-middle text-center mb-0" style="font-size: 12px;">
                     <thead class="table-light">
@@ -340,15 +472,18 @@
 </div>
 
 <!-- Form Import Excel -->
-<div class="card mb-3 brand-card">
-    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseExcel" aria-expanded="false" style="cursor: pointer; border-bottom: none;">
-        <h6 class="text-danger mb-0 fw-bold" style="font-size: 14px;"><i class="fa-solid fa-file-excel me-1 text-success"></i> Cập nhật dữ liệu nhanh từ Excel</h6>
-        <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 10px;">
-            Mở rộng <i class="fa-solid fa-chevron-down transition-icon ms-1"></i>
-        </span>
+<div class="tool-card mb-3">
+    <div class="tool-card-header" data-bs-toggle="collapse" data-bs-target="#collapseExcel" aria-expanded="false">
+        <div class="tool-icon tool-icon-violet"><i class="fa-solid fa-file-excel"></i></div>
+        <div class="tool-text">
+            <h6 class="tool-title">Cập nhật dữ liệu nhanh từ Excel</h6>
+            <span class="tool-subtitle">Tải file Excel để cập nhật hàng loạt giá và tồn kho cho toàn bộ xe</span>
+        </div>
+        <div class="tool-expand-btn"><i class="fa-solid fa-chevron-down"></i></div>
     </div>
     <div class="collapse" id="collapseExcel">
-        <div class="card-body py-2 pt-0">
+        <div class="tool-card-divider"></div>
+        <div class="card-body py-3">
             <form action="/admin/import" method="POST" enctype="multipart/form-data" class="row g-2 align-items-center">
                 <div class="col-md-4 col-12">
                     <input type="file" name="file_excel" class="form-control form-control-sm" accept=".xlsx, .xls" required>
@@ -362,15 +497,18 @@
 </div>
 
 <!-- Form Cấu hình Link Google Sheets -->
-<div class="card mb-4 brand-card">
-    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseSheets" aria-expanded="false" style="cursor: pointer; border-bottom: none;">
-        <h6 class="text-danger mb-0 fw-bold" style="font-size: 14px;"><i class="fa-solid fa-link me-1"></i> Đồng bộ Google Sheets (Cập nhật link khi qua tháng)</h6>
-        <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 10px;">
-            Mở rộng <i class="fa-solid fa-chevron-down transition-icon ms-1"></i>
-        </span>
+<div class="tool-card mb-4">
+    <div class="tool-card-header" data-bs-toggle="collapse" data-bs-target="#collapseSheets" aria-expanded="false">
+        <div class="tool-icon tool-icon-cyan"><i class="fa-solid fa-link"></i></div>
+        <div class="tool-text">
+            <h6 class="tool-title">Đồng bộ Google Sheets</h6>
+            <span class="tool-subtitle">Đồng bộ dữ liệu tự động theo link Google Sheets đã Publish (cập nhật link khi qua tháng)</span>
+        </div>
+        <div class="tool-expand-btn"><i class="fa-solid fa-chevron-down"></i></div>
     </div>
     <div class="collapse" id="collapseSheets">
-        <div class="card-body py-2 pt-0">
+        <div class="tool-card-divider"></div>
+        <div class="card-body py-3">
             <div class="row g-2 align-items-center">
                 <div class="col-md-9 col-12">
                     <form action="/admin/settings" method="POST" class="d-flex gap-2">
@@ -391,20 +529,23 @@
 </div>
 
 <!-- Quản lý Chương trình Khuyến mãi -->
-<div class="card mb-3 brand-card" style="border-top-color: #f97316;">
-    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseKhuyenMai" aria-expanded="false" style="cursor: pointer; border-bottom: none;">
-        <h6 class="mb-0 fw-bold" style="font-size: 14px; color: #f97316;">
-            <i class="fa-solid fa-gift me-1"></i> Quản lý Chương trình Khuyến mãi
-            {% if danh_sach_khuyen_mai %}
-                <span class="badge bg-warning text-dark ms-1" style="font-size: 10px;">{{ danh_sach_khuyen_mai|length }}</span>
-            {% endif %}
-        </h6>
-        <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 10px;">
-            Mở rộng <i class="fa-solid fa-chevron-down transition-icon ms-1"></i>
-        </span>
+<div class="tool-card mb-3">
+    <div class="tool-card-header" data-bs-toggle="collapse" data-bs-target="#collapseKhuyenMai" aria-expanded="false">
+        <div class="tool-icon tool-icon-orange"><i class="fa-solid fa-gift"></i></div>
+        <div class="tool-text">
+            <h6 class="tool-title">
+                Quản lý Chương trình Khuyến mãi
+                {% if danh_sach_khuyen_mai %}
+                    <span class="tool-count-badge" style="background:#f97316;">{{ danh_sach_khuyen_mai|length }}</span>
+                {% endif %}
+            </h6>
+            <span class="tool-subtitle">Tạo và quản lý các chương trình khuyến mãi đang áp dụng</span>
+        </div>
+        <div class="tool-expand-btn"><i class="fa-solid fa-chevron-down"></i></div>
     </div>
     <div class="collapse" id="collapseKhuyenMai">
-        <div class="card-body py-2 pt-2">
+        <div class="tool-card-divider"></div>
+        <div class="card-body py-2 pt-3">
             <div class="d-flex justify-content-end mb-2">
                 <button type="button" class="btn btn-sm text-white fw-semibold" style="background-color:#f97316;" data-bs-toggle="modal" data-bs-target="#modalThemKM">
                     <i class="fa-solid fa-circle-plus me-1"></i> Thêm chương trình khuyến mãi

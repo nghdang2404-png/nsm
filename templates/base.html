@@ -23,36 +23,46 @@
             font-family: 'SVN-Monasans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
-        /* --- NAVBAR HIỆN ĐẠI --- */
+        /* --- NAVBAR HIỆN ĐẠI, GỌN GÀNG --- */
         .custom-navbar {
             background-color: #ffffff !important;
             border-bottom: 1px solid #e9ecef;
-            padding-top: 10px;
-            padding-bottom: 10px;
+            padding-top: 8px;
+            padding-bottom: 8px;
         }
 
         .navbar-brand-custom {
             display: flex;
             align-items: center;
             text-decoration: none;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .brand-logo {
+            height: 32px;
+            width: auto;
+            object-fit: contain;
         }
 
         .brand-text {
             color: #dc3545;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 800;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
             text-transform: uppercase;
+            line-height: 1.1;
         }
 
         /* --- MENU DẠNG PILL HIỆN ĐẠI --- */
         .admin-nav-pills {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             background-color: #f1f3f5;
             padding: 4px;
             border-radius: 8px;
+            flex-wrap: wrap;
         }
 
         .nav-pill-btn {
@@ -60,7 +70,7 @@
             text-decoration: none;
             font-size: 13px;
             font-weight: 600;
-            padding: 6px 12px;
+            padding: 7px 12px;
             border-radius: 6px;
             transition: all 0.2s ease;
             display: inline-flex;
@@ -79,36 +89,86 @@
             box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
         }
 
-        /* --- USER STATUS PILL --- */
-        .user-status-pill {
-            background-color: #ffffff;
-            border: 1px solid #ced4da;
-            border-radius: 50rem;
-            padding: 5px 14px;
+        /* --- USER CHIP + DROPDOWN GỘP THÔNG TIN ĐỒNG BỘ --- */
+        .user-chip {
             display: flex;
             align-items: center;
+            gap: 8px;
+            background-color: #ffffff;
+            border: 1px solid #e2e5e9;
+            border-radius: 50rem;
+            padding: 4px 10px 4px 4px;
+            cursor: pointer;
         }
+        .user-chip:hover { border-color: #dc3545; }
+        .user-chip::after { display: none; } /* bỏ mũi tên mặc định của Bootstrap, dùng icon riêng */
 
-        .update-timestamp {
-            font-size: 11px;
-            color: #6c757d;
-            text-align: right;
-            margin-top: 3px;
-            margin-right: 5px;
-            font-weight: 500;
-            line-height: 1.4;
-        }
-
-        .btn-logout {
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
             background-color: #dc3545;
-            color: white;
-            font-weight: 600;
-            border: none;
-            border-radius: 6px;
-            padding: 6px 14px;
-            font-size: 13px;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
         }
-        .btn-logout:hover { background-color: #bb2d3b; color: white; }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #343a40;
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .user-dropdown-menu {
+            min-width: 300px;
+            padding: 8px;
+            border: none;
+            border-radius: 10px;
+        }
+
+        .user-dropdown-menu .dropdown-header {
+            font-size: 11px;
+            font-weight: 700;
+            color: #adb5bd;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 6px 8px 4px;
+        }
+
+        .sync-info-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 6px 8px;
+            border-radius: 8px;
+        }
+        .sync-info-item:hover { background-color: #f8f9fa; }
+        .sync-info-item i { font-size: 9px; margin-top: 5px; }
+
+        .sync-region {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #343a40;
+        }
+
+        .sync-detail {
+            font-size: 11.5px;
+            color: #6c757d;
+        }
+
+        .navbar-toggler {
+            border: 1px solid #e2e5e9;
+            padding: 6px 10px;
+            box-shadow: none !important;
+        }
 
         /* --- THANH TIÊU ĐỀ TRANG THAY CHO BANNER LỚN --- */
         .admin-page-header {
@@ -137,13 +197,18 @@
             margin: 0;
         }
 
-        @media (max-width: 1199px) {
-            .custom-navbar .container-fluid {
-                flex-direction: column;
-                gap: 12px;
+        @media (max-width: 991.98px) {
+            .admin-nav-pills {
+                width: 100%;
+                justify-content: flex-start;
+                margin-top: 10px;
             }
-            .admin-nav-pills { width: 100%; justify-content: center; flex-wrap: wrap; }
-            .user-status-pill { width: 100%; justify-content: center; border-radius: 8px; }
+            .user-name { display: none; }
+            .user-dropdown-menu { min-width: 260px; }
+        }
+
+        @media (max-width: 575.98px) {
+            .brand-text { font-size: 13px; }
             .admin-page-header { flex-direction: column; align-items: flex-start; gap: 5px; }
         }
 
@@ -158,58 +223,78 @@
 <body>
 
     <!-- Header / Navbar -->
-    <nav class="navbar custom-navbar shadow-sm">
-        <div class="container-fluid d-flex justify-content-between align-items-center">
-            
-            <!-- Cột trái: Logo & Brand -->
+    <nav class="navbar navbar-expand-lg custom-navbar shadow-sm sticky-top">
+        <div class="container-fluid px-lg-4 px-2">
+
+            <!-- Logo & Brand -->
             <a class="navbar-brand-custom" href="/admin">
-                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Nam Sương" style="height: 34px; width: auto; object-fit: contain;" class="me-2">
-                <span class="brand-text">NAM SƯƠNG MOTOR</span>
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Nam Sương" class="brand-logo">
+                <span class="brand-text">Nam Sương Motor</span>
             </a>
 
-            <!-- Cột giữa: Menu chính dạng Pill hiện đại (Đã tích hợp nút Lịch sử vào đây cho cân đối) -->
-            <div class="admin-nav-pills">
-                <a href="/home" class="nav-pill-btn">
-                    <i class="fa-solid fa-house me-1"></i> Trang chủ
-                </a>
-                <a href="{{ url_for('manage_users') }}" class="nav-pill-btn {% if request.endpoint == 'manage_users' %}active{% endif %}">
-                    <i class="fa-solid fa-users-gear me-1"></i> Quản lý tài khoản
-                </a>
-                <a href="/register" class="nav-pill-btn">
-                    <i class="fa-solid fa-user-plus me-1"></i> Đăng ký TK
-                </a>
-                <a href="/admin/history" class="nav-pill-btn {% if request.endpoint == 'view_audit_history' %}active{% endif %} text-primary fw-bold">
-                    <i class="fa-solid fa-clock-rotate-left me-1"></i> Lịch sử hệ thống
-                </a>
+            <!-- Cụm bên phải luôn hiển thị: user chip (kèm thông tin đồng bộ + đăng xuất) + nút mở menu di động -->
+            <div class="d-flex align-items-center order-lg-3 gap-2 ms-auto">
+                <div class="dropdown">
+                    <button class="user-chip" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="user-avatar">{{ (session.get('ho_ten', session.get('username', 'U')))[0]|upper }}</span>
+                        <span class="user-name">{{ session.get('ho_ten', session.get('username', 'Thành viên')) }}</span>
+                        <i class="fa-solid fa-chevron-down" style="font-size: 10px; color:#adb5bd;"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow user-dropdown-menu">
+                        <li class="px-2 pb-2 d-lg-none">
+                            <span class="fw-bold" style="font-size: 13px;">{{ session.get('ho_ten', session.get('username', 'Thành viên')) }}</span>
+                        </li>
+                        <li class="dropdown-header">Trạng thái đồng bộ dữ liệu</li>
+                        <li>
+                            <div class="sync-info-item">
+                                <i class="fa-solid fa-circle text-danger"></i>
+                                <div>
+                                    <div class="sync-region">Cà Mau</div>
+                                    <div class="sync-detail">Cập nhật lúc <strong id="adminTimeCamau">{{ thoi_gian_camau|default('Chưa cập nhật') }}</strong> · bởi <strong id="adminUserCamau">{{ nguoi_camau|default('Admin') }}</strong></div>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="sync-info-item">
+                                <i class="fa-solid fa-circle text-primary"></i>
+                                <div>
+                                    <div class="sync-region">Bạc Liêu</div>
+                                    <div class="sync-detail">Cập nhật lúc <strong id="adminTimeBaclieu">{{ thoi_gian_baclieu|default('Chưa cập nhật') }}</strong> · bởi <strong id="adminUserBaclieu">{{ nguoi_baclieu|default('Admin') }}</strong></div>
+                                </div>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider my-2"></li>
+                        <li>
+                            <a href="/logout" class="dropdown-item text-danger fw-semibold rounded" style="font-size: 13px;">
+                                <i class="fa-solid fa-right-from-bracket me-2"></i> Đăng xuất
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavCollapse" aria-controls="adminNavCollapse" aria-expanded="false" aria-label="Mở menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
             </div>
 
-            <!-- Cột phải: Thông tin User & Đăng xuất -->
-            <div class="d-flex flex-column align-items-end">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="user-status-pill shadow-sm">
-                        <div class="d-flex align-items-center">
-                            <i class="fa-solid fa-circle text-success" style="font-size: 8px; margin-right: 6px;"></i>
-                            <span style="font-size: 12px;">Xin chào, <strong>{{ session.get('ho_ten', session.get('username', 'Thành viên')) }}</strong></span>
-                        </div>
-                    </div>
-                    <a href="/logout" class="btn-logout text-decoration-none">
-                        <i class="fa-solid fa-right-from-bracket me-1"></i> Thoát
+            <!-- Menu điều hướng chính: nằm ngang trên desktop, thu gọn vào toggler trên di động -->
+            <div class="collapse navbar-collapse order-lg-2 flex-grow-0 mx-lg-auto" id="adminNavCollapse">
+                <div class="admin-nav-pills">
+                    <a href="/home" class="nav-pill-btn">
+                        <i class="fa-solid fa-house me-1"></i> Trang chủ
+                    </a>
+                    <a href="{{ url_for('manage_users') }}" class="nav-pill-btn {% if request.endpoint == 'manage_users' %}active{% endif %}">
+                        <i class="fa-solid fa-users-gear me-1"></i> Quản lý tài khoản
+                    </a>
+                    <a href="/register" class="nav-pill-btn">
+                        <i class="fa-solid fa-user-plus me-1"></i> Đăng ký TK
+                    </a>
+                    <a href="/admin/history" class="nav-pill-btn {% if request.endpoint == 'view_audit_history' %}active{% endif %} text-primary fw-bold">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> Lịch sử hệ thống
                     </a>
                 </div>
-                
-                <!-- Khu vực hiển thị thông tin cập nhật động cho Cà Mau & Bạc Liêu -->
-                <div class="update-timestamp">
-                    <div>
-                        <i class="fa-solid fa-clock me-1 text-danger" style="font-size: 9px;"></i> <strong>Cà Mau:</strong> Cập nhật lần cuối: 
-                        <strong class="text-danger" id="adminTimeCamau">{{ thoi_gian_camau|default('Chưa cập nhật') }}</strong> | Bởi: <strong id="adminUserCamau">{{ nguoi_camau|default('Admin') }}</strong>
-                    </div>
-                    <div>
-                        <i class="fa-solid fa-clock me-1 text-primary" style="font-size: 9px;"></i> <strong>Bạc Liêu:</strong> Cập nhật lần cuối: 
-                        <strong class="text-primary" id="adminTimeBaclieu">{{ thoi_gian_baclieu|default('Chưa cập nhật') }}</strong> | Bởi: <strong id="adminUserBaclieu">{{ nguoi_baclieu|default('Admin') }}</strong>
-                    </div>
-                </div>
             </div>
-            
+
         </div>
     </nav>
 
