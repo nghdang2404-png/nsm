@@ -209,6 +209,9 @@ DU_LIEU_KHU_VUC_GIAY_TO_BL = [
             'Phước Long, Hồng Dân',
             'Đông Hải',
             'Sóc Trăng, Cần Thơ',
+            'P. Giá Rai, P. Láng Tròn, X. Phong Thạnh',
+            'X. Đông Hải, X. Gành Hào, X. Định Thành, X. An Trạch, X. Long Điền',
+            'X. Phong Hiệp',
         ]
     },
     {
@@ -367,10 +370,18 @@ def seed_khu_vuc_giay_to_bl():
             db.session.add(kvl)
             db.session.flush()
 
-        ten_nho_hien_co = {n.ten_khu_vuc_nho for n in KhuVucNhoBL.query.filter_by(khu_vuc_lon_id=kvl.id).all()}
+        cac_nho_hien_co = KhuVucNhoBL.query.filter_by(khu_vuc_lon_id=kvl.id).all()
+        ten_nho_hien_co = {n.ten_khu_vuc_nho for n in cac_nho_hien_co}
+        ten_nho_moi = set(kvl_data['khu_vuc_nho'])
         for idx_nho, ten_nho in enumerate(kvl_data['khu_vuc_nho']):
             if ten_nho not in ten_nho_hien_co:
                 db.session.add(KhuVucNhoBL(khu_vuc_lon_id=kvl.id, ten_khu_vuc_nho=ten_nho, thu_tu=idx_nho))
+        # Xoá các khu vực nhỏ không còn trong danh sách dữ liệu (đồng bộ 2 chiều),
+        # đồng thời xoá luôn giá giấy tờ theo xe đã lưu cho khu vực nhỏ đó.
+        for n in cac_nho_hien_co:
+            if n.ten_khu_vuc_nho not in ten_nho_moi:
+                GiaGiayToXeBL.query.filter_by(khu_vuc_nho_id=n.id).delete()
+                db.session.delete(n)
     db.session.commit()
 
 # --- HELPER FUNCTIONS & DECORATORS ---
