@@ -86,7 +86,7 @@
                             <button class="btn btn-sm btn-outline-primary px-2" data-bs-toggle="modal" data-bs-target="#editUserModal{{ u.id }}" title="Chỉnh sửa">
                                 <i class="fas fa-edit"></i> Sửa
                             </button>
-                            
+
                             {% if u.username != username %}
                                 <form action="{{ url_for('delete_user', id=u.id) }}" method="POST" class="d-inline m-0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tài khoản {{ u.username }} này không?');">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -99,59 +99,6 @@
                             {% endif %}
                         </td>
                     </tr>
-
-                    <!-- Modal Chỉnh Sửa Tài Khoản -->
-                    <div class="modal fade" id="editUserModal{{ u.id }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content border-0 shadow">
-                                <form action="{{ url_for('edit_user', id=u.id) }}" method="POST">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <div class="modal-header bg-dark text-white">
-                                        <h5 class="modal-title fw-bold fs-6 text-warning">
-                                            <i class="fas fa-user-pen me-1"></i> Chỉnh sửa tài khoản: {{ u.username }}
-                                        </h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body text-start">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold small text-secondary">Tên đăng nhập:</label>
-                                            <input type="text" class="form-control form-control-sm bg-light" value="{{ u.username }}" disabled>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold small text-secondary">Họ và tên:</label>
-                                            <input type="text" name="ho_ten" class="form-control form-control-sm" value="{{ u.ho_ten or '' }}">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold small text-secondary">Mật khẩu mới (bỏ trống nếu không đổi):</label>
-                                            <input type="password" name="password" class="form-control form-control-sm" placeholder="Nhập mật khẩu mới...">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold small text-secondary">Bộ phận làm việc:</label>
-                                            <input type="text" name="bo_phan" class="form-control form-control-sm" value="{{ u.bo_phan or '' }}">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold small text-secondary">Khu vực làm việc:</label>
-                                            <select name="khu_vuc" class="form-select form-select-sm" required>
-                                                <option value="Cà Mau" {% if u.khu_vuc == 'Cà Mau' %}selected{% endif %}>Cà Mau</option>
-                                                <option value="Bạc Liêu" {% if u.khu_vuc == 'Bạc Liêu' %}selected{% endif %}>Bạc Liêu</option>
-                                            </select>
-                                        </div>
-                                        <div class="mb-3 form-check bg-light p-2 rounded border ps-4">
-                                            <input type="checkbox" name="is_admin" value="yes" class="form-check-input" id="adminCheck{{ u.id }}" {% if u.role == 'admin' %}checked{% endif %}>
-                                            <label class="form-check-label text-danger fw-bold small" for="adminCheck{{ u.id }}">
-                                                Cấp quyền Quản trị viên (Admin)
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer bg-light">
-                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
-                                        <button type="submit" class="btn btn-danger btn-sm px-3" style="background-color: #dc3545; border: none;">Lưu thay đổi</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- End Modal -->
                     {% else %}
                     <tr>
                         <td colspan="7" class="text-center text-muted py-4">Chưa có tài khoản nào trong hệ thống.</td>
@@ -162,4 +109,60 @@
         </div>
     </div>
 </div>
+
+<!-- Tất cả modal chỉnh sửa được đặt NGOÀI <table> để tránh lỗi cấu trúc HTML
+     (tbody chỉ được phép chứa tr, đặt div/modal bên trong sẽ khiến trình duyệt
+     tự động đẩy modal ra khỏi vị trí -> gây kẹt thao tác, đặc biệt trên mobile) -->
+{% for u in users %}
+<div class="modal fade" id="editUserModal{{ u.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <form action="{{ url_for('edit_user', id=u.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold fs-6 text-warning">
+                        <i class="fas fa-user-pen me-1"></i> Chỉnh sửa tài khoản: {{ u.username }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-start">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-secondary">Tên đăng nhập:</label>
+                        <input type="text" class="form-control form-control-sm bg-light" value="{{ u.username }}" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-secondary">Họ và tên:</label>
+                        <input type="text" name="ho_ten" class="form-control form-control-sm" value="{{ u.ho_ten or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-secondary">Mật khẩu mới (bỏ trống nếu không đổi):</label>
+                        <input type="password" name="password" class="form-control form-control-sm" placeholder="Nhập mật khẩu mới...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-secondary">Bộ phận làm việc:</label>
+                        <input type="text" name="bo_phan" class="form-control form-control-sm" value="{{ u.bo_phan or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-secondary">Khu vực làm việc:</label>
+                        <select name="khu_vuc" class="form-select form-select-sm" required>
+                            <option value="Cà Mau" {% if u.khu_vuc == 'Cà Mau' %}selected{% endif %}>Cà Mau</option>
+                            <option value="Bạc Liêu" {% if u.khu_vuc == 'Bạc Liêu' %}selected{% endif %}>Bạc Liêu</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 form-check bg-light p-2 rounded border ps-4">
+                        <input type="checkbox" name="is_admin" value="yes" class="form-check-input" id="adminCheck{{ u.id }}" {% if u.role == 'admin' %}checked{% endif %}>
+                        <label class="form-check-label text-danger fw-bold small" for="adminCheck{{ u.id }}">
+                            Cấp quyền Quản trị viên (Admin)
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger btn-sm px-3" style="background-color: #dc3545; border: none;">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
 {% endblock %}
