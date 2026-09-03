@@ -914,10 +914,17 @@
                 const rowLoai = (row.getAttribute('data-loai') || '').trim().toLowerCase();
                 const rowName = (row.getAttribute('data-name') || '').trim().toLowerCase();
                 const rowMainName = getMainModelName(rowName).toLowerCase();
+                // Bản không dấu-cách để nhận diện các từ viết tắt kiểu "SHM" -> "SH Mode"
+                const rowNameNoSpace = rowName.replace(/\s+/g, '');
+                const keywordNoSpace = keyword.replace(/\s+/g, '');
 
                 const matchLoai = !selectedLoai || rowLoai === selectedLoai;
-                const matchDongXe = !selectedDongXe || rowMainName === selectedDongXe || rowName.includes(selectedDongXe);
-                const matchKeyword = !keyword || rowName.includes(keyword) || rowLoai.includes(keyword) || rowMainName.includes(keyword);
+                const matchDongXe = !selectedDongXe || rowMainName === selectedDongXe;
+                const matchKeyword = !keyword
+                    || rowName.includes(keyword)
+                    || rowLoai.includes(keyword)
+                    || rowMainName.includes(keyword)
+                    || (keywordNoSpace.length >= 3 && rowNameNoSpace.includes(keywordNoSpace));
 
                 if (matchLoai && matchDongXe && matchKeyword) {
                     row.style.display = '';
