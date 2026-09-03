@@ -23,15 +23,26 @@ from PIL import Image, ImageOps
 ssl._create_default_https_context = ssl._create_unverified_context
 
 app = Flask(__name__)
-# Ưu tiên đọc SECRET_KEY từ biến môi trường (set trong Render > Environment).
-# Nếu chưa set thì fallback về giá trị cũ để chạy local không bị lỗi.
-app.secret_key = os.environ.get('SECRET_KEY', 'super_secret_key')
 
 # Render tự động set biến môi trường RENDER=true trên server production.
 # Dùng để bật các cấu hình chỉ nên áp dụng khi chạy thật (HTTPS), không áp dụng khi
 # chạy local qua http://127.0.0.1 (nếu bật Secure=True lúc chạy local, cookie sẽ
 # không được set vì không có HTTPS -> không đăng nhập được).
 IS_PRODUCTION = os.environ.get('RENDER') == 'true'
+
+# Ưu tiên đọc SECRET_KEY từ biến môi trường (set trong Render > Environment > SECRET_KEY).
+# Khi chạy production mà QUÊN set biến này, ứng dụng sẽ DỪNG khởi động thay vì âm thầm
+# chạy với 1 khoá yếu/đoán được (khoá yếu -> kẻ tấn công có thể giả mạo session,
+# tự nâng quyền admin). Khi chạy local (chưa set RENDER=true) vẫn cho fallback để
+# tiện test, không chặn dev.
+_secret_key_env = os.environ.get('SECRET_KEY')
+if IS_PRODUCTION and not _secret_key_env:
+    raise RuntimeError(
+        "Thiếu biến môi trường SECRET_KEY trên Render! "
+        "Vào Render > Environment, thêm SECRET_KEY = (một chuỗi ngẫu nhiên dài, "
+        "vd tạo bằng: python -c \"import secrets; print(secrets.token_hex(32))\") rồi deploy lại."
+    )
+app.secret_key = _secret_key_env or 'chi-danh-cho-chay-local-khong-dung-tren-production'
 
 # --- CẤU HÌNH COOKIE ĐỂ GIỮ PHIÊN TRÊN ĐIỆN THOẠI ---
 app.permanent_session_lifetime = timedelta(days=30)
@@ -52,13 +63,19 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # ?v=... nếu ghi đè cùng tên file).
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 30
 
-# Ưu tiên đọc chuỗi kết nối từ biến môi trường DATABASE_URL (set trong Render >
-# Environment). Fallback về chuỗi cũ để vẫn chạy được khi test local mà chưa set env.
-# LƯU Ý: nên đổi mật khẩu DB này vì đã từng bị lộ thẳng trong code nguồn.
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    'DATABASE_URL',
-    'postgresql://neondb_owner:npg_knMXRhS06HbT@ep-fancy-block-az7pz4uf.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&connect_timeout=30'
-)
+# Bắt buộc đọc chuỗi kết nối DB từ biến môi trường DATABASE_URL (set trong Render >
+# Environment). KHÔNG còn để mật khẩu DB thật nằm trong source code nữa — trước đây
+# chuỗi kết nối Postgres (kèm user/mật khẩu thật) bị hardcode thẳng ở đây, nghĩa là
+# bất kỳ ai đọc được code (kể cả qua git history) đều có toàn quyền đọc/ghi/xoá DB.
+# Khi chạy local mà chưa set DATABASE_URL, fallback sang 1 file SQLite cục bộ (không
+# chứa dữ liệu thật) để vẫn code/test được mà không đụng tới DB production.
+_database_url_env = os.environ.get('DATABASE_URL')
+if IS_PRODUCTION and not _database_url_env:
+    raise RuntimeError(
+        "Thiếu biến môi trường DATABASE_URL trên Render! "
+        "Vào Render > Environment, thêm DATABASE_URL = chuỗi kết nối Postgres (Neon) rồi deploy lại."
+    )
+app.config['SQLALCHEMY_DATABASE_URI'] = _database_url_env or 'sqlite:///local_dev.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True, 'pool_recycle': 300}
 
@@ -384,6 +401,19 @@ def seed_khu_vuc_giay_to_bl():
                 db.session.delete(n)
     db.session.commit()
 
+# --- SECURITY HEADERS: áp dụng cho MỌI response, chống 1 số kiểu tấn công phổ biến
+# (clickjacking, MIME-sniffing, rò rỉ thông tin qua Referer...) mà không ảnh hưởng
+# giao diện hay tính năng hiện có. ---
+@app.after_request
+def them_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    if IS_PRODUCTION:
+        # Bắt trình duyệt luôn dùng HTTPS cho domain này trong 1 năm sau lần đầu ghé.
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    return response
+
 # --- HELPER FUNCTIONS & DECORATORS ---
 def admin_required(f):
     @wraps(f)
@@ -405,6 +435,11 @@ def save_image(file):
     để không làm gián đoạn thao tác của admin."""
     if file and file.filename != '':
         filename = secure_filename(file.filename)
+        CAC_DUOI_ANH_HOP_LE = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
+        if os.path.splitext(filename)[1].lower() not in CAC_DUOI_ANH_HOP_LE:
+            # Chặn ngay từ đầu các file không phải ảnh (vd .html, .svg chứa script...)
+            # thay vì để lọt xuống nhánh "lưu file gốc" khi Pillow không mở được.
+            return ''
         save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         try:
             img = Image.open(file.stream)
@@ -1318,6 +1353,11 @@ def sync_sheet():
 
 @app.route("/api/get-home-data")
 def get_home_data():
+    # Trước đây route này KHÔNG kiểm tra đăng nhập, dù trả về toàn bộ giá xe, giá giấy
+    # tờ, khuyến mãi, tồn kho theo từng chi nhánh -> bất kỳ ai biết URL (không cần tài
+    # khoản) đều gọi thẳng được và lấy hết dữ liệu kinh doanh nội bộ này.
+    if 'username' not in session:
+        return jsonify({"success": False, "message": "Vui lòng đăng nhập."}), 401
     vung = session.get('vung', 'Cà Mau')
     
     st_cm = Setting.query.filter_by(key='last_updated_cm').first()
@@ -1844,6 +1884,16 @@ def import_excel():
 
 @app.route('/api/sync-inventory', methods=['POST'])
 def sync_inventory_api():
+    # Route này TRƯỚC ĐÂY hoàn toàn không có xác thực: bất kỳ ai gửi đúng format JSON
+    # đến URL này đều có thể TẠO/SỬA dữ liệu xe và tồn kho trong database (không chỉ
+    # đọc, mà còn GHI được) mà không cần đăng nhập. Đây là lỗ hổng nghiêm trọng nhất
+    # trong toàn bộ hệ thống vì nó cho phép phá hoại dữ liệu từ xa.
+    # Yêu cầu 1 API key bí mật (đặt trong Render > Environment > SYNC_API_KEY) gửi kèm
+    # qua header X-Api-Key. Công cụ/kịch bản đồng bộ (Google Sheets, Zapier, cron job...)
+    # cần được cập nhật để gửi kèm header này.
+    sync_api_key = os.environ.get('SYNC_API_KEY')
+    if not sync_api_key or request.headers.get('X-Api-Key') != sync_api_key:
+        return jsonify({"status": "error", "message": "Không có quyền truy cập."}), 401
     try:
         data = request.json
         store_code = data.get('store_code')
