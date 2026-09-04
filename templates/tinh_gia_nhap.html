@@ -34,13 +34,13 @@
         </div>
 
         <!-- TRÌNH XEM ẢNH XOAY 360 ĐỘ: overlay toàn màn hình, kéo/vuốt ngang để xoay xe -->
-        <div id="viewer360Overlay" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 2000; align-items: center; justify-content: center; touch-action: none;">
-            <span onclick="close360Viewer()" style="position:absolute; top:16px; right:20px; color:#fff; font-size:2rem; cursor:pointer; z-index:2001;">&times;</span>
-            <div style="position:absolute; top:16px; left:20px; color:#fff; font-size:13px; opacity:0.85;">
+        <div id="viewer360Overlay" style="display:none; position: fixed; inset: 0; background: #eef0f2; z-index: 2000; align-items: center; justify-content: center; touch-action: none;">
+            <span onclick="close360Viewer()" style="position:absolute; top:16px; right:20px; color:#333; background:#fff; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.15); font-size:1.4rem; cursor:pointer; z-index:2001;">&times;</span>
+            <div style="position:absolute; top:20px; left:20px; color:#555; background:#fff; padding:6px 12px; border-radius:20px; font-size:13px; box-shadow:0 2px 6px rgba(0,0,0,0.1);">
                 <i class="fas fa-arrows-left-right"></i> Kéo hoặc vuốt ngang để xoay xe
             </div>
-            <img id="viewer360Img" src="" alt="Xoay 360 độ" draggable="false" style="max-width: 92%; max-height: 78vh; user-select:none; -webkit-user-drag:none; cursor: grab;">
-            <div id="viewer360Loading" style="display:none; position:absolute; color:#fff; font-size:14px;">
+            <img id="viewer360Img" src="" alt="Xoay 360 độ" draggable="false" style="max-width: 92%; max-height: 78vh; user-select:none; -webkit-user-drag:none; cursor: grab; filter: drop-shadow(0 18px 20px rgba(0,0,0,0.18));">
+            <div id="viewer360Loading" style="display:none; position:absolute; color:#555; font-size:14px;">
                 <i class="fas fa-spinner fa-spin"></i> Đang tải ảnh 360°...
             </div>
         </div>
