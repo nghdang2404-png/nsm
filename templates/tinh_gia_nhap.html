@@ -24,9 +24,25 @@
         </div>
 
         <!-- Hình ảnh -->
-        <div style="text-align: center; margin-bottom: 15px; min-height: 150px; display: flex; align-items: center; justify-content: center;">
+        <div id="modalCarImgWrap" onclick="if (typeof open360Viewer === 'function') open360Viewer();" style="position: relative; text-align: center; margin-bottom: 15px; min-height: 150px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
             <img id="modalCarImg" src="" alt="Hình xe" style="max-width: 100%; height: auto; border-radius: 8px; display: none;">
             <p id="modalNoImgText" style="display: none; color: #999; font-style: italic;">Chưa cập nhật hình ảnh</p>
+            <!-- Huy hiệu 360 độ: chỉ hiện khi màu xe đang chọn có sẵn bộ ảnh 360 -->
+            <div id="badge360" style="display:none; position:absolute; right:8px; bottom:8px; background: rgba(0,0,0,0.65); color:#fff; font-size:12px; font-weight:600; padding:5px 10px; border-radius:20px; align-items:center; gap:5px; pointer-events:none;">
+                <i class="fas fa-arrows-spin"></i> Xoay 360°
+            </div>
+        </div>
+
+        <!-- TRÌNH XEM ẢNH XOAY 360 ĐỘ: overlay toàn màn hình, kéo/vuốt ngang để xoay xe -->
+        <div id="viewer360Overlay" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 2000; align-items: center; justify-content: center; touch-action: none;">
+            <span onclick="close360Viewer()" style="position:absolute; top:16px; right:20px; color:#fff; font-size:2rem; cursor:pointer; z-index:2001;">&times;</span>
+            <div style="position:absolute; top:16px; left:20px; color:#fff; font-size:13px; opacity:0.85;">
+                <i class="fas fa-arrows-left-right"></i> Kéo hoặc vuốt ngang để xoay xe
+            </div>
+            <img id="viewer360Img" src="" alt="Xoay 360 độ" draggable="false" style="max-width: 92%; max-height: 78vh; user-select:none; -webkit-user-drag:none; cursor: grab;">
+            <div id="viewer360Loading" style="display:none; position:absolute; color:#fff; font-size:14px;">
+                <i class="fas fa-spinner fa-spin"></i> Đang tải ảnh 360°...
+            </div>
         </div>
 
         <!-- KHỐI PHÂN VÙNG ÁP DỤNG -->

@@ -932,6 +932,56 @@
                                         </div>
                                     </div>
                                 </div>
+                                <!-- ===== QUẢN LÝ ẢNH XOAY 360° CHO MÀU: {{ mau.ten_mau }} ===== -->
+<div style="border:1px dashed #cbd5e1; border-radius:8px; padding:10px; margin-top:8px;">
+  <div style="font-weight:600; font-size:13px; margin-bottom:6px;">
+    <i class="fas fa-arrows-spin"></i> Ảnh xoay 360° — màu "{{ mau.ten_mau }}"
+    <span style="color:#64748b; font-weight:400;">
+      ({{ mau.anh_360|length }} ảnh đã có)
+    </span>
+  </div>
+
+  <!-- Xem trước các ảnh hiện có + nút xoá từng ảnh -->
+  {% if mau.anh_360 %}
+  <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+    {% for anh in mau.anh_360 %}
+    <div style="position:relative;">
+      <img src="{{ url_for('static', filename='uploads/' + anh.duong_dan) }}"
+           style="width:56px; height:56px; object-fit:cover; border-radius:6px; border:1px solid #e2e8f0;">
+      <form method="POST" action="{{ url_for('xoa_anh_360', id=anh.id) }}"
+            onsubmit="return confirm('Xoá ảnh này khỏi bộ 360°?');"
+            style="position:absolute; top:-6px; right:-6px;">
+        <button type="submit" title="Xoá ảnh này"
+                style="width:18px; height:18px; border-radius:50%; border:none; background:#dc2626; color:#fff; font-size:11px; line-height:1; cursor:pointer;">×</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  <form method="POST" action="{{ url_for('xoa_bo_anh_360', mau_id=mau.id) }}"
+        onsubmit="return confirm('Xoá TOÀN BỘ bộ ảnh 360° của màu {{ mau.ten_mau }}?');"
+        style="margin-bottom:8px;">
+    <button type="submit" class="btn btn-sm btn-outline-danger">Xoá cả bộ ảnh 360°</button>
+  </form>
+  {% endif %}
+
+  <!-- Upload thêm ảnh -->
+  <form method="POST" action="{{ url_for('upload_anh_360', mau_id=mau.id) }}"
+        enctype="multipart/form-data">
+    <input type="file" name="anh_360[]" accept="image/*" multiple required
+           style="font-size:12px; margin-bottom:6px;">
+    <div style="font-size:11px; color:#64748b; margin-bottom:6px;">
+      Chọn NHIỀU ảnh cùng lúc, theo ĐÚNG thứ tự góc xoay (vd: chụp mỗi 10-15 độ quanh
+      xe, 24-36 tấm là đẹp). Thứ tự file chọn = thứ tự xoay.
+    </div>
+    <label style="font-size:12px; display:flex; align-items:center; gap:4px; margin-bottom:6px;">
+      <input type="checkbox" name="thay_the" value="1">
+      Thay thế toàn bộ ảnh 360 cũ của màu này bằng bộ ảnh mới upload
+    </label>
+    <button type="submit" class="btn btn-sm btn-primary">
+      <i class="fas fa-upload"></i> Tải lên ảnh 360°
+    </button>
+  </form>
+</div>
                                 {% endfor %}
                             </div>
                             {% endif %}

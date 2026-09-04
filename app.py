@@ -2,6 +2,7 @@ import os
 import re
 import io
 import json
+import uuid
 import unicodedata
 import ssl
 import threading
@@ -189,12 +190,14 @@ class XeMau(db.Model):
         is_bl = 'bạc liêu' in (khu_vuc_user or '').lower()
         chenh_lech_vung = self.chenh_lech_bl if is_bl else self.chenh_lech_cm
         return {
+            'id': self.id,
             'ten_mau': self.ten_mau, 
             'chenh_lech_gia': chenh_lech_vung,
             'chenh_lech_cm': self.chenh_lech_cm or 0,
             'chenh_lech_bl': self.chenh_lech_bl or 0,
             'ds_ma_mau': lay_danh_sach_ma_mau(self.ten_mau),
             'hinh_anh_mau': self.hinh_anh_mau,
+            'co_anh_360': bool(self.anh_360),
             'ns1': self.ns1 or 0,
             'ns2': self.ns2 or 0,
             'ns3': self.ns3 or 0,
@@ -202,6 +205,22 @@ class XeMau(db.Model):
             'ns5': self.ns5 or 0,
             'nsm1': self.nsm1 or 0
         }
+
+class Anh360(db.Model):
+    """Từng tấm ảnh (1 góc chụp) trong bộ ảnh xoay 360 độ của 1 màu xe.
+    thu_tu quyết định thứ tự khi xoay (0, 1, 2, ... theo vòng tròn)."""
+    __tablename__ = 'anh_360'
+    id = db.Column(db.Integer, primary_key=True)
+    xe_mau_id = db.Column(db.Integer, db.ForeignKey('xe_mau.id'), nullable=False)
+    duong_dan = db.Column(db.String(200), nullable=False)
+    thu_tu = db.Column(db.Integer, default=0)
+
+# Quan hệ 1 màu xe (XeMau) -> nhiều ảnh 360, sắp xếp sẵn theo thu_tu,
+# và tự xoá hết ảnh 360 khi xoá màu xe (cascade) để không rác dữ liệu.
+XeMau.anh_360 = db.relationship(
+    'Anh360', backref='mau', cascade='all, delete-orphan',
+    order_by='Anh360.thu_tu', lazy='joined'
+)
 
 class KhuVucLonBL(db.Model):
     """Khu vực lớn về giấy tờ ở Bạc Liêu: Nam Sương 4, Nam Sương 2, Nam Sương 5 - NSM1."""
@@ -500,6 +519,37 @@ def save_image(file):
             file.save(save_path)
         return filename
     return ''
+
+def save_image_360(file):
+    """Giống save_image() (nén + resize) nhưng LUÔN đặt tên file ngẫu nhiên
+    (uuid), không giữ tên gốc. Lý do: 1 bộ ảnh 360 độ thường có nhiều file
+    được đặt tên kiểu 1.jpg, 2.jpg... 01.jpg, 02.jpg... nên nếu giữ tên gốc
+    như save_image() thì ảnh của xe/màu này sẽ RẤT DỄ ghi đè lên ảnh của
+    xe/màu khác đã lỡ dùng trùng tên file trước đó."""
+    if not file or file.filename == '':
+        return ''
+    ext = os.path.splitext(secure_filename(file.filename))[1].lower()
+    CAC_DUOI_ANH_HOP_LE = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
+    if ext not in CAC_DUOI_ANH_HOP_LE:
+        return ''
+    filename = f"360_{uuid.uuid4().hex}{ext}"
+    save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    try:
+        img = Image.open(file.stream)
+        img = ImageOps.exif_transpose(img)
+        MAX_KICH_THUOC = 1200
+        img.thumbnail((MAX_KICH_THUOC, MAX_KICH_THUOC), Image.LANCZOS)
+        if ext == '.png' and (img.mode in ('RGBA', 'LA') or 'transparency' in img.info):
+            img.save(save_path, format='PNG', optimize=True)
+        else:
+            if img.mode in ('RGBA', 'LA', 'P'):
+                img = img.convert('RGB')
+            img.save(save_path, format='JPEG', quality=82, optimize=True, progressive=True)
+    except Exception as e:
+        print("Lỗi nén ảnh 360, lưu file gốc:", e)
+        file.stream.seek(0)
+        file.save(save_path)
+    return filename
 
 def lay_danh_sach_ma_mau(ten_mau):
     if not ten_mau: 
@@ -1793,6 +1843,92 @@ def delete_mau(id):
         db.session.rollback()
         flash(f"Không thể xóa màu: {str(e)}", "danger")
     return redirect(url_for('admin_panel'))
+
+# --- ẢNH XOAY 360 ĐỘ (theo từng màu xe) ---
+
+@app.route("/admin/anh-360/upload/<int:mau_id>", methods=["POST"])
+@admin_required
+def upload_anh_360(mau_id):
+    """Upload 1 bộ nhiều ảnh (các góc chụp quanh xe) cho 1 màu xe cụ thể.
+    Thứ tự lưu = đúng thứ tự file được chọn/kéo thả trong ô upload -> khi
+    xoay ở giao diện người dùng sẽ đi đúng theo vòng tròn đó."""
+    mau = db.get_or_404(XeMau, mau_id)
+    files = request.files.getlist("anh_360[]")
+    files = [f for f in files if f and f.filename]
+    if not files:
+        flash("Vui lòng chọn ít nhất 1 ảnh cho bộ ảnh 360°.", "danger")
+        return redirect(url_for('admin_panel'))
+
+    if request.form.get('thay_the') == '1':
+        for anh in list(mau.anh_360):
+            try:
+                old_path = os.path.join(app.config['UPLOAD_FOLDER'], anh.duong_dan)
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            except Exception:
+                pass
+            db.session.delete(anh)
+        db.session.flush()
+
+    thu_tu_hien_tai = [a.thu_tu for a in mau.anh_360]
+    start_order = (max(thu_tu_hien_tai) + 1) if thu_tu_hien_tai else 0
+
+    count = 0
+    for i, f in enumerate(files):
+        filename = save_image_360(f)
+        if filename:
+            db.session.add(Anh360(xe_mau_id=mau.id, duong_dan=filename, thu_tu=start_order + i))
+            count += 1
+
+    db.session.commit()
+    if count:
+        flash(f"Đã tải lên {count} ảnh 360° cho màu \"{mau.ten_mau}\".", "success")
+    else:
+        flash("Không có ảnh hợp lệ nào được tải lên (chỉ nhận .jpg .jpeg .png .webp .gif).", "danger")
+    return redirect(url_for('admin_panel'))
+
+@app.route("/admin/anh-360/xoa-anh/<int:id>", methods=["POST"])
+@admin_required
+def xoa_anh_360(id):
+    """Xoá 1 tấm ảnh trong bộ ảnh 360 (không xoá cả bộ)."""
+    anh = db.get_or_404(Anh360, id)
+    try:
+        old_path = os.path.join(app.config['UPLOAD_FOLDER'], anh.duong_dan)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+    except Exception:
+        pass
+    db.session.delete(anh)
+    db.session.commit()
+    flash("Đã xoá ảnh 360°.", "success")
+    return redirect(url_for('admin_panel'))
+
+@app.route("/admin/anh-360/xoa-bo/<int:mau_id>", methods=["POST"])
+@admin_required
+def xoa_bo_anh_360(mau_id):
+    """Xoá TOÀN BỘ bộ ảnh 360 của 1 màu xe."""
+    mau = db.get_or_404(XeMau, mau_id)
+    for anh in list(mau.anh_360):
+        try:
+            old_path = os.path.join(app.config['UPLOAD_FOLDER'], anh.duong_dan)
+            if os.path.exists(old_path):
+                os.remove(old_path)
+        except Exception:
+            pass
+        db.session.delete(anh)
+    db.session.commit()
+    flash(f"Đã xoá toàn bộ ảnh 360° của màu \"{mau.ten_mau}\".", "success")
+    return redirect(url_for('admin_panel'))
+
+@app.route("/api/anh-360/<int:mau_id>")
+def api_anh_360(mau_id):
+    """Trả về danh sách URL ảnh (đã sắp đúng thứ tự xoay) của 1 màu xe,
+    dùng cho trình xem 360° ở giao diện người dùng (home.html)."""
+    mau = XeMau.query.get(mau_id)
+    if not mau:
+        return jsonify({"images": [], "ten_mau": ""})
+    urls = [url_for('static', filename='uploads/' + a.duong_dan) for a in mau.anh_360]
+    return jsonify({"images": urls, "ten_mau": mau.ten_mau})
 
 @app.route("/admin/import", methods=["POST"])
 @admin_required

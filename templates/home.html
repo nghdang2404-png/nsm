@@ -1343,6 +1343,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
         if (colors && colors.length > 0) {
             window.activeColorName = colors[0].ten_mau; 
+            window.activeColorId = colors[0].id || null;
+            updateBadge360(colors[0].co_anh_360);
 
             // TỐI ƯU TỐC ĐỘ: tải trước (preload) ảnh của TẤT CẢ các màu ngay khi mở modal,
             // thay vì đợi đến lúc người dùng bấm mới tải. Nhờ vậy khi bấm đổi màu, ảnh đã
@@ -1379,6 +1381,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 
                 btn.onclick = function() {
                     window.activeColorName = item.ten_mau; 
+                    window.activeColorId = item.id || null;
+                    updateBadge360(item.co_anh_360);
 
                     Array.from(colorButtonsContainer.children).forEach(b => {
                         b.style.backgroundColor = '#ffffff';
@@ -1406,12 +1410,16 @@ document.addEventListener("DOMContentLoaded", function() {
             updateStockDisplay(colors[0]);
 
         } else if (defaultImg && defaultImg.trim() !== '') {
+            window.activeColorId = null;
+            updateBadge360(false);
             modalImg.src = defaultImg;
             modalImg.style.display = 'block';
             noImgText.style.display = 'none';
             updateModalPrice(giaGoc, thapGoc, trungGoc);
             updateStockDisplay(null);
         } else {
+            window.activeColorId = null;
+            updateBadge360(false);
             modalImg.src = '';
             modalImg.style.display = 'none';
             noImgText.style.display = 'block';
@@ -1461,6 +1469,144 @@ document.addEventListener("DOMContentLoaded", function() {
             modal.style.display = 'none';
         }
     }
+
+    // =========================================================================
+    // XEM ẢNH XOAY 360 ĐỘ (kéo chuột / vuốt ngang để xoay xe quanh trục dọc)
+    // =========================================================================
+
+    function updateBadge360(coAnh360) {
+        const badge = document.getElementById('badge360');
+        if (badge) badge.style.display = coAnh360 ? 'flex' : 'none';
+    }
+
+    // Cache ảnh 360 đã tải theo mau_id, tránh gọi lại API mỗi lần bấm cùng 1 màu
+    window._cache360 = window._cache360 || {};
+
+    async function open360Viewer() {
+        const mauId = window.activeColorId;
+        if (!mauId) return; // Xe/màu này chưa có mã màu (không xác định được bộ ảnh 360)
+
+        const overlay = document.getElementById('viewer360Overlay');
+        const viewerImg = document.getElementById('viewer360Img');
+        const loading = document.getElementById('viewer360Loading');
+        if (!overlay || !viewerImg) return;
+
+        let frames = window._cache360[mauId];
+        if (!frames) {
+            overlay.style.display = 'flex';
+            viewerImg.style.display = 'none';
+            if (loading) loading.style.display = 'block';
+            try {
+                const apiUrl = "{{ url_for('api_anh_360', mau_id=999999999) }}".replace('999999999', String(mauId));
+                const resp = await fetch(apiUrl);
+                const data = await resp.json();
+                frames = data.images || [];
+                window._cache360[mauId] = frames;
+            } catch (e) {
+                console.error('Lỗi tải ảnh 360:', e);
+                frames = [];
+            }
+            if (loading) loading.style.display = 'none';
+        }
+
+        if (!frames || frames.length === 0) {
+            overlay.style.display = 'none';
+            showToast360('Màu xe này chưa có ảnh xoay 360°.');
+            return;
+        }
+
+        // Tải trước toàn bộ khung hình để khi kéo không bị giật/chờ tải
+        frames.forEach(src => { const im = new Image(); im.src = src; });
+
+        window._frames360 = frames;
+        window._frameIndex360 = 0;
+        overlay.style.display = 'flex';
+        viewerImg.style.display = 'block';
+        viewerImg.src = frames[0];
+        setup360Drag();
+    }
+
+    function close360Viewer() {
+        const overlay = document.getElementById('viewer360Overlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+
+    function showToast360(text) {
+        let toast = document.getElementById('toast360');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'toast360';
+            toast.style.cssText = 'position:fixed; left:50%; bottom:30px; transform:translateX(-50%); background:#333; color:#fff; padding:10px 18px; border-radius:20px; font-size:13px; z-index:3000; opacity:0; transition:opacity .25s;';
+            document.body.appendChild(toast);
+        }
+        toast.innerText = text;
+        toast.style.opacity = '1';
+        clearTimeout(window._toast360Timer);
+        window._toast360Timer = setTimeout(() => { toast.style.opacity = '0'; }, 2200);
+    }
+
+    let _drag360Bound = false;
+    function setup360Drag() {
+        const viewerImg = document.getElementById('viewer360Img');
+        if (!viewerImg || _drag360Bound) return; // gắn sự kiện đúng 1 lần, dùng chung cho mọi lần mở
+        _drag360Bound = true;
+
+        let isDragging = false;
+        let startX = 0;
+        let lastX = 0;
+        const DEG_PER_FRAME = 6; // số px kéo cần để nhảy 1 khung hình - chỉnh để xoay mượt/nhanh theo ý
+
+        function frameCount() { return (window._frames360 || []).length; }
+
+        function renderFrame() {
+            const frames = window._frames360 || [];
+            if (!frames.length) return;
+            let idx = window._frameIndex360 % frames.length;
+            if (idx < 0) idx += frames.length;
+            viewerImg.src = frames[idx];
+        }
+
+        function onDown(clientX) {
+            isDragging = true;
+            startX = clientX;
+            lastX = clientX;
+            viewerImg.style.cursor = 'grabbing';
+        }
+
+        function onMove(clientX) {
+            if (!isDragging) return;
+            const deltaX = clientX - lastX;
+            if (Math.abs(deltaX) >= DEG_PER_FRAME) {
+                const steps = Math.trunc(deltaX / DEG_PER_FRAME);
+                // Kéo sang phải -> lùi khung hình (cảm giác xe xoay theo chiều kéo tay)
+                window._frameIndex360 = (window._frameIndex360 || 0) - steps;
+                lastX = clientX;
+                renderFrame();
+            }
+        }
+
+        function onUp() {
+            isDragging = false;
+            viewerImg.style.cursor = 'grab';
+        }
+
+        viewerImg.addEventListener('mousedown', (e) => { e.preventDefault(); onDown(e.clientX); });
+        window.addEventListener('mousemove', (e) => onMove(e.clientX));
+        window.addEventListener('mouseup', onUp);
+
+        viewerImg.addEventListener('touchstart', (e) => { onDown(e.touches[0].clientX); }, { passive: true });
+        viewerImg.addEventListener('touchmove', (e) => { onMove(e.touches[0].clientX); }, { passive: true });
+        viewerImg.addEventListener('touchend', onUp);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const overlay360 = document.getElementById('viewer360Overlay');
+        if (overlay360) {
+            overlay360.addEventListener('click', function (e) {
+                if (e.target === overlay360) close360Viewer();
+            });
+        }
+    });
 
     function toggleExtraPrices(element) {
         element.classList.toggle('active');
@@ -1661,6 +1807,10 @@ document.addEventListener("DOMContentLoaded", function() {
                                 if (selectedColorItem && !window.activeColorName) {
                                     window.activeColorName = selectedColorItem.ten_mau;
                                 }
+                                if (selectedColorItem) {
+                                    window.activeColorId = selectedColorItem.id || null;
+                                    updateBadge360(selectedColorItem.co_anh_360);
+                                }
 
                                 const chenhLech = selectedColorItem ? (Number(selectedColorItem.chenh_lech_gia) || 0) : 0;
 
@@ -1727,6 +1877,8 @@ document.addEventListener("DOMContentLoaded", function() {
                                             
                                             btn.onclick = function() {
                                                 window.activeColorName = item.ten_mau;
+                                                window.activeColorId = item.id || null;
+                                                updateBadge360(item.co_anh_360);
                                                 Array.from(colorButtonsContainer.children).forEach(b => {
                                                     applyButtonStyle(b, false);
                                                 });
