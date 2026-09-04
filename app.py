@@ -69,7 +69,11 @@ limiter = Limiter(
 @app.errorhandler(CSRFError)
 def loi_csrf(e):
     flash("Phiên làm việc đã hết hạn hoặc yêu cầu không hợp lệ (CSRF). Vui lòng thử lại.", "danger")
-    return redirect(request.referrer or url_for('login')), 400
+    # LƯU Ý: redirect() kèm mã trạng thái 4xx sẽ KHÔNG được trình duyệt tự động
+    # điều hướng theo (chỉ mã 3xx mới tự nhảy trang) -> người dùng sẽ thấy nguyên
+    # trang "Redirecting..." mặc định của Werkzeug thay vì được đưa về trang login/trang
+    # trước đó. Dùng 302 (mặc định của redirect()) để trình duyệt tự chuyển trang.
+    return redirect(request.referrer or url_for('login')), 302
 
 @app.errorhandler(429)
 def loi_qua_nhieu_yeu_cau(e):
@@ -2787,10 +2791,18 @@ def admin_history():
 # trên Render, dù mọi thứ vẫn chạy bình thường khi test local bằng `python app.py`.
 with app.app_context():
     db.create_all()
-    # Tự động thêm cột trang_thai nếu cơ sở dữ liệu cũ chưa có
+    # Tự động thêm cột trang_thai nếu cơ sở dữ liệu cũ chưa có.
+    # LƯU Ý: "ADD COLUMN IF NOT EXISTS" là cú pháp riêng của PostgreSQL, KHÔNG
+    # chạy được trên SQLite (dùng khi test local bằng `python app.py`) -> sẽ báo
+    # lỗi cú pháp (vô hại vì có try/except, nhưng vẫn nên tránh). Thay vào đó,
+    # tự kiểm tra cột đã tồn tại chưa bằng inspector rồi mới ALTER - cách này
+    # chạy được trên cả SQLite lẫn PostgreSQL.
     try:
-        db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN IF NOT EXISTS trang_thai VARCHAR(20) DEFAULT 'approved';"))
-        db.session.commit()
+        inspector = db.inspect(db.engine)
+        cot_hien_co = [c['name'] for c in inspector.get_columns('user')]
+        if 'trang_thai' not in cot_hien_co:
+            db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN trang_thai VARCHAR(20) DEFAULT 'approved';"))
+            db.session.commit()
     except Exception as e:
         db.session.rollback()
         print("Lỗi tự động thêm cột trang_thai:", e)
