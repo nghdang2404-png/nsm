@@ -802,7 +802,8 @@ def admin_panel():
     if loai_filter:
         query = query.filter_by(loai_xe=loai_filter)
         
-    danh_sach_xe = query.order_by(get_order_priority(), Xe.ten_xe.asc()).all()
+    from sqlalchemy.orm import selectinload
+    danh_sach_xe = query.options(selectinload(Xe.mau_xe)).order_by(get_order_priority(), Xe.ten_xe.asc()).all()
     danh_sach_loai = [l[0] for l in db.session.query(Xe.loai_xe).distinct().all() if l[0]]
     
     setting = Setting.query.filter_by(key='csv_url').first()
@@ -1473,7 +1474,9 @@ def get_home_data():
         current_time = st_cm.value if st_cm else "Chưa cập nhật"
         current_user = su_cm.value if su_cm else "Hệ thống"
 
-    danh_sach_xe = Xe.query.all()
+    from sqlalchemy.orm import selectinload
+    danh_sach_xe = Xe.query.options(selectinload(Xe.mau_xe)).all()
+    gia_gt_bl_map = lay_gia_giay_to_bl_hang_loat([x.id for x in danh_sach_xe])
     data = []
     for xe in danh_sach_xe:
         gia_info = lay_gia_theo_vung(xe, vung)
@@ -1497,7 +1500,7 @@ def get_home_data():
             "gia_giay_to_xa_bl": xe.gia_gt_xa_bl or 0,
             # MỚI: giá giấy tờ theo từng khu vực nhỏ Bạc Liêu, luôn gửi kèm để modal có thể
             # đổi vùng tại chỗ (không load lại trang) dù session đang ở vùng nào.
-            "gia_giay_to_khu_vuc_nho_bl": lay_gia_giay_to_khu_vuc_nho_bl(xe.id),
+            "gia_giay_to_khu_vuc_nho_bl": gia_gt_bl_map.get(xe.id, []),
             "mau_xe": [mau.to_dict(vung) for mau in xe.mau_xe]
         })
         
@@ -1521,11 +1524,44 @@ def get_home_data():
         "data": data
     })
 
+@app.route("/api/sync-status", methods=["GET"])
+def sync_status():
+    """Bản nhẹ của /api/get-home-data: chỉ trả thời gian/người cập nhật từng vùng
+    (4 truy vấn nhỏ) để thanh Admin polling mà không phải tải cả danh sách xe."""
+    if 'username' not in session:
+        return jsonify({"success": False, "message": "Vui lòng đăng nhập."}), 401
+    vung = session.get('vung', 'Cà Mau')
+    st_cm = Setting.query.filter_by(key='last_updated_cm').first()
+    su_cm = Setting.query.filter_by(key='last_user_cm').first()
+    st_bl = Setting.query.filter_by(key='last_updated_bl').first()
+    su_bl = Setting.query.filter_by(key='last_user_bl').first()
+    if vung == 'Bạc Liêu':
+        current_time = st_bl.value if st_bl else "Chưa cập nhật"
+        current_user = su_bl.value if su_bl else "Hệ thống"
+    else:
+        current_time = st_cm.value if st_cm else "Chưa cập nhật"
+        current_user = su_cm.value if su_cm else "Hệ thống"
+    return jsonify({
+        "success": True,
+        "vung": vung,
+        "last_updated": current_time,
+        "last_updated_by": current_user,
+        "vungs": [
+            {"vung": "Cà Mau",
+             "last_updated": st_cm.value if st_cm else "Chưa cập nhật",
+             "last_updated_by": su_cm.value if su_cm else "Hệ thống"},
+            {"vung": "Bạc Liêu",
+             "last_updated": st_bl.value if st_bl else "Chưa cập nhật",
+             "last_updated_by": su_bl.value if su_bl else "Hệ thống"}
+        ]
+    })
+
 @app.route("/admin/api/data", methods=["GET"])
 @admin_required
 def get_admin_data():
     try:
-        danh_sach_xe = Xe.query.all()
+        from sqlalchemy.orm import selectinload
+        danh_sach_xe = Xe.query.options(selectinload(Xe.mau_xe)).all()
         data = []
         for xe in danh_sach_xe:
             mau_list = []
@@ -2179,6 +2215,32 @@ def lay_gia_giay_to_khu_vuc_nho_bl(xe_id):
                 } for kvn in sorted(kvl.khu_vuc_nho, key=lambda x: x.thu_tu)
             ]
         })
+    return ket_qua
+
+def lay_gia_giay_to_bl_hang_loat(ds_xe_id):
+    """Phiên bản gộp của lay_gia_giay_to_khu_vuc_nho_bl: lấy cho NHIỀU xe chỉ bằng vài truy vấn.
+    Trả về {xe_id: [cùng cấu trúc với hàm cũ]}. Hàm cũ vẫn giữ nguyên cho các nơi khác."""
+    from sqlalchemy.orm import selectinload
+    gia_theo_xe = {}
+    if ds_xe_id:
+        for g in GiaGiayToXeBL.query.filter(GiaGiayToXeBL.xe_id.in_(ds_xe_id)).all():
+            gia_theo_xe.setdefault(g.xe_id, {})[g.khu_vuc_nho_id] = (g.gia or 0)
+    ds_khu_vuc_lon = (KhuVucLonBL.query
+                      .options(selectinload(KhuVucLonBL.khu_vuc_nho))
+                      .order_by(KhuVucLonBL.thu_tu).all())
+    ket_qua = {}
+    for xe_id in ds_xe_id:
+        ds_gia = gia_theo_xe.get(xe_id, {})
+        ket_qua[xe_id] = [{
+            'khu_vuc_lon_id': kvl.id,
+            'ma_khu_vuc': kvl.ma_khu_vuc,
+            'ten_khu_vuc_lon': kvl.ten_khu_vuc,
+            'khu_vuc_nho': [
+                {'id': kvn.id, 'ten_khu_vuc_nho': kvn.ten_khu_vuc_nho,
+                 'gia': ds_gia.get(kvn.id, 0)}
+                for kvn in sorted(kvl.khu_vuc_nho, key=lambda x: x.thu_tu)
+            ]
+        } for kvl in ds_khu_vuc_lon]
     return ket_qua
 
 def format_xe_data_home(xe, khu_vuc_user):
