@@ -113,7 +113,21 @@ if IS_PRODUCTION and not _database_url_env:
     )
 app.config['SQLALCHEMY_DATABASE_URI'] = _database_url_env or 'sqlite:///local_dev.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True, 'pool_recycle': 300}
+# Cấu hình pool cho Postgres qua pooler (Supabase): pooler hay đóng connection nhàn rỗi
+# -> gây lỗi "SSL error: decryption failed or bad record mac". Giảm pool_recycle để tái tạo
+# connection sớm, bật pre_ping để loại connection chết, bật TCP keepalive để giữ kết nối.
+# Chỉ áp dụng keepalive khi dùng Postgres (SQLite khi chạy local không nhận các tham số này).
+_engine_options = {'pool_pre_ping': True, 'pool_recycle': 120, 'pool_size': 5, 'max_overflow': 5}
+if _database_url_env:
+    _engine_options['connect_args'] = {
+        'keepalives': 1,
+        'keepalives_idle': 30,
+        'keepalives_interval': 10,
+        'keepalives_count': 5,
+    }
+else:
+    _engine_options.pop('pool_size'); _engine_options.pop('max_overflow')
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = _engine_options
 
 db = SQLAlchemy(app)
 
