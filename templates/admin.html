@@ -1315,8 +1315,8 @@
             }
         }
 
-        setInterval(fetchLatestData, 10000); 
-        setInterval(pollAndUpdateAdminData, 3000); 
+        setInterval(function () { if (!document.hidden) fetchLatestData(); }, 15000);
+        setInterval(function () { if (!document.hidden) pollAndUpdateAdminData(); }, 10000);
     });
 </script>
 {% endblock %}

@@ -1946,7 +1946,8 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     // Thiết lập polling vòng lặp kiểm tra thay đổi ngầm mỗi 3 giây
-    setInterval(fetchAndUpdateHomeData, 3000);
+    // Giảm tải server/DB: 8 giây/lần và bỏ qua khi tab đang ẩn (trước: 3 giây/lần kể cả khi ẩn).
+    setInterval(function () { if (!document.hidden) fetchAndUpdateHomeData(); }, 8000);
 // =================================================================
 // TÍNH NĂNG BẢO VỆ DỮ LIỆU: CHỐNG CHỤP MÀN HÌNH & CHỐNG SAO CHÉP GIÁ
 // =================================================================

@@ -117,7 +117,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # -> gây lỗi "SSL error: decryption failed or bad record mac". Giảm pool_recycle để tái tạo
 # connection sớm, bật pre_ping để loại connection chết, bật TCP keepalive để giữ kết nối.
 # Chỉ áp dụng keepalive khi dùng Postgres (SQLite khi chạy local không nhận các tham số này).
-_engine_options = {'pool_pre_ping': True, 'pool_recycle': 120, 'pool_size': 5, 'max_overflow': 5}
+# pool_recycle 120s trước đây khiến cứ 2 phút lại phải mở lại kết nối SSL mới tới Supabase
+# (mỗi lần mở = nhiều vòng chờ mạng -> request đầu tiên rất chậm). Nâng lên 300s;
+# pool_pre_ping vẫn tự thay kết nối chết nên không lo lỗi SSL cũ.
+_engine_options = {'pool_pre_ping': True, 'pool_recycle': 300, 'pool_size': 5, 'max_overflow': 5}
 if _database_url_env:
     _engine_options['connect_args'] = {
         'keepalives': 1,
@@ -664,6 +667,31 @@ def cap_nhat_thoi_gian_dong_bo(vung='Cà Mau', username=None):
         setting_user.value = ten_hien_thi
             
     db.session.commit()
+    xoa_cache_dong_bo()
+
+
+# --- ĐỌC THÔNG TIN ĐỒNG BỘ (4 key Setting) CHỈ 1 TRUY VẤN + CACHE NGẮN ---
+# Trước đây mỗi lần render trang (context_processor), mỗi lần polling /api/get-home-data
+# và /api/sync-status đều chạy 4 truy vấn Setting riêng lẻ. Khi DB ở xa (Supabase), mỗi
+# truy vấn tốn 1 vòng chờ mạng nên cộng dồn rất chậm. Gộp thành 1 truy vấn IN (...) và
+# cache 3 giây; cache bị xoá ngay khi có cập nhật đồng bộ mới (cap_nhat_thoi_gian_dong_bo).
+_KEYS_DONG_BO = ('last_updated_cm', 'last_user_cm', 'last_updated_bl', 'last_user_bl')
+_CACHE_DONG_BO = {'data': None, 'ts': 0}
+_CACHE_HOME_DATA = {}   # {vung: (timestamp, danh_sach_data)}
+
+def lay_thong_tin_dong_bo():
+    now_ts = time.time()
+    if _CACHE_DONG_BO['data'] is not None and (now_ts - _CACHE_DONG_BO['ts']) < 3:
+        return _CACHE_DONG_BO['data']
+    rows = Setting.query.filter(Setting.key.in_(_KEYS_DONG_BO)).all()
+    d = {r.key: r.value for r in rows}
+    _CACHE_DONG_BO['data'] = d
+    _CACHE_DONG_BO['ts'] = now_ts
+    return d
+
+def xoa_cache_dong_bo():
+    _CACHE_DONG_BO['data'] = None
+    _CACHE_HOME_DATA.clear()
 
 # --- ROUTES AUTH & USER ---
 @app.route("/", methods=["GET", "POST"])
@@ -757,24 +785,26 @@ def home():
     key_time = 'last_updated_bl' if is_bl else 'last_updated_cm'
     key_user = 'last_user_bl' if is_bl else 'last_user_cm'
     
-    setting_time = Setting.query.filter_by(key=key_time).first()
-    setting_user = Setting.query.filter_by(key=key_user).first()
-    
-    last_updated_str = setting_time.value if (setting_time and setting_time.value) else "Chưa cập nhật"
-    last_user_str = setting_user.value if (setting_user and setting_user.value) else "Hệ thống"
+    _dong_bo = lay_thong_tin_dong_bo()
+    last_updated_str = _dong_bo.get(key_time) or "Chưa cập nhật"
+    last_user_str = _dong_bo.get(key_user) or "Hệ thống"
     
     search_query = request.args.get('search', '')
     loai_filter = request.args.get('loai', '')
     
+    from sqlalchemy.orm import selectinload
     query = Xe.query
     if search_query:
         query = query.filter((Xe.ten_xe.ilike(f'%{search_query}%')) | (Xe.phien_ban.ilike(f'%{search_query}%')))
     if loai_filter:
         query = query.filter_by(loai_xe=loai_filter)
         
-    danh_sach_xe = query.order_by(get_order_priority(), Xe.ten_xe.asc()).all()
+    # selectinload: nạp màu xe của TẤT CẢ xe bằng 1 truy vấn (trước đây mỗi xe 1 truy vấn riêng - N+1).
+    danh_sach_xe = query.options(selectinload(Xe.mau_xe)).order_by(get_order_priority(), Xe.ten_xe.asc()).all()
     danh_sach_loai = [l[0] for l in db.session.query(Xe.loai_xe).distinct().all() if l[0]]
-    data = [format_xe_data_home(xe, khu_vuc_user) for xe in danh_sach_xe]
+    # Giá giấy tờ Bạc Liêu: lấy hàng loạt 1 lần thay vì gọi riêng cho từng xe (2 truy vấn/xe).
+    gia_gt_bl_map = lay_gia_giay_to_bl_hang_loat([x.id for x in danh_sach_xe])
+    data = [format_xe_data_home(xe, khu_vuc_user, gia_gt_bl_map) for xe in danh_sach_xe]
        
     return render_template(
         "home.html", 
@@ -930,17 +960,12 @@ def xoa_khuyen_mai(id):
 
 @app.context_processor
 def inject_update_info():
-    t_cm = Setting.query.filter_by(key='last_updated_cm').first()
-    u_cm = Setting.query.filter_by(key='last_user_cm').first()
-    
-    t_bl = Setting.query.filter_by(key='last_updated_bl').first()
-    u_bl = Setting.query.filter_by(key='last_user_bl').first()
-
+    d = lay_thong_tin_dong_bo()
     return {
-        'thoi_gian_camau': t_cm.value if t_cm else 'Chưa cập nhật',
-        'nguoi_camau': u_cm.value if u_cm else 'Admin',
-        'thoi_gian_baclieu': t_bl.value if t_bl else 'Chưa cập nhật',
-        'nguoi_baclieu': u_bl.value if u_bl else 'Admin'
+        'thoi_gian_camau': d.get('last_updated_cm') or 'Chưa cập nhật',
+        'nguoi_camau': d.get('last_user_cm') or 'Admin',
+        'thoi_gian_baclieu': d.get('last_updated_bl') or 'Chưa cập nhật',
+        'nguoi_baclieu': d.get('last_user_bl') or 'Admin'
     }
 
 @app.route("/admin/settings", methods=["POST"])
@@ -1461,18 +1486,22 @@ def get_home_data():
         return jsonify({"success": False, "message": "Vui lòng đăng nhập."}), 401
     vung = session.get('vung', 'Cà Mau')
     
-    st_cm = Setting.query.filter_by(key='last_updated_cm').first()
-    su_cm = Setting.query.filter_by(key='last_user_cm').first()
-    
-    st_bl = Setting.query.filter_by(key='last_updated_bl').first()
-    su_bl = Setting.query.filter_by(key='last_user_bl').first()
+    _d = lay_thong_tin_dong_bo()
+    t_cm, u_cm = _d.get('last_updated_cm') or "Chưa cập nhật", _d.get('last_user_cm') or "Hệ thống"
+    t_bl, u_bl = _d.get('last_updated_bl') or "Chưa cập nhật", _d.get('last_user_bl') or "Hệ thống"
+    current_time, current_user = (t_bl, u_bl) if vung == 'Bạc Liêu' else (t_cm, u_cm)
 
-    if vung == 'Bạc Liêu':
-        current_time = st_bl.value if st_bl else "Chưa cập nhật"
-        current_user = su_bl.value if su_bl else "Hệ thống"
-    else:
-        current_time = st_cm.value if st_cm else "Chưa cập nhật"
-        current_user = su_cm.value if su_cm else "Hệ thống"
+    # Cache danh sách xe theo vùng 5 giây: nhiều người cùng polling nhưng dữ liệu giống nhau
+    # -> chỉ 1 request trong 5 giây thật sự truy vấn DB, các request còn lại dùng bản cache.
+    _cached = _CACHE_HOME_DATA.get(vung)
+    if _cached and (time.time() - _cached[0]) < 5:
+        return jsonify({
+            "success": True, "vung": vung,
+            "last_updated": current_time, "last_updated_by": current_user,
+            "vungs": [{"vung": "Cà Mau", "last_updated": t_cm, "last_updated_by": u_cm},
+                      {"vung": "Bạc Liêu", "last_updated": t_bl, "last_updated_by": u_bl}],
+            "data": _cached[1]
+        })
 
     from sqlalchemy.orm import selectinload
     danh_sach_xe = Xe.query.options(selectinload(Xe.mau_xe)).all()
@@ -1504,6 +1533,7 @@ def get_home_data():
             "mau_xe": [mau.to_dict(vung) for mau in xe.mau_xe]
         })
         
+    _CACHE_HOME_DATA[vung] = (time.time(), data)
     return jsonify({
         "success": True, 
         "vung": vung,
@@ -1512,13 +1542,13 @@ def get_home_data():
         "vungs": [
             {
                 "vung": "Cà Mau",
-                "last_updated": st_cm.value if st_cm else "Chưa cập nhật",
-                "last_updated_by": su_cm.value if su_cm else "Hệ thống"
+                "last_updated": t_cm,
+                "last_updated_by": u_cm
             },
             {
                 "vung": "Bạc Liêu",
-                "last_updated": st_bl.value if st_bl else "Chưa cập nhật",
-                "last_updated_by": su_bl.value if su_bl else "Hệ thống"
+                "last_updated": t_bl,
+                "last_updated_by": u_bl
             }
         ],
         "data": data
@@ -1531,16 +1561,10 @@ def sync_status():
     if 'username' not in session:
         return jsonify({"success": False, "message": "Vui lòng đăng nhập."}), 401
     vung = session.get('vung', 'Cà Mau')
-    st_cm = Setting.query.filter_by(key='last_updated_cm').first()
-    su_cm = Setting.query.filter_by(key='last_user_cm').first()
-    st_bl = Setting.query.filter_by(key='last_updated_bl').first()
-    su_bl = Setting.query.filter_by(key='last_user_bl').first()
-    if vung == 'Bạc Liêu':
-        current_time = st_bl.value if st_bl else "Chưa cập nhật"
-        current_user = su_bl.value if su_bl else "Hệ thống"
-    else:
-        current_time = st_cm.value if st_cm else "Chưa cập nhật"
-        current_user = su_cm.value if su_cm else "Hệ thống"
+    _d = lay_thong_tin_dong_bo()
+    t_cm, u_cm = _d.get('last_updated_cm') or "Chưa cập nhật", _d.get('last_user_cm') or "Hệ thống"
+    t_bl, u_bl = _d.get('last_updated_bl') or "Chưa cập nhật", _d.get('last_user_bl') or "Hệ thống"
+    current_time, current_user = (t_bl, u_bl) if vung == 'Bạc Liêu' else (t_cm, u_cm)
     return jsonify({
         "success": True,
         "vung": vung,
@@ -1548,11 +1572,11 @@ def sync_status():
         "last_updated_by": current_user,
         "vungs": [
             {"vung": "Cà Mau",
-             "last_updated": st_cm.value if st_cm else "Chưa cập nhật",
-             "last_updated_by": su_cm.value if su_cm else "Hệ thống"},
+             "last_updated": t_cm,
+             "last_updated_by": u_cm},
             {"vung": "Bạc Liêu",
-             "last_updated": st_bl.value if st_bl else "Chưa cập nhật",
-             "last_updated_by": su_bl.value if su_bl else "Hệ thống"}
+             "last_updated": t_bl,
+             "last_updated_by": u_bl}
         ]
     })
 
@@ -2243,7 +2267,7 @@ def lay_gia_giay_to_bl_hang_loat(ds_xe_id):
         } for kvl in ds_khu_vuc_lon]
     return ket_qua
 
-def format_xe_data_home(xe, khu_vuc_user):
+def format_xe_data_home(xe, khu_vuc_user, gia_gt_bl_map=None):
     is_bl = 'bạc liêu' in (khu_vuc_user or '').lower()
     gia_thap = xe.gia_bl_thap if is_bl else xe.gia_cm_thap
     gia_trung = xe.gia_bl_trung if is_bl else xe.gia_cm_trung
@@ -2274,7 +2298,8 @@ def format_xe_data_home(xe, khu_vuc_user):
         'gia_giay_to_xa_bac_lieu': xe.gia_gt_xa_bl,
         # MỚI: giá giấy tờ theo từng khu vực nhỏ Bạc Liêu, luôn gửi kèm để modal có thể
         # đổi vùng tại chỗ (không load lại trang) dù session đang ở vùng nào.
-        'gia_giay_to_khu_vuc_nho_bl': lay_gia_giay_to_khu_vuc_nho_bl(xe.id),
+        'gia_giay_to_khu_vuc_nho_bl': (gia_gt_bl_map.get(xe.id, []) if gia_gt_bl_map is not None
+                                       else lay_gia_giay_to_khu_vuc_nho_bl(xe.id)),
         'hinh_anh': xe.hinh_anh,
         'mau_xe': [mau.to_dict(khu_vuc_user) for mau in xe.mau_xe],
         'ns1': xe.ns1, 'ns2': xe.ns2, 'ns3': xe.ns3,
