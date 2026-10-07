@@ -753,7 +753,7 @@
                         id="xe-row-{{ xe.id }}"
                         data-name="{{ xe.ten_xe }}"
                         data-loai="{{ xe.loai_xe }}"
-                        data-img="{{ url_for('static', filename='uploads/' ~ xe.hinh_anh) if xe.hinh_anh else '' }}"
+                        data-img="{{ anh_url(xe.hinh_anh) }}"
                         data-colors='{{ xe.mau_xe | tojson | safe }}'
                         data-base-price="{{ xe.gia_cao | default(xe.gia_hien_thi, true) | default(0, true) }}"
                         data-gia-phuong="{{ (xe.gia_giay_to_phuong_bac_lieu if is_bac_lieu else xe.gia_giay_to_phuong_ca_mau) | default(xe.gia_giay_to_phuong, true) | default(0, true) }}"
@@ -1352,7 +1352,7 @@ document.addEventListener("DOMContentLoaded", function() {
             colors.forEach(function (item) {
                 if (item && item.hinh_anh_mau) {
                     const preloadImg = new Image();
-                    preloadImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
+                    preloadImg.src = "{{ anh_base }}" + item.hinh_anh_mau;
                 }
             });
 
@@ -1391,7 +1391,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     btn.style.backgroundColor = 'var(--primary-blue)';
                     btn.style.color = '#ffffff';
 
-                    modalImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
+                    modalImg.src = "{{ anh_base }}" + item.hinh_anh_mau;
 
                     const chenhLech = Number(item.chenh_lech_gia) || 0;
                     updateModalPrice(giaGoc + chenhLech, thapGoc + chenhLech, trungGoc + chenhLech);
@@ -1401,7 +1401,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 colorButtonsContainer.appendChild(btn);
             });
 
-            modalImg.src = "{{ url_for('static', filename='uploads/') }}" + colors[0].hinh_anh_mau;
+            modalImg.src = "{{ anh_base }}" + colors[0].hinh_anh_mau;
             modalImg.style.display = 'block';
             noImgText.style.display = 'none';
 
@@ -1861,7 +1861,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                         colors.forEach(function (item) {
                                             if (item && item.hinh_anh_mau) {
                                                 const preloadImg = new Image();
-                                                preloadImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
+                                                preloadImg.src = "{{ anh_base }}" + item.hinh_anh_mau;
                                             }
                                         });
 
@@ -1886,7 +1886,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                                                 const modalImg = document.getElementById('modalCarImg');
                                                 if (item.hinh_anh_mau && modalImg) {
-                                                    modalImg.src = "{{ url_for('static', filename='uploads/') }}" + item.hinh_anh_mau;
+                                                    modalImg.src = "{{ anh_base }}" + item.hinh_anh_mau;
                                                 }
 
                                                 const cl = Number(item.chenh_lech_gia) || 0;

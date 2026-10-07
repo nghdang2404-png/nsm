@@ -91,6 +91,16 @@ UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# --- LƯU ẢNH TRÊN SUPABASE STORAGE ---
+# Đĩa của Render là tạm thời (mất file mỗi lần deploy/restart) nên ảnh KHÔNG được ghi vào
+# static/uploads nữa mà đẩy lên bucket Supabase Storage. DB chỉ lưu tên file như cũ.
+# Cần set trong Render > Environment: SUPABASE_URL, SUPABASE_SERVICE_KEY (key service_role).
+# Nếu chưa set (chạy local) thì tự động lưu vào static/uploads như trước.
+SUPABASE_URL = os.environ.get('SUPABASE_URL', '').rstrip('/')
+SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')
+SUPABASE_BUCKET = os.environ.get('SUPABASE_BUCKET', 'image_xe')
+DUNG_SUPABASE = bool(SUPABASE_URL and SUPABASE_SERVICE_KEY)
+
 # --- CACHE ẢNH TĨNH (logo, ảnh xe theo màu...) TRÊN TRÌNH DUYỆT ---
 # Mặc định Flask không set Cache-Control cho /static, nên mỗi lần đổi màu xe (kể cả
 # đã xem màu đó trước đó) trình duyệt vẫn phải hỏi lại server -> chậm.
@@ -495,82 +505,117 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def save_image(file):
-    """Lưu ảnh upload, đồng thời NÉN + THU NHỎ ảnh trước khi lưu.
-    Đây là nguyên nhân chính khiến ảnh load chậm khi đã deploy lên server thật:
-    ảnh chụp trực tiếp từ điện thoại thường rất nặng (3-8MB, độ phân giải 3000-4000px)
-    trong khi hiển thị trên web chỉ cần vài trăm px, gây lãng phí băng thông rất lớn
-    -> chậm rõ rệt trên mạng di động / server có băng thông hạn chế, dù chạy trên máy
-    của mình (localhost) vẫn thấy nhanh vì không qua mạng thật.
-    Nếu Pillow xử lý lỗi (file hỏng, định dạng lạ...), sẽ tự động lưu file gốc như cũ
-    để không làm gián đoạn thao tác của admin."""
-    if file and file.filename != '':
-        filename = secure_filename(file.filename)
-        CAC_DUOI_ANH_HOP_LE = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
-        if os.path.splitext(filename)[1].lower() not in CAC_DUOI_ANH_HOP_LE:
-            # Chặn ngay từ đầu các file không phải ảnh (vd .html, .svg chứa script...)
-            # thay vì để lọt xuống nhánh "lưu file gốc" khi Pillow không mở được.
-            return ''
-        save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+CAC_DUOI_ANH_HOP_LE = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
+
+def _sb_headers(extra=None):
+    """Header gọi Supabase Storage. Key mới (sb_secret_...) không phải JWT nên chỉ gửi ở
+    header apikey; key cũ (service_role, dạng JWT) gửi thêm Authorization: Bearer."""
+    h = {"apikey": SUPABASE_SERVICE_KEY}
+    if not SUPABASE_SERVICE_KEY.startswith("sb_"):
+        h["Authorization"] = f"Bearer {SUPABASE_SERVICE_KEY}"
+    if extra:
+        h.update(extra)
+    return h
+
+def luu_file_anh(filename, data, content_type):
+    """Ghi 1 file ảnh: lên Supabase Storage (production) hoặc static/uploads (local).
+    Ném lỗi nếu thất bại để form báo lỗi thật, không báo thành công giả."""
+    if DUNG_SUPABASE:
+        import urllib.request, urllib.error
+        req = urllib.request.Request(
+            f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{filename}",
+            data=data, method="POST",
+            headers=_sb_headers({
+                "Content-Type": content_type,
+                "x-upsert": "true",
+                "Cache-Control": "max-age=2592000",
+            }))
         try:
-            img = Image.open(file.stream)
-            # Xoay ảnh đúng chiều theo thông tin EXIF (ảnh chụp điện thoại hay bị xoay
-            # ngang nếu không xử lý bước này), đồng thời gỡ bỏ dữ liệu EXIF thừa (vị trí
-            # GPS, thông tin thiết bị...) giúp giảm thêm dung lượng và bảo vệ quyền riêng tư.
-            img = ImageOps.exif_transpose(img)
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                if resp.status not in (200, 201):
+                    raise RuntimeError(f"Supabase trả về mã {resp.status}")
+        except urllib.error.HTTPError as e:
+            raise RuntimeError(f"Upload ảnh lên Supabase thất bại ({e.code}): {e.read().decode('utf-8', 'ignore')[:200]}")
+        except urllib.error.URLError as e:
+            raise RuntimeError(f"Không kết nối được Supabase Storage: {e.reason}")
+    else:
+        with open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'wb') as f:
+            f.write(data)
 
-            # Giới hạn kích thước tối đa 1600px chiều dài nhất (đủ nét trên mọi màn hình
-            # điện thoại/máy tính hiển thị danh sách xe/màu xe), không phóng to ảnh nhỏ hơn.
-            MAX_KICH_THUOC = 1600
-            img.thumbnail((MAX_KICH_THUOC, MAX_KICH_THUOC), Image.LANCZOS)
+def xoa_file_anh(filename):
+    """Xoá 1 file ảnh trên Supabase Storage (hoặc ở static/uploads khi chạy local)."""
+    if not filename:
+        return
+    try:
+        if DUNG_SUPABASE:
+            import urllib.request
+            req = urllib.request.Request(
+                f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{filename}",
+                method="DELETE",
+                headers=_sb_headers())
+            urllib.request.urlopen(req, timeout=15).close()
+        else:
+            p = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.exists(p):
+                os.remove(p)
+    except Exception as e:
+        print("Lỗi xoá ảnh:", e)
 
-            ext = os.path.splitext(filename)[1].lower()
-            if ext == '.png' and (img.mode in ('RGBA', 'LA') or 'transparency' in img.info):
-                # Giữ định dạng PNG nếu ảnh có nền trong suốt, chỉ tối ưu nén (không mất chi tiết)
-                img.save(save_path, format='PNG', optimize=True)
-            else:
-                # Các trường hợp còn lại nén sang JPEG chất lượng cao (82%) - giảm dung lượng
-                # rất nhiều (thường còn 10-20% so với ảnh gốc) mà mắt thường không thấy khác biệt
-                if img.mode in ('RGBA', 'LA', 'P'):
-                    img = img.convert('RGB')
-                img.save(save_path, format='JPEG', quality=82, optimize=True, progressive=True)
-        except Exception as e:
-            print("Lỗi nén ảnh, lưu file gốc:", e)
-            file.stream.seek(0)
-            file.save(save_path)
-        return filename
-    return ''
+def anh_url(filename):
+    """URL công khai của 1 ảnh (dùng trong template và API)."""
+    if not filename:
+        return ''
+    if DUNG_SUPABASE:
+        return f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{filename}"
+    return url_for('static', filename='uploads/' + filename)
 
-def save_image_360(file):
-    """Giống save_image() (nén + resize) nhưng LUÔN đặt tên file ngẫu nhiên
-    (uuid), không giữ tên gốc. Lý do: 1 bộ ảnh 360 độ thường có nhiều file
-    được đặt tên kiểu 1.jpg, 2.jpg... 01.jpg, 02.jpg... nên nếu giữ tên gốc
-    như save_image() thì ảnh của xe/màu này sẽ RẤT DỄ ghi đè lên ảnh của
-    xe/màu khác đã lỡ dùng trùng tên file trước đó."""
+@app.context_processor
+def inject_anh_helpers():
+    """Cho phép template gọi anh_url(...) và dùng anh_base (tiền tố URL thư mục ảnh) trong JS."""
+    base = (f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/"
+            if DUNG_SUPABASE else url_for('static', filename='uploads/'))
+    return dict(anh_url=anh_url, anh_base=base)
+
+def save_image(file, max_size=1600, prefix=''):
+    """Nén + thu nhỏ ảnh (tối đa max_size px) rồi lưu lên Supabase Storage.
+    Tên file là uuid ngẫu nhiên -> không bị ghi đè khi 2 ảnh trùng tên và không lỗi
+    với tên file tiếng Việt/ký tự lạ. Trả về tên file để lưu vào DB ('' nếu không có file).
+    File sai định dạng -> ném ValueError; upload thất bại -> ném RuntimeError."""
     if not file or file.filename == '':
         return ''
-    ext = os.path.splitext(secure_filename(file.filename))[1].lower()
-    CAC_DUOI_ANH_HOP_LE = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
+    ext = os.path.splitext(file.filename)[1].lower()
     if ext not in CAC_DUOI_ANH_HOP_LE:
-        return ''
-    filename = f"360_{uuid.uuid4().hex}{ext}"
-    save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        raise ValueError(f"File \"{file.filename}\" không phải ảnh hợp lệ (chỉ nhận .jpg .jpeg .png .webp .gif)")
+    buf = io.BytesIO()
     try:
         img = Image.open(file.stream)
+        # Xoay đúng chiều theo EXIF và bỏ dữ liệu EXIF thừa (GPS, thiết bị...)
         img = ImageOps.exif_transpose(img)
-        MAX_KICH_THUOC = 1200
-        img.thumbnail((MAX_KICH_THUOC, MAX_KICH_THUOC), Image.LANCZOS)
+        img.thumbnail((max_size, max_size), Image.LANCZOS)
         if ext == '.png' and (img.mode in ('RGBA', 'LA') or 'transparency' in img.info):
-            img.save(save_path, format='PNG', optimize=True)
+            img.save(buf, format='PNG', optimize=True)
+            content_type, ext = 'image/png', '.png'
         else:
             if img.mode in ('RGBA', 'LA', 'P'):
                 img = img.convert('RGB')
-            img.save(save_path, format='JPEG', quality=82, optimize=True, progressive=True)
+            img.save(buf, format='JPEG', quality=82, optimize=True, progressive=True)
+            content_type, ext = 'image/jpeg', '.jpg'
+        data = buf.getvalue()
     except Exception as e:
-        print("Lỗi nén ảnh 360, lưu file gốc:", e)
+        print("Lỗi nén ảnh, lưu file gốc:", e)
         file.stream.seek(0)
-        file.save(save_path)
+        data = file.read()
+        content_type = file.mimetype or 'image/jpeg'
+    filename = f"{prefix}{uuid.uuid4().hex}{ext}"
+    luu_file_anh(filename, data, content_type)
     return filename
+
+def save_image_360(file):
+    """Như save_image() nhưng thu nhỏ còn 1200px và thêm tiền tố 360_."""
+    try:
+        return save_image(file, max_size=1200, prefix='360_')
+    except ValueError:
+        return ''  # file không hợp lệ: bỏ qua, route sẽ đếm số ảnh hợp lệ
 
 def lay_danh_sach_ma_mau(ten_mau):
     if not ten_mau: 
@@ -1939,12 +1984,7 @@ def upload_anh_360(mau_id):
 
     if request.form.get('thay_the') == '1':
         for anh in list(mau.anh_360):
-            try:
-                old_path = os.path.join(app.config['UPLOAD_FOLDER'], anh.duong_dan)
-                if os.path.exists(old_path):
-                    os.remove(old_path)
-            except Exception:
-                pass
+            xoa_file_anh(anh.duong_dan)
             db.session.delete(anh)
         db.session.flush()
 
@@ -1952,13 +1992,22 @@ def upload_anh_360(mau_id):
     start_order = (max(thu_tu_hien_tai) + 1) if thu_tu_hien_tai else 0
 
     count = 0
+    loi_upload = None
     for i, f in enumerate(files):
-        filename = save_image_360(f)
+        try:
+            filename = save_image_360(f)
+        except Exception as e:
+            loi_upload = str(e)
+            print("Lỗi upload ảnh 360:", e)
+            break
         if filename:
             db.session.add(Anh360(xe_mau_id=mau.id, duong_dan=filename, thu_tu=start_order + i))
             count += 1
 
     db.session.commit()
+    if loi_upload:
+        flash(f"Tải ảnh 360° bị dừng giữa chừng (đã lưu {count} ảnh): {loi_upload}", "danger")
+        return redirect(url_for('admin_panel'))
     if count:
         flash(f"Đã tải lên {count} ảnh 360° cho màu \"{mau.ten_mau}\".", "success")
     else:
@@ -1970,12 +2019,7 @@ def upload_anh_360(mau_id):
 def xoa_anh_360(id):
     """Xoá 1 tấm ảnh trong bộ ảnh 360 (không xoá cả bộ)."""
     anh = db.get_or_404(Anh360, id)
-    try:
-        old_path = os.path.join(app.config['UPLOAD_FOLDER'], anh.duong_dan)
-        if os.path.exists(old_path):
-            os.remove(old_path)
-    except Exception:
-        pass
+    xoa_file_anh(anh.duong_dan)
     db.session.delete(anh)
     db.session.commit()
     flash("Đã xoá ảnh 360°.", "success")
@@ -1987,12 +2031,7 @@ def xoa_bo_anh_360(mau_id):
     """Xoá TOÀN BỘ bộ ảnh 360 của 1 màu xe."""
     mau = db.get_or_404(XeMau, mau_id)
     for anh in list(mau.anh_360):
-        try:
-            old_path = os.path.join(app.config['UPLOAD_FOLDER'], anh.duong_dan)
-            if os.path.exists(old_path):
-                os.remove(old_path)
-        except Exception:
-            pass
+        xoa_file_anh(anh.duong_dan)
         db.session.delete(anh)
     db.session.commit()
     flash(f"Đã xoá toàn bộ ảnh 360° của màu \"{mau.ten_mau}\".", "success")
@@ -2005,7 +2044,7 @@ def api_anh_360(mau_id):
     mau = XeMau.query.get(mau_id)
     if not mau:
         return jsonify({"images": [], "ten_mau": ""})
-    urls = [url_for('static', filename='uploads/' + a.duong_dan) for a in mau.anh_360]
+    urls = [anh_url(a.duong_dan) for a in mau.anh_360]
     return jsonify({"images": urls, "ten_mau": mau.ten_mau})
 
 @app.route("/admin/import", methods=["POST"])

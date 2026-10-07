@@ -946,7 +946,7 @@
   <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
     {% for anh in mau.anh_360 %}
     <div style="position:relative;">
-      <img src="{{ url_for('static', filename='uploads/' + anh.duong_dan) }}"
+      <img src="{{ anh_url(anh.duong_dan) }}"
            style="width:56px; height:56px; object-fit:cover; border-radius:6px; border:1px solid #e2e8f0;">
       <form method="POST" action="{{ url_for('xoa_anh_360', id=anh.id) }}"
             onsubmit="return confirm('Xoá ảnh này khỏi bộ 360°?');"
