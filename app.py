@@ -2973,6 +2973,10 @@ with app.app_context():
 from tinh_gop import dang_ky_tinh_gop
 dang_ky_tinh_gop(app, db, Setting, admin_required)
 
+# --- KẾT NỐI NỘI BỘ (bảng tin, chat, nhóm, thông báo) - xem teamhub.py ---
+from teamhub import dang_ky_teamhub
+dang_ky_teamhub(app, db, luu_file_anh, xoa_file_anh, anh_url)
+
 if __name__ == "__main__":
     # threaded=True: cho phép server xử lý NHIỀU request cùng lúc (ví dụ nhiều người cùng mở
     # ảnh xe, hoặc trình duyệt tải nhiều ảnh màu song song). Mặc định server dev của Flask

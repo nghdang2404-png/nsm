@@ -149,6 +149,10 @@
             transition: all 0.2s;
             flex-shrink: 0;
         }
+        /* Nút vào Kết nối nội bộ + số tin chưa đọc */
+        .th-link { position: relative; text-decoration: none; }
+        .th-badge { position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: #dc2626; color: #fff; font-size: 10px; font-weight: 700; line-height: 17px; text-align: center; box-sizing: border-box; }
+        .th-badge:empty { display: none; }
         .icon-btn:hover {
             background: var(--primary-blue);
             color: #fff;
@@ -674,6 +678,9 @@
         </div>
 
         <div class="user-actions">
+            <a href="{{ url_for('teamhub.page') }}" class="icon-btn th-link" title="Kết nối nội bộ (chat, bảng tin)">
+                <i class="fas fa-comments"></i><span class="th-badge" id="thBadge"></span>
+            </a>
             <button type="button" class="icon-btn" id="btnOpenChangePassword" onclick="openChangePasswordModal()" title="Đổi mật khẩu">
                 <i class="fas fa-key"></i>
             </button>
@@ -2116,5 +2123,20 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<script>
+// Số tin nhắn + thông báo chưa đọc trên nút "Kết nối nội bộ"
+(function () {
+    var b = document.getElementById('thBadge');
+    if (!b) return;
+    function dem() {
+        fetch('/teamhub/api/pulse', { credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) { if (d) { var n = (d.chat || 0) + (d.notif || 0); b.textContent = n > 99 ? '99+' : (n || ''); } })
+            .catch(function () {});
+    }
+    dem();
+    setInterval(function () { if (!document.hidden) dem(); }, 30000);
+})();
+</script>
 </body>
 </html>
