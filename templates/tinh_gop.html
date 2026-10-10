@@ -160,8 +160,15 @@
     }
     function laiCua(k) {
         if (!k.goi) return st.feLai;
-        const i = st.laiChon[k.thang] || 0;
+        const i = chiSoLai(k);
         return k.lai[i] !== undefined ? k.lai[i] : k.lai[0];
+    }
+    // Mức lãi đang chọn của kỳ hạn: người dùng đã bấm chọn > lãi mặc định của dòng xe (nếu trùng 1 gói) > gói đầu tiên
+    function chiSoLai(k) {
+        if (st.laiChon[k.thang] !== undefined) return st.laiChon[k.thang];
+        const xe = xeFE();
+        if (xe) { const i = k.lai.findIndex(l => Math.abs(l - xe.lai) < 1e-9); if (i >= 0) return i; }
+        return 0;
     }
     const tinh = (vay, lai, n) => (vay * (lai / 100) * n + vay) / n;
 
@@ -226,12 +233,13 @@
         const box = $('gopLaiBox');
         if (st.doi === 'fe' && k && !k.goi) {
             const xe = xeFE();
-            box.innerHTML = `<select id="gopFeLai" class="gop-select">${CFG.fe.lai_tuy_chon.map(l =>
+            const dsLai = Array.from(new Set(CFG.fe.lai_tuy_chon.concat(xe ? [xe.lai] : []))).sort((a, b) => a - b);
+            box.innerHTML = `<select id="gopFeLai" class="gop-select">${dsLai.map(l =>
                 `<option value="${l}"${l === st.feLai ? ' selected' : ''}>${fmtLai(l)} / tháng</option>`).join('')}</select>` +
                 `<div class="gop-hint">${xe ? `Xe thuộc dòng <b>${xe.ten}</b>: lãi mặc định ${fmtLai(xe.lai)}, góp tối đa ${xe.toi_da} tháng.`
                     : 'Dòng xe này chưa có trong bảng FE: chọn lãi suất thủ công, hiện đủ các kỳ hạn.'}</div>`;
         } else if (k && k.goi && k.lai.length > 1) {
-            const i = st.laiChon[k.thang] || 0;
+            const i = chiSoLai(k);
             box.innerHTML = `<div class="gop-chips">${k.lai.map((l, idx) =>
                 `<button type="button" class="gop-chip${idx === i ? ' on' : ''}" data-lai-idx="${idx}">${fmtLai(l)}</button>`).join('')}</div>
                 <div class="gop-hint">Kỳ hạn ${k.thang} tháng có nhiều mức lãi, chọn mức đang áp dụng.</div>`;
@@ -264,7 +272,7 @@
                 <div><span>Gốc mỗi tháng</span><b>${fmt(vay / k.thang)}</b></div>
                 <div><span>Lãi mỗi tháng</span><b>${fmt(vay * lai / 100)}</b></div>
                 <div><span>Tổng tiền lãi</span><b>${fmt(tongLai)}</b></div>
-                <div><span>Tổng thanh toán (gồm trả trước)</span><b>${fmt(st.tien + gop * k.thang)}</b></div>
+                <div><span>Tổng gốc + lãi</span><b>${fmt(gop * k.thang)}</b></div>
             </div>`;
         footV.textContent = new Intl.NumberFormat('vi-VN').format(Math.round(gop)) + ' đ';
         footD.innerHTML = `${k.thang} tháng<br>lãi ${fmtLai(lai)}/tháng`;
@@ -322,7 +330,7 @@
             if (pill) {
                 const t = Number(pill.dataset.doiLai);
                 const k = dsKyHan().find(x => x.thang === t);
-                st.laiChon[t] = ((st.laiChon[t] || 0) + 1) % k.lai.length;
+                st.laiChon[t] = (chiSoLai(k) + 1) % k.lai.length;
                 st.thang = t; ve(); return;
             }
             const tr = e.target.closest('tr[data-thang]');
