@@ -1993,14 +1993,17 @@ document.addEventListener("DOMContentLoaded", function() {
         document.body.removeChild(aux);
     }
 
-    // 3. LÀM MỜ MÀN HÌNH KHI RỜI TRÌNH DUYỆT (Chống dùng app chụp ngoài)
-    window.addEventListener('blur', function () {
-        document.body.style.filter = 'blur(12px)';
-    });
-
-    window.addEventListener('focus', function () {
-        document.body.style.filter = 'none';
-    });
+    // 3. (ĐÃ TẮT) Làm mờ màn hình khi cửa sổ mất focus (vd bấm sang Zalo).
+    //    Muốn bật lại: đổi BAT_LAM_MO thành true.
+    var BAT_LAM_MO = false;
+    if (BAT_LAM_MO) {
+        window.addEventListener('blur', function () {
+            document.body.style.filter = 'blur(12px)';
+        });
+        window.addEventListener('focus', function () {
+            document.body.style.filter = 'none';
+        });
+    }
 })();
 </script>
 <!-- MODAL ĐỔI MẬT KHẨU -->
