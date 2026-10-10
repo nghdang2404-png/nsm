@@ -44,7 +44,8 @@ DEFAULT_CONFIG = {
         "ten": "FE",
         "min_tra_truoc": 10,
         "lai_tuy_chon": [0.79, 0.99, 1.19, 1.35],
-        "ky_han": [6, 9, 12, 15, 18, 24, 36],
+        # lai rỗng = dùng lãi theo dòng xe (bảng bên dưới); có lai = gói lãi riêng của kỳ hạn như Jacss
+        "ky_han": [{"thang": t, "lai": []} for t in (6, 9, 12, 15, 18, 24, 36)],
         "xe": [
             {"ten": "Wave Alpha",   "match": ["wavealpha"],            "loai_tru": [],          "lai": 0.79, "toi_da": 36},
             {"ten": "Blade",        "match": ["blade"],                "loai_tru": ["airblade"], "lai": 1.19, "toi_da": 15},
@@ -110,9 +111,23 @@ def _lam_sach(cfg):
     lai_tc = sorted({round(_so(x), 4) for x in f.get('lai_tuy_chon', []) if 0 <= _so(x, -1) <= 10})
     if not lai_tc:
         raise ValueError("FE cần ít nhất 1 mức lãi suất tuỳ chọn.")
-    ky_han_f = sorted({int(_so(x)) for x in f.get('ky_han', []) if 0 < _so(x) <= 120})
+    ky_han_f, da_co_f = [], set()
+    for r in f.get('ky_han', []):
+        if not isinstance(r, dict):       # tương thích cấu hình cũ: danh sách số tháng
+            r = {"thang": r, "lai": []}
+        thang = int(_so(r.get('thang')))
+        lai = [round(_so(x), 4) for x in (r.get('lai') or []) if _so(x, -1) >= 0]
+        if thang <= 0 or thang > 120:
+            raise ValueError(f"Số tháng không hợp lệ (FE): {r.get('thang')}")
+        if any(x > 10 for x in lai):
+            raise ValueError(f"Lãi suất kỳ hạn {thang} tháng (FE) quá lớn (>10%/tháng), kiểm tra lại.")
+        if thang in da_co_f:
+            raise ValueError(f"Kỳ hạn {thang} tháng (FE) bị trùng.")
+        da_co_f.add(thang)
+        ky_han_f.append({"thang": thang, "lai": lai})
     if not ky_han_f:
         raise ValueError("FE cần ít nhất 1 kỳ hạn.")
+    ky_han_f.sort(key=lambda x: x['thang'])
     xe_f = []
     for x in f.get('xe', []):
         ten = str(x.get('ten') or '').strip()
@@ -126,7 +141,7 @@ def _lam_sach(cfg):
             "match": match,
             "loai_tru": [_chuan_hoa_khoa(m) for m in (x.get('loai_tru') or []) if _chuan_hoa_khoa(m)],
             "lai": round(_so(x.get('lai')), 4),
-            "toi_da": int(_so(x.get('toi_da'), ky_han_f[-1])) or ky_han_f[-1],
+            "toi_da": int(_so(x.get('toi_da'), ky_han_f[-1]['thang'])) or ky_han_f[-1]['thang'],
         })
 
     def pct(v, default):

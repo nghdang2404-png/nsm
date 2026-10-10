@@ -20,7 +20,7 @@
         <h5 class="fw-bold m-0 text-uppercase"><i class="fa-solid fa-hand-holding-dollar text-danger me-2"></i> Lãi suất tính góp xe</h5>
         <button class="btn btn-danger btn-sm px-3" onclick="luuCauHinh()"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu thay đổi</button>
     </div>
-    <p class="tg-hint">Lãi suất nhập theo <b>%/tháng</b> (VD 0,99). Với Jacss, kỳ hạn có nhiều mức lãi thì nhập cách nhau bằng dấu chấm phẩy, mức đầu tiên là mặc định (VD <code>0,99; 0,79</code>).</p>
+    <p class="tg-hint">Lãi suất nhập theo <b>%/tháng</b> (VD 0,99). Với kỳ hạn có nhiều mức lãi thì nhập cách nhau bằng dấu chấm phẩy, mức đầu tiên là mặc định (VD <code>0,99; 0,79</code>).</p>
 
     <!-- JACSS -->
     <div class="tg-card">
@@ -46,15 +46,21 @@
                 <label class="form-label small fw-semibold">Trả trước tối thiểu (%)</label>
                 <input id="fMin" class="form-control form-control-sm" inputmode="decimal">
             </div>
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-9">
                 <label class="form-label small fw-semibold">Các mức lãi để chọn (%/tháng)</label>
                 <input id="fLaiTc" class="form-control form-control-sm" placeholder="0,79; 0,99; 1,19; 1,35">
             </div>
-            <div class="col-12 col-md-5">
-                <label class="form-label small fw-semibold">Các kỳ hạn (tháng)</label>
-                <input id="fKyHan" class="form-control form-control-sm" placeholder="6; 9; 12; 15; 18; 24; 36">
-            </div>
         </div>
+        <h6 class="small fw-bold text-uppercase mt-2">Kỳ hạn &amp; gói lãi suất</h6>
+        <p class="tg-hint mb-2">Để trống cột lãi = lấy lãi theo dòng xe (bảng bên dưới). Điền lãi (VD <code>0,99; 0,79</code>) = gói lãi riêng của kỳ hạn đó, mức đầu là mặc định, giống Jacss.</p>
+        <div class="table-responsive">
+            <table class="table table-sm tg-table">
+                <thead><tr><th style="width:130px">Số tháng</th><th>Lãi suất %/tháng (có thể để trống)</th><th style="width:50px"></th></tr></thead>
+                <tbody id="fKyBody"></tbody>
+            </table>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm mb-4" onclick="themKyHanF()"><i class="fa-solid fa-plus me-1"></i> Thêm kỳ hạn</button>
+        <h6 class="small fw-bold text-uppercase">Lãi mặc định theo dòng xe</h6>
         <div class="table-responsive">
             <table class="table table-sm tg-table">
                 <thead><tr><th>Dòng xe</th><th>Từ khoá nhận diện</th><th>Loại trừ</th><th style="width:110px">Lãi mặc định</th><th style="width:110px">Tối đa (tháng)</th><th style="width:50px"></th></tr></thead>
@@ -87,6 +93,7 @@
             <td><input class="form-control form-control-sm f-max" inputmode="numeric" value="${x.toi_da}"></td>
             <td><button class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">×</button></td></tr>`;
     }
+    function themKyHanF() { document.getElementById('fKyBody').insertAdjacentHTML('beforeend', dongJ({ thang: '', lai: [] })); }
     function themKyHanJ() { document.getElementById('jBody').insertAdjacentHTML('beforeend', dongJ({ thang: '', lai: [] })); }
     function themXeF() { document.getElementById('fBody').insertAdjacentHTML('beforeend', dongF({ ten: '', match: [], loai_tru: [], lai: 0.79, toi_da: 24 })); }
 
@@ -95,7 +102,7 @@
         document.getElementById('jBody').innerHTML = CFG.jacss.ky_han.map(dongJ).join('');
         document.getElementById('fMin').value = soStr(CFG.fe.min_tra_truoc);
         document.getElementById('fLaiTc').value = CFG.fe.lai_tuy_chon.map(soStr).join('; ');
-        document.getElementById('fKyHan').value = CFG.fe.ky_han.join('; ');
+        document.getElementById('fKyBody').innerHTML = CFG.fe.ky_han.map(k => dongJ(typeof k === 'object' ? k : { thang: k, lai: [] })).join('');
         document.getElementById('fBody').innerHTML = CFG.fe.xe.map(dongF).join('');
     })();
 
@@ -109,7 +116,7 @@
             fe: {
                 min_tra_truoc: document.getElementById('fMin').value,
                 lai_tuy_chon: toList(document.getElementById('fLaiTc').value),
-                ky_han: toList(document.getElementById('fKyHan').value),
+                ky_han: q('#fKyBody tr').map(tr => ({ thang: tr.querySelector('.j-thang').value, lai: toList(tr.querySelector('.j-lai').value) })),
                 xe: q('#fBody tr').map(tr => ({
                     ten: tr.querySelector('.f-ten').value,
                     match: toList(tr.querySelector('.f-match').value),

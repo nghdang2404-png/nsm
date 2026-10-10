@@ -153,13 +153,13 @@
         return best;
     }
     function dsKyHan() {
-        if (st.doi === 'jacss') return CFG.jacss.ky_han.map(k => ({ thang: k.thang, lai: k.lai }));
+        if (st.doi === 'jacss') return CFG.jacss.ky_han.map(k => ({ thang: k.thang, lai: k.lai, goi: true }));
         const xe = xeFE();
-        const lai = st.feLai;
-        return CFG.fe.ky_han.filter(t => !xe || t <= xe.toi_da).map(t => ({ thang: t, lai: [lai] }));
+        return CFG.fe.ky_han.filter(k => !xe || k.thang <= xe.toi_da).map(k =>
+            (k.lai && k.lai.length) ? { thang: k.thang, lai: k.lai, goi: true } : { thang: k.thang, lai: [st.feLai], goi: false });
     }
     function laiCua(k) {
-        if (st.doi === 'fe') return st.feLai;
+        if (!k.goi) return st.feLai;
         const i = st.laiChon[k.thang] || 0;
         return k.lai[i] !== undefined ? k.lai[i] : k.lai[0];
     }
@@ -224,17 +224,17 @@
     function veLai(ky) {
         const k = ky.find(x => x.thang === st.thang);
         const box = $('gopLaiBox');
-        if (st.doi === 'fe') {
+        if (st.doi === 'fe' && k && !k.goi) {
             const xe = xeFE();
             box.innerHTML = `<select id="gopFeLai" class="gop-select">${CFG.fe.lai_tuy_chon.map(l =>
                 `<option value="${l}"${l === st.feLai ? ' selected' : ''}>${fmtLai(l)} / tháng</option>`).join('')}</select>` +
                 `<div class="gop-hint">${xe ? `Xe thuộc dòng <b>${xe.ten}</b>: lãi mặc định ${fmtLai(xe.lai)}, góp tối đa ${xe.toi_da} tháng.`
                     : 'Dòng xe này chưa có trong bảng FE: chọn lãi suất thủ công, hiện đủ các kỳ hạn.'}</div>`;
-        } else if (k && k.lai.length > 1) {
+        } else if (k && k.goi && k.lai.length > 1) {
             const i = st.laiChon[k.thang] || 0;
             box.innerHTML = `<div class="gop-chips">${k.lai.map((l, idx) =>
                 `<button type="button" class="gop-chip${idx === i ? ' on' : ''}" data-lai-idx="${idx}">${fmtLai(l)}</button>`).join('')}</div>
-                <div class="gop-hint">Kỳ hạn ${k.thang} tháng có 2 mức lãi, chọn mức đang áp dụng.</div>`;
+                <div class="gop-hint">Kỳ hạn ${k.thang} tháng có nhiều mức lãi, chọn mức đang áp dụng.</div>`;
         } else if (k) {
             box.innerHTML = `<div class="gop-input" style="background:#f8fafc">${fmtLai(k.lai[0])} / tháng</div>`;
         }
@@ -272,7 +272,7 @@
         bang.innerHTML = '<thead><tr><th>Kỳ hạn</th><th>Lãi</th><th>Góp/tháng</th><th>Tổng lãi</th></tr></thead><tbody>' +
             ky.map(x => {
                 const l = laiCua(x), g = tinh(vay, l, x.thang);
-                const pill = (st.doi === 'jacss' && x.lai.length > 1)
+                const pill = (x.goi && x.lai.length > 1)
                     ? `<button type="button" class="gop-pill" data-doi-lai="${x.thang}" title="Bấm để đổi mức lãi">${fmtLai(l)} ⇄</button>` : fmtLai(l);
                 return `<tr class="row${x.thang === st.thang ? ' sel' : ''}" data-thang="${x.thang}"><td>${x.thang} tháng</td><td>${pill}</td>` +
                     `<td>${new Intl.NumberFormat('vi-VN').format(Math.round(g))}</td><td>${new Intl.NumberFormat('vi-VN').format(Math.round(vay * l / 100 * x.thang))}</td></tr>`;
@@ -321,7 +321,7 @@
             const pill = e.target.closest('[data-doi-lai]');
             if (pill) {
                 const t = Number(pill.dataset.doiLai);
-                const k = CFG.jacss.ky_han.find(x => x.thang === t);
+                const k = dsKyHan().find(x => x.thang === t);
                 st.laiChon[t] = ((st.laiChon[t] || 0) + 1) % k.lai.length;
                 st.thang = t; ve(); return;
             }
