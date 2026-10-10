@@ -6,14 +6,8 @@
     <title>Bảng Giá & Tồn Kho - Nam Sương Motor</title>
     
     <!-- CẤU HÌNH PWA CHO ANDROID & IOS -->
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    {% include "_pwa_head.html" %}
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="theme-color" content="#dc2626">
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Nam Sương Motor">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
 
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

@@ -1,0 +1,14 @@
+<!-- PWA: icon cho Android và iPhone, dùng chung cho mọi trang -->
+<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}?v=2">
+<meta name="theme-color" content="#dc3545">
+
+<!-- Android / Chrome -->
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='LogoNSM.png') }}?v=2">
+
+<!-- iPhone / Safari (Safari KHÔNG đọc icon trong manifest.json) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Nam Sương">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='LogoNSM.png') }}?v=2">
+<link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='LogoNSM.png') }}?v=2">
