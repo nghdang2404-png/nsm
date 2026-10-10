@@ -2,10 +2,14 @@
      Modal "Tính góp xe": điện thoại = toàn màn hình + thanh kết quả cố định phía dưới,
      laptop = hộp thoại 2 cột (nhập liệu bên trái, kết quả + bảng so sánh kỳ hạn bên phải). -->
 <style>
+    /* Màu theo đơn vị: Jacss = đỏ, FE = xanh lá nhạt (đổi ở đây nếu muốn chỉnh tông) */
+    #gopModal { --gop-main:#dc2626; --gop-dark:#b91c1c; --gop-soft:#fff1f2; --gop-border:#fecdd3; --gop-ring:rgba(220,38,38,.15); --gop-shadow:rgba(220,38,38,.3); }
+    #gopModal[data-doi="fe"] { --gop-main:#22a559; --gop-dark:#178a47; --gop-soft:#f0fdf4; --gop-border:#bbf7d0; --gop-ring:rgba(34,165,89,.18); --gop-shadow:rgba(34,165,89,.3); }
+    .gop-head, .gop-chip, .gop-seg button, .gop-input { transition: background-color .2s, border-color .2s, color .2s; }
     #gopModal { display: none; position: fixed; inset: 0; z-index: 1100; background: rgba(15,23,42,.55); align-items: stretch; justify-content: center; }
     #gopModal.open { display: flex; }
     .gop-sheet { background: #f1f5f9; width: 100%; display: flex; flex-direction: column; min-height: 0; color: #1f2937; }
-    .gop-head { background: linear-gradient(135deg,#dc2626,#b91c1c); color: #fff; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+    .gop-head { background: linear-gradient(135deg,var(--gop-main),var(--gop-dark)); color: #fff; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; }
     .gop-head small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .6px; opacity: .85; }
     .gop-head strong { display: block; font-size: 16px; font-weight: 800; line-height: 1.25; margin-top: 2px; }
     .gop-x { background: rgba(255,255,255,.18); border: 0; color: #fff; width: 34px; height: 34px; border-radius: 50%; font-size: 20px; line-height: 1; cursor: pointer; flex-shrink: 0; }
@@ -15,9 +19,9 @@
     .gop-card > .gop-label:not(:first-child) { margin-top: 18px; }
     .gop-seg { display: grid; grid-template-columns: 1fr 1fr; background: #e2e8f0; border-radius: 10px; padding: 3px; gap: 3px; }
     .gop-seg button { border: 0; background: transparent; padding: 10px; border-radius: 8px; font-size: 15px; font-weight: 800; color: #475569; cursor: pointer; font-family: inherit; }
-    .gop-seg button.on { background: #fff; color: #dc2626; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+    .gop-seg button.on { background: #fff; color: var(--gop-main); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
     .gop-input { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 700; font-family: inherit; background: #fff; color: #111827; }
-    .gop-input:focus, .gop-select:focus { outline: 0; border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.15); }
+    .gop-input:focus, .gop-select:focus { outline: 0; border-color: var(--gop-main); box-shadow: 0 0 0 3px var(--gop-ring); }
     .gop-select { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; font-weight: 700; font-family: inherit; background: #fff; }
     .gop-row2 { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; }
     .gop-addon { position: relative; }
@@ -25,17 +29,17 @@
     .gop-addon .gop-input { padding-right: 44px; }
     .gop-chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .gop-chip { border: 1px solid #cbd5e1; background: #fff; border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 700; color: #334155; cursor: pointer; font-family: inherit; line-height: 1.2; }
-    .gop-chip.on { background: #dc2626; border-color: #dc2626; color: #fff; }
+    .gop-chip.on { background: var(--gop-main); border-color: var(--gop-main); color: #fff; }
     .gop-chip.price { border-radius: 10px; text-align: left; padding: 7px 11px; }
     .gop-chip.price small { display: block; font-size: 11px; font-weight: 600; opacity: .8; }
-    .gop-range { width: 100%; margin: 12px 0 2px; accent-color: #dc2626; }
+    .gop-range { width: 100%; margin: 12px 0 2px; accent-color: var(--gop-main); }
     .gop-warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 8px; padding: 9px 11px; font-size: 13px; font-weight: 600; margin-top: 10px; }
     .gop-hint { font-size: 12px; color: #64748b; margin-top: 8px; }
-    .gop-result { background: linear-gradient(135deg,#fff1f2,#fff); border: 1px solid #fecdd3; }
-    .gop-big { font-size: 30px; font-weight: 800; color: #dc2626; line-height: 1.1; }
+    .gop-result { background: linear-gradient(135deg,var(--gop-soft),#fff); border: 1px solid var(--gop-border); }
+    .gop-big { font-size: 30px; font-weight: 800; color: var(--gop-main); line-height: 1.1; }
     .gop-big small { font-size: 14px; color: #64748b; font-weight: 700; }
     .gop-sub { font-size: 13px; color: #64748b; margin-top: 4px; font-weight: 600; }
-    .gop-kv { display: grid; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed #fecdd3; font-size: 14px; }
+    .gop-kv { display: grid; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--gop-border); font-size: 14px; }
     .gop-kv div { display: flex; justify-content: space-between; gap: 10px; }
     .gop-kv span { color: #64748b; }
     .gop-kv b { text-align: right; }
@@ -45,12 +49,12 @@
     .gop-table th:first-child, .gop-table td:first-child { text-align: left; }
     .gop-table td { text-align: right; padding: 10px 6px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
     .gop-table tr.row { cursor: pointer; }
-    .gop-table tr.sel td { background: #fff1f2; font-weight: 800; color: #b91c1c; }
-    .gop-pill { border: 1px dashed #dc2626; background: #fff; color: #dc2626; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 800; cursor: pointer; font-family: inherit; }
+    .gop-table tr.sel td { background: var(--gop-soft); font-weight: 800; color: var(--gop-dark); }
+    .gop-pill { border: 1px dashed var(--gop-main); background: #fff; color: var(--gop-main); border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 800; cursor: pointer; font-family: inherit; }
     .gop-note { font-size: 11.5px; color: #94a3b8; line-height: 1.5; }
     .gop-foot { flex-shrink: 0; background: #fff; border-top: 1px solid #e2e8f0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom,0px)); display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 -4px 12px rgba(0,0,0,.06); }
     .gop-foot .lbl { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; }
-    .gop-foot .val { font-size: 22px; font-weight: 800; color: #dc2626; line-height: 1.1; }
+    .gop-foot .val { font-size: 22px; font-weight: 800; color: var(--gop-main); line-height: 1.1; }
     .gop-foot .det { text-align: right; font-size: 12px; color: #475569; font-weight: 700; }
     .gop-open-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg,#dc2626,#b91c1c); color: #fff; border: 0; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit; box-shadow: 0 2px 8px rgba(220,38,38,.3); }
     @media (min-width: 768px) {
@@ -94,18 +98,19 @@
                 <div class="gop-chips" id="gopPctChips"></div>
                 <div id="gopCanhBao"></div>
 
-                <span class="gop-label">Số tháng góp</span>
-                <div class="gop-chips" id="gopThangChips"></div>
+                <span class="gop-label">Gói lãi suất <span style="text-transform:none;font-weight:600">(%/tháng)</span></span>
+                <div class="gop-chips" id="gopLaiChips"></div>
+                <div class="gop-hint" id="gopLaiHint"></div>
 
-                <span class="gop-label">Lãi suất <span style="text-transform:none;font-weight:600">(%/tháng)</span></span>
-                <div id="gopLaiBox"></div>
+                <span class="gop-label">Số tháng góp áp dụng</span>
+                <div class="gop-chips" id="gopThangChips"></div>
             </div>
 
             <!-- CỘT PHẢI: KẾT QUẢ -->
             <div style="display:grid;gap:14px;align-content:start">
                 <div class="gop-card gop-result" id="gopKetQua"></div>
                 <div class="gop-card">
-                    <span class="gop-label">So sánh các kỳ hạn <span style="text-transform:none;font-weight:600">(bấm để chọn)</span></span>
+                    <span class="gop-label" id="gopBangTitle">So sánh các kỳ hạn <span style="text-transform:none;font-weight:600">(bấm để chọn)</span></span>
                     <div class="gop-table-wrap"><table class="gop-table" id="gopBang"></table></div>
                 </div>
                 <p class="gop-note">* Lãi tính phẳng trên khoản vay ban đầu: góp mỗi tháng = (khoản vay × lãi suất × số tháng + khoản vay) ÷ số tháng. Số liệu tham khảo, mức lãi và hồ sơ duyệt cuối cùng theo công ty tài chính.</p>
@@ -124,7 +129,7 @@
     const $ = (id) => document.getElementById(id);
     let CFG = null, cfgPromise = null;
     // mode: người dùng đang "giữ cố định" % hay số tiền khi đổi giá xe
-    const st = { doi: 'jacss', gia: 0, tien: 0, pct: 20, mode: 'pct', thang: 12, laiChon: {}, feLai: null, car: '' };
+    const st = { doi: 'jacss', gia: 0, tien: 0, pct: 20, mode: 'pct', thang: 12, lai: null, car: '' };
 
     const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n || 0)) + ' VNĐ';
     const fmtLai = (r) => Number(r).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + '%';
@@ -152,31 +157,38 @@
         });
         return best;
     }
-    // Gói lãi của kỳ hạn + lãi mặc định của dòng xe (nếu có và chưa nằm trong gói) để chọn được và được chọn sẵn
+    const cungLai = (a, b) => Math.abs(a - b) < 1e-9;
+    // Thêm lãi mặc định của dòng xe (nếu có và chưa nằm trong gói) để chọn được và được chọn sẵn
     function themLaiXe(lai) {
         const xe = xeFE();
-        if (xe && xe.lai > 0 && !lai.some(l => Math.abs(l - xe.lai) < 1e-9)) return lai.concat([xe.lai]);
+        if (xe && xe.lai > 0 && !lai.some(l => cungLai(l, xe.lai))) return lai.concat([xe.lai]);
         return lai;
     }
-    function dsKyHan() {
-        if (st.doi === 'jacss') return CFG.jacss.ky_han.map(k => ({ thang: k.thang, lai: themLaiXe(k.lai), goi: true }));
-        const xe = xeFE();
-        return CFG.fe.ky_han.filter(k => !xe || k.thang <= xe.toi_da).map(k =>
-            (k.lai && k.lai.length) ? { thang: k.thang, lai: themLaiXe(k.lai), goi: true } : { thang: k.thang, lai: [st.feLai], goi: false });
+    // Đảo chiều: danh sách GÓI LÃI, mỗi gói kèm các số tháng được áp dụng
+    // [{ lai: 0.79, thang: [6, 9, 12] }, ...] (thứ tự xuất hiện trong cấu hình, mức đầu là mặc định)
+    function dsLaiThang() {
+        const xe = xeFE(), map = [];
+        const them = (lai, thang) => {
+            let m = map.find(x => cungLai(x.lai, lai));
+            if (!m) { m = { lai, thang: [] }; map.push(m); }
+            if (!m.thang.includes(thang)) m.thang.push(thang);
+        };
+        const nguon = st.doi === 'jacss' ? CFG.jacss.ky_han : CFG.fe.ky_han;
+        const kyHan = nguon.map(k => (typeof k === 'object' ? k : { thang: k, lai: [] }))
+            .filter(k => st.doi === 'jacss' || !xe || k.thang <= xe.toi_da);
+        // FE: kỳ hạn để trống lãi => áp dụng cho mọi mức lãi tuỳ chọn
+        const tuyChon = st.doi === 'fe'
+            ? Array.from(new Set(CFG.fe.lai_tuy_chon.concat(xe && xe.lai > 0 ? [xe.lai] : []))) : [];
+        kyHan.forEach(k => {
+            if (k.lai && k.lai.length) themLaiXe(k.lai).forEach(l => them(l, k.thang));
+            else tuyChon.forEach(l => them(l, k.thang));
+        });
+        map.forEach(m => m.thang.sort((x, y) => x - y));
+        return map;
     }
-    function laiCua(k) {
-        if (!k.goi) return st.feLai;
-        const i = chiSoLai(k);
-        return k.lai[i] !== undefined ? k.lai[i] : k.lai[0];
-    }
-    // Mức lãi đang chọn của kỳ hạn: người dùng đã bấm chọn > lãi mặc định của dòng xe (nếu trùng 1 gói) > gói đầu tiên
-    function chiSoLai(k) {
-        if (st.laiChon[k.thang] !== undefined) return st.laiChon[k.thang];
-        const xe = xeFE();
-        if (xe && xe.lai > 0) { const i = k.lai.findIndex(l => Math.abs(l - xe.lai) < 1e-9); if (i >= 0) return i; }
-        return 0;
-    }
-    const tinh = (vay, lai, n) => (vay * (lai / 100) * n + vay) / n;
+    // Làm tròn LÊN đến hàng nghìn đồng (trừ 1e-9 để tránh sai số số thực đẩy 1.000.000 thành 1.001.000)
+    const lenNghin = (x) => Math.ceil(x / 1000 - 1e-9) * 1000;
+    const tinh = (vay, lai, n) => lenNghin((vay * (lai / 100) * n + vay) / n);
 
     // ---------- Nhập liệu ----------
     function docGiaTuModal() {
@@ -205,11 +217,24 @@
     }
 
     // ---------- Vẽ giao diện ----------
-    function ve(giuNhap) {
-        const ky = dsKyHan();
-        if (!ky.some(k => k.thang === st.thang)) {
-            st.thang = (ky.find(k => k.thang === 12) || ky[0] || {}).thang;
+    function moTaThang(ds) {
+        if (ds.length <= 5) return ds.join(', ') + ' tháng';
+        return ds[0] + ' – ' + ds[ds.length - 1] + ' tháng';
+    }
+
+    function ve() {
+        const ds = dsLaiThang();
+        // Chọn gói lãi: giữ lựa chọn cũ nếu còn hợp lệ, không thì lấy lãi mặc định của dòng xe, không có thì gói đầu tiên
+        let cur = st.lai === null ? null : ds.find(m => cungLai(m.lai, st.lai));
+        if (!cur && ds.length) {
+            const xe = xeFE();
+            cur = (xe && xe.lai > 0 && ds.find(m => cungLai(m.lai, xe.lai))) || ds[0];
         }
+        if (cur) {
+            st.lai = cur.lai;
+            if (!cur.thang.includes(st.thang)) st.thang = cur.thang.includes(12) ? 12 : cur.thang[0];
+        }
+
         // Ô nhập: không ghi đè ô đang gõ
         const act = document.activeElement;
         if (act !== $('gopGia')) $('gopGia').value = dinhDangSo(st.gia);
@@ -217,49 +242,45 @@
         if (act !== $('gopTien')) $('gopTien').value = dinhDangSo(st.tien);
         $('gopRange').value = Math.round(st.pct / 5) * 5;
 
+        $('gopModal').dataset.doi = st.doi;
         document.querySelectorAll('#gopDoiTac button').forEach(b => b.classList.toggle('on', b.dataset.doi === st.doi));
         document.querySelectorAll('#gopGiaChips .gop-chip').forEach(b => b.classList.toggle('on', Number(b.dataset.gia) === st.gia));
         $('gopPctChips').innerHTML = [10, 20, 30, 40, 50].map(p =>
             `<button type="button" class="gop-chip${Math.abs(st.pct - p) < 0.05 ? ' on' : ''}" data-pct="${p}">${p}%</button>`).join('');
-        $('gopThangChips').innerHTML = ky.map(k =>
-            `<button type="button" class="gop-chip${k.thang === st.thang ? ' on' : ''}" data-thang="${k.thang}">${k.thang} tháng</button>`).join('');
 
-        veLai(ky);
+        // Gói lãi suất (xếp tăng dần), mỗi gói ghi rõ số tháng áp dụng
+        const xe = xeFE();
+        $('gopLaiChips').innerHTML = ds.slice().sort((x, y) => x.lai - y.lai).map(m =>
+            `<button type="button" class="gop-chip price${cur && cungLai(m.lai, st.lai) ? ' on' : ''}" data-lai="${m.lai}">${fmtLai(m.lai)}<small>${moTaThang(m.thang)}</small></button>`).join('');
+        $('gopLaiHint').innerHTML = !ds.length ? 'Chưa có gói lãi suất nào được cấu hình.'
+            : (st.doi === 'fe'
+                ? (xe ? `Xe thuộc dòng <b>${xe.ten}</b>: lãi mặc định ${fmtLai(xe.lai)}, góp tối đa ${xe.toi_da} tháng.`
+                      : 'Dòng xe này chưa có trong bảng FE: chọn gói lãi phù hợp.')
+                : 'Chọn gói lãi suất, bên dưới sẽ hiện các kỳ hạn được áp dụng.');
+
+        // Số tháng áp dụng của gói lãi đang chọn
+        $('gopThangChips').innerHTML = cur ? cur.thang.map(t =>
+            `<button type="button" class="gop-chip${t === st.thang ? ' on' : ''}" data-thang="${t}">${t} tháng</button>`).join('') : '';
 
         // Cảnh báo trả trước tối thiểu
         const min = CFG[st.doi].min_tra_truoc || 0;
         $('gopCanhBao').innerHTML = (st.gia > 0 && st.pct + 1e-9 < min)
             ? `<div class="gop-warn"><i class="fas fa-triangle-exclamation"></i> ${CFG[st.doi].ten} yêu cầu trả trước tối thiểu ${min}% (${new Intl.NumberFormat('vi-VN').format(Math.round(st.gia * min / 100))} VNĐ).</div>` : '';
 
-        veKetQua(ky);
+        veKetQua(cur);
     }
 
-    function veLai(ky) {
-        const k = ky.find(x => x.thang === st.thang);
-        const box = $('gopLaiBox');
-        if (st.doi === 'fe' && k && !k.goi) {
-            const xe = xeFE();
-            const dsLai = Array.from(new Set(CFG.fe.lai_tuy_chon.concat(xe ? [xe.lai] : []))).sort((a, b) => a - b);
-            box.innerHTML = `<select id="gopFeLai" class="gop-select">${dsLai.map(l =>
-                `<option value="${l}"${l === st.feLai ? ' selected' : ''}>${fmtLai(l)} / tháng</option>`).join('')}</select>` +
-                `<div class="gop-hint">${xe ? `Xe thuộc dòng <b>${xe.ten}</b>: lãi mặc định ${fmtLai(xe.lai)}, góp tối đa ${xe.toi_da} tháng.`
-                    : 'Dòng xe này chưa có trong bảng FE: chọn lãi suất thủ công, hiện đủ các kỳ hạn.'}</div>`;
-        } else if (k && k.goi && k.lai.length > 1) {
-            const i = chiSoLai(k);
-            box.innerHTML = `<div class="gop-chips">${k.lai.map((l, idx) =>
-                `<button type="button" class="gop-chip${idx === i ? ' on' : ''}" data-lai-idx="${idx}">${fmtLai(l)}</button>`).join('')}</div>
-                <div class="gop-hint">Kỳ hạn ${k.thang} tháng có nhiều mức lãi, chọn mức đang áp dụng.${(xeFE() && xeFE().lai > 0) ? ' Lãi mặc định của dòng xe này: ' + fmtLai(xeFE().lai) + '.' : ''}</div>`;
-        } else if (k) {
-            box.innerHTML = `<div class="gop-input" style="background:#f8fafc">${fmtLai(k.lai[0])} / tháng</div>`;
-        }
-    }
-
-    function veKetQua(ky) {
+    function veKetQua(cur) {
         const vay = st.gia - st.tien;
-        const k = ky.find(x => x.thang === st.thang);
         const kq = $('gopKetQua'), bang = $('gopBang');
         const footV = $('gopFootVal'), footD = $('gopFootDet');
-        if (!(st.gia > 0) || !k) {
+        const lai = st.lai, thang = st.thang;
+        if (!cur) {
+            kq.innerHTML = '<div class="gop-sub">Chưa có gói lãi suất nào để tính.</div>';
+            bang.innerHTML = ''; footV.textContent = '—'; footD.textContent = ''; return;
+        }
+        $('gopBangTitle').innerHTML = `So sánh kỳ hạn · lãi ${fmtLai(lai)}/tháng <span style="text-transform:none;font-weight:600">(bấm để chọn)</span>`;
+        if (!(st.gia > 0)) {
             kq.innerHTML = '<div class="gop-sub">Nhập giá xe để xem kết quả.</div>';
             bang.innerHTML = ''; footV.textContent = '—'; footD.textContent = ''; return;
         }
@@ -267,29 +288,29 @@
             kq.innerHTML = '<div class="gop-sub">Trả trước đã đủ giá xe, không cần vay.</div>';
             bang.innerHTML = ''; footV.textContent = '—'; footD.textContent = ''; return;
         }
-        const lai = laiCua(k), gop = tinh(vay, lai, k.thang), tongLai = vay * lai / 100 * k.thang;
+        const gop = tinh(vay, lai, thang);
+        const goc = lenNghin(vay / thang), laiThang = gop - goc;   // gốc + lãi = góp mỗi tháng
+        const tongTra = gop * thang, tongLai = tongTra - vay;
         kq.innerHTML = `
-            <span class="gop-label" style="color:#be123c">${CFG[st.doi].ten} · ${k.thang} tháng · lãi ${fmtLai(lai)}/tháng</span>
+            <span class="gop-label" style="color:var(--gop-dark)">${CFG[st.doi].ten} · lãi ${fmtLai(lai)}/tháng · ${thang} tháng</span>
             <div class="gop-big">${new Intl.NumberFormat('vi-VN').format(Math.round(gop))} <small>VNĐ / tháng</small></div>
             <div class="gop-kv">
                 <div><span>Giá xe</span><b>${fmt(st.gia)}</b></div>
                 <div><span>Trả trước (${Math.round(st.pct * 10) / 10}%)</span><b>${fmt(st.tien)}</b></div>
                 <div><span>Khoản vay</span><b>${fmt(vay)}</b></div>
-                <div><span>Gốc mỗi tháng</span><b>${fmt(vay / k.thang)}</b></div>
-                <div><span>Lãi mỗi tháng</span><b>${fmt(vay * lai / 100)}</b></div>
+                <div><span>Gốc mỗi tháng</span><b>${fmt(goc)}</b></div>
+                <div><span>Lãi mỗi tháng</span><b>${fmt(laiThang)}</b></div>
                 <div><span>Tổng tiền lãi</span><b>${fmt(tongLai)}</b></div>
-                <div><span>Tổng gốc + lãi</span><b>${fmt(gop * k.thang)}</b></div>
+                <div><span>Tổng gốc + lãi</span><b>${fmt(tongTra)}</b></div>
             </div>`;
         footV.textContent = new Intl.NumberFormat('vi-VN').format(Math.round(gop)) + ' đ';
-        footD.innerHTML = `${k.thang} tháng<br>lãi ${fmtLai(lai)}/tháng`;
+        footD.innerHTML = `${thang} tháng<br>lãi ${fmtLai(lai)}/tháng`;
 
-        bang.innerHTML = '<thead><tr><th>Kỳ hạn</th><th>Lãi</th><th>Góp/tháng</th><th>Tổng lãi</th></tr></thead><tbody>' +
-            ky.map(x => {
-                const l = laiCua(x), g = tinh(vay, l, x.thang);
-                const pill = (x.goi && x.lai.length > 1)
-                    ? `<button type="button" class="gop-pill" data-doi-lai="${x.thang}" title="Bấm để đổi mức lãi">${fmtLai(l)} ⇄</button>` : fmtLai(l);
-                return `<tr class="row${x.thang === st.thang ? ' sel' : ''}" data-thang="${x.thang}"><td>${x.thang} tháng</td><td>${pill}</td>` +
-                    `<td>${new Intl.NumberFormat('vi-VN').format(Math.round(g))}</td><td>${new Intl.NumberFormat('vi-VN').format(Math.round(vay * l / 100 * x.thang))}</td></tr>`;
+        bang.innerHTML = '<thead><tr><th>Kỳ hạn</th><th>Góp/tháng</th><th>Tổng lãi</th></tr></thead><tbody>' +
+            cur.thang.map(t => {
+                const g = tinh(vay, lai, t);
+                return `<tr class="row${t === thang ? ' sel' : ''}" data-thang="${t}"><td>${t} tháng</td>` +
+                    `<td>${new Intl.NumberFormat('vi-VN').format(Math.round(g))}</td><td>${new Intl.NumberFormat('vi-VN').format(Math.round(g * t - vay))}</td></tr>`;
             }).join('') + '</tbody>';
     }
 
@@ -324,21 +345,11 @@
             const b = e.target.closest('button'); if (!b) return;
             st.thang = Number(b.dataset.thang); ve();
         });
-        $('gopLaiBox').addEventListener('click', (e) => {
-            const b = e.target.closest('[data-lai-idx]'); if (!b) return;
-            st.laiChon[st.thang] = Number(b.dataset.laiIdx); ve();
-        });
-        $('gopLaiBox').addEventListener('change', (e) => {
-            if (e.target.id === 'gopFeLai') { st.feLai = Number(e.target.value); ve(); }
+        $('gopLaiChips').addEventListener('click', (e) => {
+            const b = e.target.closest('button'); if (!b) return;
+            st.lai = Number(b.dataset.lai); ve();
         });
         $('gopBang').addEventListener('click', (e) => {
-            const pill = e.target.closest('[data-doi-lai]');
-            if (pill) {
-                const t = Number(pill.dataset.doiLai);
-                const k = dsKyHan().find(x => x.thang === t);
-                st.laiChon[t] = (chiSoLai(k) + 1) % k.lai.length;
-                st.thang = t; ve(); return;
-            }
             const tr = e.target.closest('tr[data-thang]');
             if (tr) { st.thang = Number(tr.dataset.thang); ve(); }
         });
@@ -359,9 +370,7 @@
             return;
         }
         const ds = docGiaTuModal();
-        st.laiChon = {};
-        const xe = xeFE();
-        st.feLai = (xe && xe.lai > 0) ? xe.lai : CFG.fe.lai_tuy_chon[0];
+        st.lai = null;
         st.pct = 20; st.mode = 'pct';
         st.gia = 0; st.tien = 0;
         datGia(ds.nhap || ds.cao || ds.trung || ds.thap || 0);
