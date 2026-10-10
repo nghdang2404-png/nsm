@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Lãi suất tính góp - Hệ thống Nam Sương{% endblock %}
+{% block hero_section %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tg-card { background:#fff; border-radius:10px; padding:16px; box-shadow:0 1px 4px rgba(0,0,0,.06); margin-bottom:16px; }
+    .tg-card h6 { font-weight:800; text-transform:uppercase; font-size:14px; margin-bottom:12px; }
+    .tg-table th { font-size:12px; text-transform:uppercase; color:#6c757d; white-space:nowrap; }
+    .tg-table td { vertical-align:middle; }
+    .tg-table input { min-width:70px; }
+    .tg-hint { font-size:12px; color:#6c757d; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0 my-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <h5 class="fw-bold m-0 text-uppercase"><i class="fa-solid fa-hand-holding-dollar text-danger me-2"></i> Lãi suất tính góp xe</h5>
+        <button class="btn btn-danger btn-sm px-3" onclick="luuCauHinh()"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu thay đổi</button>
+    </div>
+    <p class="tg-hint">Lãi suất nhập theo <b>%/tháng</b> (VD 0,99). Với Jacss, kỳ hạn có nhiều mức lãi thì nhập cách nhau bằng dấu chấm phẩy, mức đầu tiên là mặc định (VD <code>0,99; 0,79</code>).</p>
+
+    <!-- JACSS -->
+    <div class="tg-card">
+        <h6 class="text-danger">Jacss</h6>
+        <div class="mb-3" style="max-width:260px">
+            <label class="form-label small fw-semibold">Trả trước tối thiểu (%) <span class="tg-hint">- 0 = không cảnh báo</span></label>
+            <input id="jMin" class="form-control form-control-sm" inputmode="decimal">
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm tg-table">
+                <thead><tr><th style="width:130px">Số tháng</th><th>Lãi suất %/tháng</th><th style="width:50px"></th></tr></thead>
+                <tbody id="jBody"></tbody>
+            </table>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" onclick="themKyHanJ()"><i class="fa-solid fa-plus me-1"></i> Thêm kỳ hạn</button>
+    </div>
+
+    <!-- FE -->
+    <div class="tg-card">
+        <h6 class="text-primary">FE</h6>
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-md-3">
+                <label class="form-label small fw-semibold">Trả trước tối thiểu (%)</label>
+                <input id="fMin" class="form-control form-control-sm" inputmode="decimal">
+            </div>
+            <div class="col-12 col-md-4">
+                <label class="form-label small fw-semibold">Các mức lãi để chọn (%/tháng)</label>
+                <input id="fLaiTc" class="form-control form-control-sm" placeholder="0,79; 0,99; 1,19; 1,35">
+            </div>
+            <div class="col-12 col-md-5">
+                <label class="form-label small fw-semibold">Các kỳ hạn (tháng)</label>
+                <input id="fKyHan" class="form-control form-control-sm" placeholder="6; 9; 12; 15; 18; 24; 36">
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm tg-table">
+                <thead><tr><th>Dòng xe</th><th>Từ khoá nhận diện</th><th>Loại trừ</th><th style="width:110px">Lãi mặc định</th><th style="width:110px">Tối đa (tháng)</th><th style="width:50px"></th></tr></thead>
+                <tbody id="fBody"></tbody>
+            </table>
+        </div>
+        <p class="tg-hint mb-2">Từ khoá so với tên xe sau khi bỏ khoảng trắng, dấu gạch và viết thường (VD <code>airblade125</code>, <code>sh125</code>). Nhiều từ khoá cách nhau bằng dấu chấm phẩy. "Loại trừ" dùng để tránh nhận nhầm (Blade không áp cho Air Blade).</p>
+        <button class="btn btn-outline-secondary btn-sm" onclick="themXeF()"><i class="fa-solid fa-plus me-1"></i> Thêm dòng xe</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const CFG = {{ config | tojson }};
+    const toList = (s) => String(s).split(';').map(x => x.trim()).filter(Boolean);
+    const soStr = (n) => String(n).replace('.', ',');
+    const esc = (s) => String(s ?? '').replace(/"/g, '&quot;');
+
+    function dongJ(k) {
+        return `<tr><td><input class="form-control form-control-sm j-thang" inputmode="numeric" value="${k.thang}"></td>
+            <td><input class="form-control form-control-sm j-lai" value="${esc(k.lai.map(soStr).join('; '))}"></td>
+            <td><button class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">×</button></td></tr>`;
+    }
+    function dongF(x) {
+        return `<tr><td><input class="form-control form-control-sm f-ten" value="${esc(x.ten)}"></td>
+            <td><input class="form-control form-control-sm f-match" value="${esc((x.match || []).join('; '))}"></td>
+            <td><input class="form-control form-control-sm f-loai" value="${esc((x.loai_tru || []).join('; '))}"></td>
+            <td><input class="form-control form-control-sm f-lai" inputmode="decimal" value="${soStr(x.lai)}"></td>
+            <td><input class="form-control form-control-sm f-max" inputmode="numeric" value="${x.toi_da}"></td>
+            <td><button class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">×</button></td></tr>`;
+    }
+    function themKyHanJ() { document.getElementById('jBody').insertAdjacentHTML('beforeend', dongJ({ thang: '', lai: [] })); }
+    function themXeF() { document.getElementById('fBody').insertAdjacentHTML('beforeend', dongF({ ten: '', match: [], loai_tru: [], lai: 0.79, toi_da: 24 })); }
+
+    (function ve() {
+        document.getElementById('jMin').value = soStr(CFG.jacss.min_tra_truoc);
+        document.getElementById('jBody').innerHTML = CFG.jacss.ky_han.map(dongJ).join('');
+        document.getElementById('fMin').value = soStr(CFG.fe.min_tra_truoc);
+        document.getElementById('fLaiTc').value = CFG.fe.lai_tuy_chon.map(soStr).join('; ');
+        document.getElementById('fKyHan').value = CFG.fe.ky_han.join('; ');
+        document.getElementById('fBody').innerHTML = CFG.fe.xe.map(dongF).join('');
+    })();
+
+    async function luuCauHinh() {
+        const q = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+        const payload = {
+            jacss: {
+                min_tra_truoc: document.getElementById('jMin').value,
+                ky_han: q('#jBody tr').map(tr => ({ thang: tr.querySelector('.j-thang').value, lai: toList(tr.querySelector('.j-lai').value) }))
+            },
+            fe: {
+                min_tra_truoc: document.getElementById('fMin').value,
+                lai_tuy_chon: toList(document.getElementById('fLaiTc').value),
+                ky_han: toList(document.getElementById('fKyHan').value),
+                xe: q('#fBody tr').map(tr => ({
+                    ten: tr.querySelector('.f-ten').value,
+                    match: toList(tr.querySelector('.f-match').value),
+                    loai_tru: toList(tr.querySelector('.f-loai').value),
+                    lai: tr.querySelector('.f-lai').value,
+                    toi_da: tr.querySelector('.f-max').value
+                }))
+            }
+        };
+        try {
+            const res = await fetch('/admin/api/tinh-gop-config', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+            const j = await res.json();
+            alert(j.success ? 'Đã lưu lãi suất tính góp.' : ('Không lưu được: ' + j.message));
+        } catch (e) { alert('Lỗi kết nối, thử lại.'); }
+    }
+</script>
+{% endblock %}

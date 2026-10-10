@@ -2970,7 +2970,8 @@ with app.app_context():
 # LƯU Ý khi lên Render: nếu sau này tăng số worker Gunicorn (--workers > 1), mỗi
 # worker là 1 tiến trình riêng và sẽ tự khởi động 1 scheduler riêng -> đồng bộ có
 # thể bị chạy trùng nhiều lần cùng lúc. Với 1 worker (mặc định) thì không sao.
-
+from tinh_gop import dang_ky_tinh_gop
+dang_ky_tinh_gop(app, db, Setting, admin_required)
 
 if __name__ == "__main__":
     # threaded=True: cho phép server xử lý NHIỀU request cùng lúc (ví dụ nhiều người cùng mở

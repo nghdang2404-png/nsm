@@ -290,6 +290,9 @@
                     <a href="/register" class="nav-pill-btn">
                         <i class="fa-solid fa-user-plus me-1"></i> Đăng ký TK
                     </a>
+                    <a href="/admin/tinh-gop" class="nav-pill-btn {% if request.path == '/admin/tinh-gop' %}active{% endif %}">
+                        <i class="fa-solid fa-hand-holding-dollar me-1"></i> Lãi suất tính góp
+                    </a>
                     <a href="/admin/history" class="nav-pill-btn {% if request.endpoint == 'view_audit_history' %}active{% endif %} text-primary fw-bold">
                         <i class="fa-solid fa-clock-rotate-left me-1"></i> Lịch sử hệ thống
                     </a>

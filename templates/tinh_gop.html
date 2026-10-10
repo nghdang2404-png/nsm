@@ -1,0 +1,364 @@
+<!-- Bắt đầu file: tinh_gop.html  (được nhúng ở cuối tinh_gia_nhap.html)
+     Modal "Tính góp xe": điện thoại = toàn màn hình + thanh kết quả cố định phía dưới,
+     laptop = hộp thoại 2 cột (nhập liệu bên trái, kết quả + bảng so sánh kỳ hạn bên phải). -->
+<style>
+    #gopModal { display: none; position: fixed; inset: 0; z-index: 1100; background: rgba(15,23,42,.55); align-items: stretch; justify-content: center; }
+    #gopModal.open { display: flex; }
+    .gop-sheet { background: #f1f5f9; width: 100%; display: flex; flex-direction: column; min-height: 0; color: #1f2937; }
+    .gop-head { background: linear-gradient(135deg,#dc2626,#b91c1c); color: #fff; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+    .gop-head small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .6px; opacity: .85; }
+    .gop-head strong { display: block; font-size: 16px; font-weight: 800; line-height: 1.25; margin-top: 2px; }
+    .gop-x { background: rgba(255,255,255,.18); border: 0; color: #fff; width: 34px; height: 34px; border-radius: 50%; font-size: 20px; line-height: 1; cursor: pointer; flex-shrink: 0; }
+    .gop-body { flex: 1; overflow-y: auto; padding: 14px; display: grid; gap: 14px; align-content: start; -webkit-overflow-scrolling: touch; }
+    .gop-card { background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .gop-label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px; display: block; }
+    .gop-card > .gop-label:not(:first-child) { margin-top: 18px; }
+    .gop-seg { display: grid; grid-template-columns: 1fr 1fr; background: #e2e8f0; border-radius: 10px; padding: 3px; gap: 3px; }
+    .gop-seg button { border: 0; background: transparent; padding: 10px; border-radius: 8px; font-size: 15px; font-weight: 800; color: #475569; cursor: pointer; font-family: inherit; }
+    .gop-seg button.on { background: #fff; color: #dc2626; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+    .gop-input { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 700; font-family: inherit; background: #fff; color: #111827; }
+    .gop-input:focus, .gop-select:focus { outline: 0; border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.15); }
+    .gop-select { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; font-weight: 700; font-family: inherit; background: #fff; }
+    .gop-row2 { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; }
+    .gop-addon { position: relative; }
+    .gop-addon span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-weight: 700; font-size: 13px; pointer-events: none; }
+    .gop-addon .gop-input { padding-right: 44px; }
+    .gop-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .gop-chip { border: 1px solid #cbd5e1; background: #fff; border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 700; color: #334155; cursor: pointer; font-family: inherit; line-height: 1.2; }
+    .gop-chip.on { background: #dc2626; border-color: #dc2626; color: #fff; }
+    .gop-chip.price { border-radius: 10px; text-align: left; padding: 7px 11px; }
+    .gop-chip.price small { display: block; font-size: 11px; font-weight: 600; opacity: .8; }
+    .gop-range { width: 100%; margin: 12px 0 2px; accent-color: #dc2626; }
+    .gop-warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 8px; padding: 9px 11px; font-size: 13px; font-weight: 600; margin-top: 10px; }
+    .gop-hint { font-size: 12px; color: #64748b; margin-top: 8px; }
+    .gop-result { background: linear-gradient(135deg,#fff1f2,#fff); border: 1px solid #fecdd3; }
+    .gop-big { font-size: 30px; font-weight: 800; color: #dc2626; line-height: 1.1; }
+    .gop-big small { font-size: 14px; color: #64748b; font-weight: 700; }
+    .gop-sub { font-size: 13px; color: #64748b; margin-top: 4px; font-weight: 600; }
+    .gop-kv { display: grid; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed #fecdd3; font-size: 14px; }
+    .gop-kv div { display: flex; justify-content: space-between; gap: 10px; }
+    .gop-kv span { color: #64748b; }
+    .gop-kv b { text-align: right; }
+    .gop-table-wrap { overflow-x: auto; }
+    .gop-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .gop-table th { text-align: right; font-size: 11px; text-transform: uppercase; color: #64748b; padding: 6px 6px; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+    .gop-table th:first-child, .gop-table td:first-child { text-align: left; }
+    .gop-table td { text-align: right; padding: 10px 6px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+    .gop-table tr.row { cursor: pointer; }
+    .gop-table tr.sel td { background: #fff1f2; font-weight: 800; color: #b91c1c; }
+    .gop-pill { border: 1px dashed #dc2626; background: #fff; color: #dc2626; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 800; cursor: pointer; font-family: inherit; }
+    .gop-note { font-size: 11.5px; color: #94a3b8; line-height: 1.5; }
+    .gop-foot { flex-shrink: 0; background: #fff; border-top: 1px solid #e2e8f0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom,0px)); display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 -4px 12px rgba(0,0,0,.06); }
+    .gop-foot .lbl { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+    .gop-foot .val { font-size: 22px; font-weight: 800; color: #dc2626; line-height: 1.1; }
+    .gop-foot .det { text-align: right; font-size: 12px; color: #475569; font-weight: 700; }
+    .gop-open-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg,#dc2626,#b91c1c); color: #fff; border: 0; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit; box-shadow: 0 2px 8px rgba(220,38,38,.3); }
+    @media (min-width: 768px) {
+        #gopModal.open { align-items: center; padding: 24px; }
+        .gop-sheet { max-width: 980px; max-height: 92vh; border-radius: 16px; overflow: hidden; }
+        .gop-body { grid-template-columns: 380px 1fr; gap: 16px; padding: 18px; align-items: start; }
+        .gop-foot { display: none; }
+        .gop-head strong { font-size: 18px; }
+    }
+</style>
+
+<div id="gopModal" role="dialog" aria-modal="true" aria-labelledby="gopCarName">
+    <div class="gop-sheet">
+        <div class="gop-head">
+            <div>
+                <small><i class="fas fa-hand-holding-usd"></i> TÍNH GÓP XE</small>
+                <strong id="gopCarName">Tên xe</strong>
+            </div>
+            <button type="button" class="gop-x" onclick="dongTinhGop()" aria-label="Đóng">&times;</button>
+        </div>
+
+        <div class="gop-body" id="gopBody">
+            <!-- CỘT TRÁI: NHẬP LIỆU -->
+            <div class="gop-card">
+                <span class="gop-label">Đơn vị trả góp</span>
+                <div class="gop-seg" id="gopDoiTac">
+                    <button type="button" data-doi="jacss" class="on">Jacss</button>
+                    <button type="button" data-doi="fe">FE</button>
+                </div>
+
+                <span class="gop-label">Giá xe</span>
+                <div class="gop-addon"><input id="gopGia" class="gop-input" type="text" inputmode="numeric" placeholder="Nhập giá xe..." autocomplete="off"><span>VNĐ</span></div>
+                <div class="gop-chips" id="gopGiaChips" style="margin-top:10px"></div>
+
+                <span class="gop-label">Trả trước</span>
+                <div class="gop-row2">
+                    <div class="gop-addon"><input id="gopPct" class="gop-input" type="text" inputmode="decimal" autocomplete="off"><span>%</span></div>
+                    <div class="gop-addon"><input id="gopTien" class="gop-input" type="text" inputmode="numeric" placeholder="Số tiền" autocomplete="off"><span>VNĐ</span></div>
+                </div>
+                <input id="gopRange" class="gop-range" type="range" min="0" max="90" step="5">
+                <div class="gop-chips" id="gopPctChips"></div>
+                <div id="gopCanhBao"></div>
+
+                <span class="gop-label">Số tháng góp</span>
+                <div class="gop-chips" id="gopThangChips"></div>
+
+                <span class="gop-label">Lãi suất <span style="text-transform:none;font-weight:600">(%/tháng)</span></span>
+                <div id="gopLaiBox"></div>
+            </div>
+
+            <!-- CỘT PHẢI: KẾT QUẢ -->
+            <div style="display:grid;gap:14px;align-content:start">
+                <div class="gop-card gop-result" id="gopKetQua"></div>
+                <div class="gop-card">
+                    <span class="gop-label">So sánh các kỳ hạn <span style="text-transform:none;font-weight:600">(bấm để chọn)</span></span>
+                    <div class="gop-table-wrap"><table class="gop-table" id="gopBang"></table></div>
+                </div>
+                <p class="gop-note">* Lãi tính phẳng trên khoản vay ban đầu: góp mỗi tháng = (khoản vay × lãi suất × số tháng + khoản vay) ÷ số tháng. Số liệu tham khảo, mức lãi và hồ sơ duyệt cuối cùng theo công ty tài chính.</p>
+            </div>
+        </div>
+
+        <div class="gop-foot">
+            <div><div class="lbl">Góp mỗi tháng</div><div class="val" id="gopFootVal">—</div></div>
+            <div class="det" id="gopFootDet"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const $ = (id) => document.getElementById(id);
+    let CFG = null, cfgPromise = null;
+    // mode: người dùng đang "giữ cố định" % hay số tiền khi đổi giá xe
+    const st = { doi: 'jacss', gia: 0, tien: 0, pct: 20, mode: 'pct', thang: 12, laiChon: {}, feLai: null, car: '' };
+
+    const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n || 0)) + ' VNĐ';
+    const fmtLai = (r) => Number(r).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + '%';
+    const soTuChuoi = (s) => Number(String(s || '').replace(/\D/g, '')) || 0;
+    const chuanHoa = (s) => String(s || '').normalize('NFC').toLowerCase().replace(/[\s\-_.]+/g, '');
+    const dinhDangSo = (n) => n > 0 ? new Intl.NumberFormat('vi-VN').format(Math.round(n)) : '';
+
+    function loadCfg() {
+        if (!cfgPromise) {
+            cfgPromise = fetch('/api/tinh-gop-config').then(r => r.json()).then(j => {
+                if (!j.success) throw new Error(j.message || 'Lỗi');
+                CFG = j.config; return CFG;
+            }).catch(e => { cfgPromise = null; throw e; });
+        }
+        return cfgPromise;
+    }
+
+    // ---------- Dữ liệu theo đối tác ----------
+    function xeFE() {
+        const n = chuanHoa(st.car);
+        let best = null, bestLen = 0;
+        (CFG.fe.xe || []).forEach(x => {
+            if ((x.loai_tru || []).some(k => n.includes(k))) return;
+            (x.match || []).forEach(k => { if (n.includes(k) && k.length > bestLen) { best = x; bestLen = k.length; } });
+        });
+        return best;
+    }
+    function dsKyHan() {
+        if (st.doi === 'jacss') return CFG.jacss.ky_han.map(k => ({ thang: k.thang, lai: k.lai }));
+        const xe = xeFE();
+        const lai = st.feLai;
+        return CFG.fe.ky_han.filter(t => !xe || t <= xe.toi_da).map(t => ({ thang: t, lai: [lai] }));
+    }
+    function laiCua(k) {
+        if (st.doi === 'fe') return st.feLai;
+        const i = st.laiChon[k.thang] || 0;
+        return k.lai[i] !== undefined ? k.lai[i] : k.lai[0];
+    }
+    const tinh = (vay, lai, n) => (vay * (lai / 100) * n + vay) / n;
+
+    // ---------- Nhập liệu ----------
+    function docGiaTuModal() {
+        const doc = (id) => soTuChuoi(($(id) || {}).innerText);
+        const nhap = soTuChuoi((($('draftPriceInput')) || {}).value);
+        return { cao: doc('modalBasePrice'), trung: doc('modalGiaTrung'), thap: doc('modalGiaThap'), nhap };
+    }
+    function veChipGia(ds) {
+        const items = [['Giá cao', ds.cao], ['Giá trung', ds.trung], ['Giá thấp', ds.thap]];
+        if (ds.nhap > 0) items.push(['Giá đã nhập', ds.nhap]);
+        $('gopGiaChips').innerHTML = items.filter(i => i[1] > 0).map(i =>
+            `<button type="button" class="gop-chip price${st.gia === i[1] ? ' on' : ''}" data-gia="${i[1]}">${i[0]}<small>${new Intl.NumberFormat('vi-VN').format(i[1])}</small></button>`).join('');
+    }
+    function datGia(v) {
+        st.gia = Math.max(0, Math.round(v));
+        if (st.mode === 'pct') st.tien = Math.round(st.gia * st.pct / 100);
+        else { st.tien = Math.min(st.tien, st.gia); st.pct = st.gia ? st.tien / st.gia * 100 : 0; }
+    }
+    function datPct(p) {
+        st.pct = Math.min(Math.max(p, 0), 100); st.mode = 'pct';
+        st.tien = Math.round(st.gia * st.pct / 100);
+    }
+    function datTien(t) {
+        st.tien = Math.min(Math.max(t, 0), st.gia || t); st.mode = 'tien';
+        st.pct = st.gia ? st.tien / st.gia * 100 : 0;
+    }
+
+    // ---------- Vẽ giao diện ----------
+    function ve(giuNhap) {
+        const ky = dsKyHan();
+        if (!ky.some(k => k.thang === st.thang)) {
+            st.thang = (ky.find(k => k.thang === 12) || ky[0] || {}).thang;
+        }
+        // Ô nhập: không ghi đè ô đang gõ
+        const act = document.activeElement;
+        if (act !== $('gopGia')) $('gopGia').value = dinhDangSo(st.gia);
+        if (act !== $('gopPct')) $('gopPct').value = st.pct ? String(Math.round(st.pct * 10) / 10).replace('.', ',') : '';
+        if (act !== $('gopTien')) $('gopTien').value = dinhDangSo(st.tien);
+        $('gopRange').value = Math.round(st.pct / 5) * 5;
+
+        document.querySelectorAll('#gopDoiTac button').forEach(b => b.classList.toggle('on', b.dataset.doi === st.doi));
+        document.querySelectorAll('#gopGiaChips .gop-chip').forEach(b => b.classList.toggle('on', Number(b.dataset.gia) === st.gia));
+        $('gopPctChips').innerHTML = [10, 20, 30, 40, 50].map(p =>
+            `<button type="button" class="gop-chip${Math.abs(st.pct - p) < 0.05 ? ' on' : ''}" data-pct="${p}">${p}%</button>`).join('');
+        $('gopThangChips').innerHTML = ky.map(k =>
+            `<button type="button" class="gop-chip${k.thang === st.thang ? ' on' : ''}" data-thang="${k.thang}">${k.thang} tháng</button>`).join('');
+
+        veLai(ky);
+
+        // Cảnh báo trả trước tối thiểu
+        const min = CFG[st.doi].min_tra_truoc || 0;
+        $('gopCanhBao').innerHTML = (st.gia > 0 && st.pct + 1e-9 < min)
+            ? `<div class="gop-warn"><i class="fas fa-triangle-exclamation"></i> ${CFG[st.doi].ten} yêu cầu trả trước tối thiểu ${min}% (${new Intl.NumberFormat('vi-VN').format(Math.round(st.gia * min / 100))} VNĐ).</div>` : '';
+
+        veKetQua(ky);
+    }
+
+    function veLai(ky) {
+        const k = ky.find(x => x.thang === st.thang);
+        const box = $('gopLaiBox');
+        if (st.doi === 'fe') {
+            const xe = xeFE();
+            box.innerHTML = `<select id="gopFeLai" class="gop-select">${CFG.fe.lai_tuy_chon.map(l =>
+                `<option value="${l}"${l === st.feLai ? ' selected' : ''}>${fmtLai(l)} / tháng</option>`).join('')}</select>` +
+                `<div class="gop-hint">${xe ? `Xe thuộc dòng <b>${xe.ten}</b>: lãi mặc định ${fmtLai(xe.lai)}, góp tối đa ${xe.toi_da} tháng.`
+                    : 'Dòng xe này chưa có trong bảng FE: chọn lãi suất thủ công, hiện đủ các kỳ hạn.'}</div>`;
+        } else if (k && k.lai.length > 1) {
+            const i = st.laiChon[k.thang] || 0;
+            box.innerHTML = `<div class="gop-chips">${k.lai.map((l, idx) =>
+                `<button type="button" class="gop-chip${idx === i ? ' on' : ''}" data-lai-idx="${idx}">${fmtLai(l)}</button>`).join('')}</div>
+                <div class="gop-hint">Kỳ hạn ${k.thang} tháng có 2 mức lãi, chọn mức đang áp dụng.</div>`;
+        } else if (k) {
+            box.innerHTML = `<div class="gop-input" style="background:#f8fafc">${fmtLai(k.lai[0])} / tháng</div>`;
+        }
+    }
+
+    function veKetQua(ky) {
+        const vay = st.gia - st.tien;
+        const k = ky.find(x => x.thang === st.thang);
+        const kq = $('gopKetQua'), bang = $('gopBang');
+        const footV = $('gopFootVal'), footD = $('gopFootDet');
+        if (!(st.gia > 0) || !k) {
+            kq.innerHTML = '<div class="gop-sub">Nhập giá xe để xem kết quả.</div>';
+            bang.innerHTML = ''; footV.textContent = '—'; footD.textContent = ''; return;
+        }
+        if (vay <= 0) {
+            kq.innerHTML = '<div class="gop-sub">Trả trước đã đủ giá xe, không cần vay.</div>';
+            bang.innerHTML = ''; footV.textContent = '—'; footD.textContent = ''; return;
+        }
+        const lai = laiCua(k), gop = tinh(vay, lai, k.thang), tongLai = vay * lai / 100 * k.thang;
+        kq.innerHTML = `
+            <span class="gop-label" style="color:#be123c">${CFG[st.doi].ten} · ${k.thang} tháng · lãi ${fmtLai(lai)}/tháng</span>
+            <div class="gop-big">${new Intl.NumberFormat('vi-VN').format(Math.round(gop))} <small>VNĐ / tháng</small></div>
+            <div class="gop-kv">
+                <div><span>Giá xe</span><b>${fmt(st.gia)}</b></div>
+                <div><span>Trả trước (${Math.round(st.pct * 10) / 10}%)</span><b>${fmt(st.tien)}</b></div>
+                <div><span>Khoản vay</span><b>${fmt(vay)}</b></div>
+                <div><span>Gốc mỗi tháng</span><b>${fmt(vay / k.thang)}</b></div>
+                <div><span>Lãi mỗi tháng</span><b>${fmt(vay * lai / 100)}</b></div>
+                <div><span>Tổng tiền lãi</span><b>${fmt(tongLai)}</b></div>
+                <div><span>Tổng thanh toán (gồm trả trước)</span><b>${fmt(st.tien + gop * k.thang)}</b></div>
+            </div>`;
+        footV.textContent = new Intl.NumberFormat('vi-VN').format(Math.round(gop)) + ' đ';
+        footD.innerHTML = `${k.thang} tháng<br>lãi ${fmtLai(lai)}/tháng`;
+
+        bang.innerHTML = '<thead><tr><th>Kỳ hạn</th><th>Lãi</th><th>Góp/tháng</th><th>Tổng lãi</th></tr></thead><tbody>' +
+            ky.map(x => {
+                const l = laiCua(x), g = tinh(vay, l, x.thang);
+                const pill = (st.doi === 'jacss' && x.lai.length > 1)
+                    ? `<button type="button" class="gop-pill" data-doi-lai="${x.thang}" title="Bấm để đổi mức lãi">${fmtLai(l)} ⇄</button>` : fmtLai(l);
+                return `<tr class="row${x.thang === st.thang ? ' sel' : ''}" data-thang="${x.thang}"><td>${x.thang} tháng</td><td>${pill}</td>` +
+                    `<td>${new Intl.NumberFormat('vi-VN').format(Math.round(g))}</td><td>${new Intl.NumberFormat('vi-VN').format(Math.round(vay * l / 100 * x.thang))}</td></tr>`;
+            }).join('') + '</tbody>';
+    }
+
+    // ---------- Sự kiện ----------
+    function gan() {
+        $('gopDoiTac').addEventListener('click', (e) => {
+            const b = e.target.closest('button'); if (!b) return;
+            st.doi = b.dataset.doi; ve();
+        });
+        $('gopGiaChips').addEventListener('click', (e) => {
+            const b = e.target.closest('button'); if (!b) return;
+            datGia(Number(b.dataset.gia)); ve();
+        });
+        $('gopGia').addEventListener('input', (e) => {
+            const v = soTuChuoi(e.target.value); e.target.value = dinhDangSo(v);
+            datGia(v); ve();
+        });
+        $('gopPct').addEventListener('input', (e) => {
+            const raw = e.target.value.replace(/[^\d.,]/g, '').replace(',', '.');
+            datPct(parseFloat(raw) || 0); ve();
+        });
+        $('gopTien').addEventListener('input', (e) => {
+            const v = soTuChuoi(e.target.value); e.target.value = dinhDangSo(v);
+            datTien(v); ve();
+        });
+        $('gopRange').addEventListener('input', (e) => { datPct(Number(e.target.value)); ve(); });
+        $('gopPctChips').addEventListener('click', (e) => {
+            const b = e.target.closest('button'); if (!b) return;
+            datPct(Number(b.dataset.pct)); ve();
+        });
+        $('gopThangChips').addEventListener('click', (e) => {
+            const b = e.target.closest('button'); if (!b) return;
+            st.thang = Number(b.dataset.thang); ve();
+        });
+        $('gopLaiBox').addEventListener('click', (e) => {
+            const b = e.target.closest('[data-lai-idx]'); if (!b) return;
+            st.laiChon[st.thang] = Number(b.dataset.laiIdx); ve();
+        });
+        $('gopLaiBox').addEventListener('change', (e) => {
+            if (e.target.id === 'gopFeLai') { st.feLai = Number(e.target.value); ve(); }
+        });
+        $('gopBang').addEventListener('click', (e) => {
+            const pill = e.target.closest('[data-doi-lai]');
+            if (pill) {
+                const t = Number(pill.dataset.doiLai);
+                const k = CFG.jacss.ky_han.find(x => x.thang === t);
+                st.laiChon[t] = ((st.laiChon[t] || 0) + 1) % k.lai.length;
+                st.thang = t; ve(); return;
+            }
+            const tr = e.target.closest('tr[data-thang]');
+            if (tr) { st.thang = Number(tr.dataset.thang); ve(); }
+        });
+        $('gopModal').addEventListener('click', (e) => { if (e.target === $('gopModal')) dongTinhGop(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('gopModal').classList.contains('open')) dongTinhGop(); });
+    }
+
+    // ---------- Mở / đóng ----------
+    window.moTinhGop = async function () {
+        st.car = (($('modalCarTitle') || {}).innerText || '').trim();
+        $('gopCarName').textContent = st.car || 'Tính góp xe';
+        $('gopModal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+        $('gopKetQua').innerHTML = '<div class="gop-sub">Đang tải lãi suất...</div>';
+        try { await loadCfg(); }
+        catch (e) {
+            $('gopKetQua').innerHTML = '<div class="gop-warn">Không tải được bảng lãi suất. Kiểm tra mạng rồi mở lại.</div>';
+            return;
+        }
+        const ds = docGiaTuModal();
+        st.laiChon = {};
+        const xe = xeFE();
+        st.feLai = xe ? xe.lai : CFG.fe.lai_tuy_chon[0];
+        st.pct = 20; st.mode = 'pct';
+        st.gia = 0; st.tien = 0;
+        datGia(ds.nhap || ds.cao || ds.trung || ds.thap || 0);
+        veChipGia(ds);
+        ve();
+    };
+    window.dongTinhGop = function () {
+        $('gopModal').classList.remove('open');
+        document.body.style.overflow = '';
+    };
+    gan();
+})();
+</script>
+<!-- Kết thúc file: tinh_gop.html -->
