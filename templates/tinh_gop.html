@@ -152,11 +152,17 @@
         });
         return best;
     }
+    // Gói lãi của kỳ hạn + lãi mặc định của dòng xe (nếu có và chưa nằm trong gói) để chọn được và được chọn sẵn
+    function themLaiXe(lai) {
+        const xe = xeFE();
+        if (xe && xe.lai > 0 && !lai.some(l => Math.abs(l - xe.lai) < 1e-9)) return lai.concat([xe.lai]);
+        return lai;
+    }
     function dsKyHan() {
-        if (st.doi === 'jacss') return CFG.jacss.ky_han.map(k => ({ thang: k.thang, lai: k.lai, goi: true }));
+        if (st.doi === 'jacss') return CFG.jacss.ky_han.map(k => ({ thang: k.thang, lai: themLaiXe(k.lai), goi: true }));
         const xe = xeFE();
         return CFG.fe.ky_han.filter(k => !xe || k.thang <= xe.toi_da).map(k =>
-            (k.lai && k.lai.length) ? { thang: k.thang, lai: k.lai, goi: true } : { thang: k.thang, lai: [st.feLai], goi: false });
+            (k.lai && k.lai.length) ? { thang: k.thang, lai: themLaiXe(k.lai), goi: true } : { thang: k.thang, lai: [st.feLai], goi: false });
     }
     function laiCua(k) {
         if (!k.goi) return st.feLai;
@@ -167,7 +173,7 @@
     function chiSoLai(k) {
         if (st.laiChon[k.thang] !== undefined) return st.laiChon[k.thang];
         const xe = xeFE();
-        if (xe) { const i = k.lai.findIndex(l => Math.abs(l - xe.lai) < 1e-9); if (i >= 0) return i; }
+        if (xe && xe.lai > 0) { const i = k.lai.findIndex(l => Math.abs(l - xe.lai) < 1e-9); if (i >= 0) return i; }
         return 0;
     }
     const tinh = (vay, lai, n) => (vay * (lai / 100) * n + vay) / n;
@@ -242,7 +248,7 @@
             const i = chiSoLai(k);
             box.innerHTML = `<div class="gop-chips">${k.lai.map((l, idx) =>
                 `<button type="button" class="gop-chip${idx === i ? ' on' : ''}" data-lai-idx="${idx}">${fmtLai(l)}</button>`).join('')}</div>
-                <div class="gop-hint">Kỳ hạn ${k.thang} tháng có nhiều mức lãi, chọn mức đang áp dụng.</div>`;
+                <div class="gop-hint">Kỳ hạn ${k.thang} tháng có nhiều mức lãi, chọn mức đang áp dụng.${(xeFE() && xeFE().lai > 0) ? ' Lãi mặc định của dòng xe này: ' + fmtLai(xeFE().lai) + '.' : ''}</div>`;
         } else if (k) {
             box.innerHTML = `<div class="gop-input" style="background:#f8fafc">${fmtLai(k.lai[0])} / tháng</div>`;
         }
@@ -355,7 +361,7 @@
         const ds = docGiaTuModal();
         st.laiChon = {};
         const xe = xeFE();
-        st.feLai = xe ? xe.lai : CFG.fe.lai_tuy_chon[0];
+        st.feLai = (xe && xe.lai > 0) ? xe.lai : CFG.fe.lai_tuy_chon[0];
         st.pct = 20; st.mode = 'pct';
         st.gia = 0; st.tien = 0;
         datGia(ds.nhap || ds.cao || ds.trung || ds.thap || 0);
